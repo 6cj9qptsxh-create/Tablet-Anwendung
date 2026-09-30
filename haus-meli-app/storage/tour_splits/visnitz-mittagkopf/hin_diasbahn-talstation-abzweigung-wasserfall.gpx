@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Diasbahn Talstation → Abzweigung Wasserfall</name></metadata>
+  <trk><name>Diasbahn Talstation → Abzweigung Wasserfall</name><trkseg>
+      <trkpt lat="47.0600750" lon="10.3748830"><ele>1190.6</ele></trkpt>
+      <trkpt lat="47.0604200" lon="10.3756720"><ele>1190.6</ele></trkpt>
+      <trkpt lat="47.0606390" lon="10.3760880"><ele>1193.3</ele></trkpt>
+      <trkpt lat="47.0606640" lon="10.3761300"><ele>1193.8</ele></trkpt>
+      <trkpt lat="47.0605990" lon="10.3761850"><ele>1194.7</ele></trkpt>
+      <trkpt lat="47.0604850" lon="10.3760590"><ele>1196.5</ele></trkpt>
+      <trkpt lat="47.0601060" lon="10.3758410"><ele>1201.5</ele></trkpt>
+      <trkpt lat="47.0597050" lon="10.3753230"><ele>1208.2</ele></trkpt>
+      <trkpt lat="47.0592470" lon="10.3748430"><ele>1215.0</ele></trkpt>
+      <trkpt lat="47.0590420" lon="10.3744590"><ele>1218.7</ele></trkpt>
+      <trkpt lat="47.0587980" lon="10.3741200"><ele>1222.6</ele></trkpt>
+      <trkpt lat="47.0586150" lon="10.3737870"><ele>1225.9</ele></trkpt>
+      <trkpt lat="47.0583890" lon="10.3735120"><ele>1229.2</ele></trkpt>
+      <trkpt lat="47.0581100" lon="10.3727570"><ele>1236.6</ele></trkpt>
+      <trkpt lat="47.0580570" lon="10.3720720"><ele>1243.5</ele></trkpt>
+      <trkpt lat="47.0580140" lon="10.3719310"><ele>1245.1</ele></trkpt>
+      <trkpt lat="47.0579090" lon="10.3718870"><ele>1246.7</ele></trkpt>
+      <trkpt lat="47.0577430" lon="10.3718930"><ele>1249.1</ele></trkpt>
+      <trkpt lat="47.0573550" lon="10.3717710"><ele>1255.0</ele></trkpt>
+      <trkpt lat="47.0571940" lon="10.3717780"><ele>1257.3</ele></trkpt>
+      <trkpt lat="47.0571770" lon="10.3718290"><ele>1257.9</ele></trkpt>
+      <trkpt lat="47.0572030" lon="10.3718990"><ele>1258.7</ele></trkpt>
+      <trkpt lat="47.0574680" lon="10.3721010"><ele>1267.0</ele></trkpt>
+      <trkpt lat="47.0569620" lon="10.3722460"><ele>1283.8</ele></trkpt>
+      <trkpt lat="47.0563240" lon="10.3725400"><ele>1305.6</ele></trkpt>
+      <trkpt lat="47.0559660" lon="10.3724700"><ele>1317.4</ele></trkpt>
+  </trkseg></trk>
+</gpx>

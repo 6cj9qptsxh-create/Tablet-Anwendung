@@ -1,0 +1,332 @@
+{
+  "nodes_used": [
+    {
+      "name": "Haus Meli",
+      "lat": 47.069961,
+      "lng": 10.398723,
+      "flags": [
+        "start"
+      ]
+    },
+    {
+      "name": "Durrich Alpe",
+      "lat": 47.085255,
+      "lng": 10.39396,
+      "flags": [
+        "highlight",
+        "junction_lichtsee"
+      ]
+    },
+    {
+      "name": "Lichtsee",
+      "lat": 47.089489,
+      "lng": 10.388942,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Blankasee",
+      "lat": 47.099581,
+      "lng": 10.3764,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Edmund-Graf-Hütte",
+      "lat": 47.105967,
+      "lng": 10.355834,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Hoher Riffler",
+      "lat": 47.115954,
+      "lng": 10.370957,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Abzweigung Niederelbe Hütte",
+      "lat": 47.067735,
+      "lng": 10.356623,
+      "flags": [
+        "junction"
+      ]
+    },
+    {
+      "name": "Diasbahn Bergstation",
+      "lat": 47.067115,
+      "lng": 10.359023,
+      "flags": [
+        "seilbahn"
+      ]
+    }
+  ],
+  "note": "Abzweigung Lichtsee hatte dieselben Koordinaten wie Durrich Alpe — als ein Knoten behandelt.",
+  "seilbahn": {
+    "idea": "Diasbahn Bergstation <-> Talstation als Segment mit 0 km / 0 Hm",
+    "talstation": "Koordinaten fehlen noch — bitte nachreichen"
+  },
+  "tracks": [
+    {
+      "file": "2026-07-19_3122005120_Haus Meli - Hoher Riffler - Diasbahn.gpx",
+      "prefix": "hin",
+      "point_count": 966,
+      "snapped_nodes": [
+        {
+          "name": "Haus Meli",
+          "index": 0,
+          "snap_m": 0.6,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Durrich Alpe",
+          "index": 202,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Lichtsee",
+          "index": 238,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Blankasee",
+          "index": 332,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Edmund-Graf-Hütte",
+          "index": 452,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Hoher Riffler",
+          "index": 581,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Abzweigung Niederelbe Hütte",
+          "index": 944,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Diasbahn Bergstation",
+          "index": 965,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        }
+      ],
+      "segments": [
+        {
+          "name": "Haus Meli → Durrich Alpe",
+          "from": "Haus Meli",
+          "to": "Durrich Alpe",
+          "distance_km": 3.85,
+          "elevation_m": 678,
+          "point_count": 203,
+          "gpx_file": "hin_haus-meli-durrich-alpe.gpx"
+        },
+        {
+          "name": "Durrich Alpe → Lichtsee",
+          "from": "Durrich Alpe",
+          "to": "Lichtsee",
+          "distance_km": 0.71,
+          "elevation_m": 108,
+          "point_count": 37,
+          "gpx_file": "hin_durrich-alpe-lichtsee.gpx"
+        },
+        {
+          "name": "Lichtsee → Blankasee",
+          "from": "Lichtsee",
+          "to": "Blankasee",
+          "distance_km": 2.0,
+          "elevation_m": 409,
+          "point_count": 95,
+          "gpx_file": "hin_lichtsee-blankasee.gpx"
+        },
+        {
+          "name": "Blankasee → Edmund-Graf-Hütte",
+          "from": "Blankasee",
+          "to": "Edmund-Graf-Hütte",
+          "distance_km": 2.31,
+          "elevation_m": 226,
+          "point_count": 121,
+          "gpx_file": "hin_blankasee-edmund-graf-h-tte.gpx"
+        },
+        {
+          "name": "Edmund-Graf-Hütte → Hoher Riffler",
+          "from": "Edmund-Graf-Hütte",
+          "to": "Hoher Riffler",
+          "distance_km": 2.38,
+          "elevation_m": 685,
+          "point_count": 130,
+          "gpx_file": "hin_edmund-graf-h-tte-hoher-riffler.gpx"
+        },
+        {
+          "name": "Hoher Riffler → Abzweigung Niederelbe Hütte",
+          "from": "Hoher Riffler",
+          "to": "Abzweigung Niederelbe Hütte",
+          "distance_km": 8.5,
+          "elevation_m": 291,
+          "point_count": 364,
+          "gpx_file": "hin_hoher-riffler-abzweigung-niederelbe-h-tte.gpx"
+        },
+        {
+          "name": "Abzweigung Niederelbe Hütte → Diasbahn Bergstation",
+          "from": "Abzweigung Niederelbe Hütte",
+          "to": "Diasbahn Bergstation",
+          "distance_km": 0.42,
+          "elevation_m": 0,
+          "point_count": 22,
+          "gpx_file": "hin_abzweigung-niederelbe-h-tte-diasbahn-bergstation.gpx"
+        }
+      ]
+    },
+    {
+      "file": "2026-07-19_3122005120_Haus Meli - Hoher Riffler - Diasbahn (1).gpx",
+      "prefix": "retour",
+      "point_count": 966,
+      "snapped_nodes": [
+        {
+          "name": "Diasbahn Bergstation",
+          "index": 0,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Abzweigung Niederelbe Hütte",
+          "index": 21,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Hoher Riffler",
+          "index": 384,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Edmund-Graf-Hütte",
+          "index": 513,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Blankasee",
+          "index": 633,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Lichtsee",
+          "index": 727,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Durrich Alpe",
+          "index": 763,
+          "snap_m": 0.0,
+          "skipped_cut": false,
+          "merged_with": null
+        },
+        {
+          "name": "Haus Meli",
+          "index": 965,
+          "snap_m": 0.6,
+          "skipped_cut": false,
+          "merged_with": null
+        }
+      ],
+      "segments": [
+        {
+          "name": "Diasbahn Bergstation → Abzweigung Niederelbe Hütte",
+          "from": "Diasbahn Bergstation",
+          "to": "Abzweigung Niederelbe Hütte",
+          "distance_km": 0.42,
+          "elevation_m": 40,
+          "point_count": 22,
+          "gpx_file": "retour_diasbahn-bergstation-abzweigung-niederelbe-h-tte.gpx"
+        },
+        {
+          "name": "Abzweigung Niederelbe Hütte → Hoher Riffler",
+          "from": "Abzweigung Niederelbe Hütte",
+          "to": "Hoher Riffler",
+          "distance_km": 8.5,
+          "elevation_m": 1485,
+          "point_count": 364,
+          "gpx_file": "retour_abzweigung-niederelbe-h-tte-hoher-riffler.gpx"
+        },
+        {
+          "name": "Hoher Riffler → Edmund-Graf-Hütte",
+          "from": "Hoher Riffler",
+          "to": "Edmund-Graf-Hütte",
+          "distance_km": 2.38,
+          "elevation_m": 0,
+          "point_count": 130,
+          "gpx_file": "retour_hoher-riffler-edmund-graf-h-tte.gpx"
+        },
+        {
+          "name": "Edmund-Graf-Hütte → Blankasee",
+          "from": "Edmund-Graf-Hütte",
+          "to": "Blankasee",
+          "distance_km": 2.31,
+          "elevation_m": 261,
+          "point_count": 121,
+          "gpx_file": "retour_edmund-graf-h-tte-blankasee.gpx"
+        },
+        {
+          "name": "Blankasee → Lichtsee",
+          "from": "Blankasee",
+          "to": "Lichtsee",
+          "distance_km": 2.0,
+          "elevation_m": 0,
+          "point_count": 95,
+          "gpx_file": "retour_blankasee-lichtsee.gpx"
+        },
+        {
+          "name": "Lichtsee → Durrich Alpe",
+          "from": "Lichtsee",
+          "to": "Durrich Alpe",
+          "distance_km": 0.71,
+          "elevation_m": 0,
+          "point_count": 37,
+          "gpx_file": "retour_lichtsee-durrich-alpe.gpx"
+        },
+        {
+          "name": "Durrich Alpe → Haus Meli",
+          "from": "Durrich Alpe",
+          "to": "Haus Meli",
+          "distance_km": 3.85,
+          "elevation_m": 0,
+          "point_count": 203,
+          "gpx_file": "retour_durrich-alpe-haus-meli.gpx"
+        }
+      ]
+    }
+  ]
+}

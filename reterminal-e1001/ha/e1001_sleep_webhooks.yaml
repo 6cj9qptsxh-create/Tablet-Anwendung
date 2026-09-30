@@ -1,0 +1,41 @@
+# Schlafen an: Fokus (beide). Schlafen aus: Lukas = bestehender Flugmodus-Webhook,
+# Melanie = Wecker gestoppt. Unter "automation:" einfügen. webhook_id geheim halten.
+
+- alias: E1001 Schlafen Lukas an
+  id: e1001_schlafen_lukas_an
+  trigger:
+    - trigger: webhook
+      webhook_id: e1001-schlafen-lukas-an
+      allowed_methods:
+        - POST
+      local_only: false
+  action:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.lukas_schlafen
+
+- alias: E1001 Schlafen Melanie an
+  id: e1001_schlafen_melanie_an
+  trigger:
+    - trigger: webhook
+      webhook_id: e1001-schlafen-melanie-an
+      allowed_methods:
+        - POST
+      local_only: false
+  action:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.melanie_schlafen
+
+- alias: E1001 Schlafen Melanie aus
+  id: e1001_schlafen_melanie_aus
+  trigger:
+    - trigger: webhook
+      webhook_id: e1001-schlafen-melanie-aus
+      allowed_methods:
+        - POST
+      local_only: false
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.melanie_schlafen

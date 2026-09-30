@@ -1,0 +1,5411 @@
+/* =========================================
+   1. VARIABLEN & RESET
+   ========================================= */
+:root {
+    /* Cart dock layout (measured via JS) */
+    --shop-header-height: 120px;
+    --cart-dock-top: 120px;
+    --cart-width: 400px;
+
+    /* Farben: Basis */
+    --bg: #2e343a;
+    --surface: #343a40;
+    --card: #222229;
+    --muted: #adb5bd;
+    --text: #f8f9fa;
+    --soft: #495057;
+    --border: rgba(255, 255, 255, 0.1);
+
+    /* Farben: Akzent & Semantic */
+    --accent: #6c25b3;
+    --accent-contrast: #ffffff;
+    --accent-soft: color-mix(in srgb, var(--accent), white 30%);
+
+    /* Warenkorb-Schiene: dezentes Grau mit leichtem Lila, nicht bunt */
+    --cart-rail: color-mix(in srgb, var(--bg), var(--accent) 7%);
+    --cart-rail-edge: color-mix(in srgb, var(--bg), var(--accent) 14%);
+
+    --color-green-soft: #d4edda;
+    --color-green-border: #c3e6cb;
+    --color-green-text: #155724;
+    --color-red-soft: #f8d7da;
+    --color-red-border: #ff717f;
+    --color-red-text: #721c24;
+    --color-magenta-soft: #e2d9eb;
+    --color-magenta-text: #4b367c;
+
+    /* Layout & Sizes */
+    --radius: 10px;
+    --spacing: 12px;
+    --thumb-w: 96px;
+    --dd-width: 200px;
+    --input-height: 38px;
+    --border-th: 3px;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+
+    /* System */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+    color-scheme: dark;
+}
+
+/* RESET */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* BASIS LAYOUT */
+html {
+    background: var(--bg);
+    height: 100%;
+    /* Verhindert Verzögerung bei Klicks auf Touch-Geräten */
+    touch-action: manipulation;
+}
+
+body {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    min-height: 100vh;
+
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing);
+    gap: var(--spacing);
+
+    /* Wichtig für sauberes Scrollen */
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* =========================================
+   2. CORE UI COMPONENTS (Cards, Buttons, Inputs)
+   ========================================= */
+
+/* --- CARD (Basis-Design) --- */
+.card {
+    background: var(--card);
+    padding: var(--spacing);
+    position: relative;
+    border-radius: 16px;
+    border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+    display: flex;
+    gap: var(--spacing);
+}
+
+/* Der farbige Strich unten an der Karte */
+.card::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+}
+
+.thumb {
+    width: var(--thumb-w);
+    height: 100%;
+
+    border-radius: 8px;
+    overflow: hidden;
+
+    /* Zentrierung des Bildes im Kasten */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--soft);
+    border: 1px solid var(--border);
+
+    /* WICHTIG: Verhindert, dass das Bild schrumpft, wenn Text viel Platz braucht */
+    flex-shrink: 0;
+}
+
+.thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+
+    padding: 4px
+        /* Das hier ist für den Lazy-Load Effekt (sanftes Einblenden) wichtig: */
+        /*transition: opacity 0.3s ease-in; */
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    /* Nimmt den restlichen Platz ein */
+    min-width: 0;
+}
+
+/* Die Haupt-Zeile teilt sich in Links und Rechts */
+.card-main-row {
+    display: flex;
+    gap: var(--spacing);
+    /* Abstand zwischen Dropdown und Buttons */
+    width: 100%;
+    align-items: stretch;
+    /* Beide Spalten gleich hoch */
+}
+
+/* Titel vertikal zentrieren */
+.card-text-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing);
+
+    /* NEU: Damit es exakt mittig zum Button sitzt */
+    min-height: var(--input-height);
+    /* Gleiche Höhe wie der Button rechts */
+    align-items: center;
+    /* Zentriert den Text vertikal in der Höhe */
+}
+
+/* Linke Spalte: Titel oben, Dropdown unten */
+.card-left-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* Nimmt allen freien Platz */
+    justify-content: space-between;
+    /* Titel oben, DD unten */
+    min-width: 0;
+}
+
+/* Dropdown Anpassung */
+.card .custom-dd {
+    width: 100% !important;
+}
+
+.custom-dd.open .custom-dd-arrow {
+    transform: rotate(180deg);
+}
+
+/* Rechte Spalte (Action Group): Button oben, Menge unten */
+.action-group {
+    display: flex;
+    flex-direction: column;
+    /* PC: Untereinander */
+    gap: var(--spacing);
+    width: 100px;
+    /* Fixe Breite für ein sauberes Raster */
+    flex-shrink: 0;
+}
+
+/* --- SCHMALE KARTEN (Container Query) ---
+   Wird die einzelne Karte schmaler als 420px (mehr Spalten / offener
+   Warenkorb), stapelt sich ihr Inhalt: Text oben, Actions als Zeile darunter.
+   Selektoren mit .card-Präfix, damit sie die Media-Query-Regeln
+   weiter unten in der Datei sicher überstimmen. */
+@container (max-width: 419px) {
+    .card .card-main-row {
+        flex-direction: column;
+        justify-content: flex-start;
+        flex-grow: 1;
+    }
+
+    .card .thumb {
+        height: auto;
+        align-self: stretch;
+    }
+
+    .card .action-group {
+        width: 100%;
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card .action-group .add-btn {
+        flex: 1;
+    }
+
+    .card .qty-control {
+        width: 110px;
+        flex-shrink: 0;
+    }
+}
+
+.product-note:empty {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/* =========================================
+   WARENKORB (PUSH-LAYOUT + STICKY DOCK)
+   ========================================= */
+
+body {
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Wrapper um Header + Produkte: definiert den Bereich, in dem der Header kleben darf.
+   Kein gap: Der Abstand unter dem Header kommt vom padding der Sticky-Platte,
+   damit Produkte und Warenkorb auf gleicher Höhe starten. */
+.shop-region {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--spacing);
+}
+
+/* Die Sticky-Platte hinter dem Shop-Header: eine durchgehende, eckige Fläche
+   in Hintergrundfarbe. Ragt seitlich über den Header hinaus (verdeckt die
+   Schatten der wegscrollenden Product Cards) und endet unten exakt an der
+   Warenkorb-Oberkante (= Dock-Position). */
+.shop-header-wrap {
+    position: sticky;
+    position: -webkit-sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg);
+    margin: calc(-1 * var(--safe-top)) calc(-1 * var(--spacing)) 0;
+    padding: var(--safe-top) var(--spacing) var(--spacing);
+}
+
+/* Produktbereich + Warenkorb nebeneinander (nur Desktop + offen) */
+.shop-layout {
+    display: block;
+}
+
+@media (min-width: 750px) {
+
+    /* Grid ist IMMER aktiv - die Warenkorb-Spalte ist im geschlossenen
+       Zustand nur 0px breit. Dadurch lässt sich die Spaltenbreite
+       animieren: Produkte und Warenkorb bewegen sich exakt gekoppelt,
+       wie beim Aufziehen/Zuziehen einer Schublade. */
+    .shop-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 0px;
+        column-gap: 0px;
+        align-items: start;
+        /* Langsamere, weichere Kurve – weniger „Ruck“ beim Spaltenwechsel */
+        transition: grid-template-columns 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                    column-gap 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Gesamte Produktspalte abdimmen während der Animation:
+       kaschiert den harten Auto-Fill-Umbruch (z. B. 3 → 2 Spalten). */
+    #tab-order .shop-content {
+        transition: opacity 0.28s ease;
+    }
+
+    #tab-order.cart-animating .shop-content {
+        opacity: 0.22;
+        pointer-events: none;
+    }
+
+    #tab-order.cart-is-open .shop-layout {
+        grid-template-columns: minmax(0, 1fr) var(--cart-width);
+        column-gap: 20px;
+        /* Abstand zwischen Product Cards und der vertikalen Linie */
+    }
+
+    /* Produktspalte mindestens so hoch wie das Warenkorb-Panel:
+       Sorgt dafür, dass die Seite bei wenigen Produkten exakt bis zum
+       Andocken scrollbar ist - nicht weiter (kein "Herausschieben" des Carts). */
+    #tab-order.cart-is-open .shop-content {
+        min-height: calc(100dvh - var(--cart-dock-top, 0px) - var(--spacing));
+    }
+}
+
+.shop-content {
+    min-width: 0;
+}
+
+/* --- WARENKORB CONTAINER --- */
+/* Kein pointer-events-Trick noetig: Wenn versteckt, ist das Panel
+   display: none und faengt ohnehin keine Klicks ab. */
+.sidebar-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100dvh;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    /* Mobile Overlay: ruhiger Grau-Lila-Ton */
+    background: var(--cart-rail);
+}
+
+/* Mobile (Overlay): von rechts hereingleiten. */
+@media (max-width: 749.98px) {
+    .sidebar-panel {
+        animation: cart-slide-in 0.3s ease-out;
+        padding-right: 20px;
+        box-sizing: border-box;
+    }
+}
+
+@keyframes cart-slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Desktop: Das Panel startet komplett ausserhalb des Viewports (rechts)
+   und fliegt herein - zusätzlich zur Grid-Spalten-Animation, mit
+   identischer Dauer und Kurve. So kommt es auch dann von aussen, wenn
+   die Grid-Spalte es bereits nahe der Zielposition platziert
+   (Bildschirm schmaler als die max-width des Body). */
+@keyframes cart-slide-in-desktop {
+    from {
+        transform: translateX(calc(100% + var(--spacing)));
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* --- SCHLIESS-ANIMATION (Alpine Leave-Klassen) ---
+   Alpine hält das Panel sichtbar, solange die Transition läuft. */
+.sidebar-panel.cart-leaving {
+    transition: transform 0.3s ease-in, opacity 0.3s ease-in;
+}
+
+/* Mobile: echtes Hinausgleiten nach rechts */
+@media (max-width: 749.98px) {
+    .sidebar-panel.cart-leaving-end {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Desktop: Das Panel gleitet nach rechts aus dem Viewport hinaus,
+   während gleichzeitig die Grid-Spalte zusammenschrumpft.
+   (Dauer muss zur Grid-Animation passen: 0.7s) */
+@media (min-width: 750px) {
+    .sidebar-panel.cart-leaving {
+        transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .sidebar-panel.cart-leaving-end {
+        transform: translateX(calc(100% + var(--spacing)));
+    }
+}
+
+@media (min-width: 750px) {
+    .sidebar-panel {
+        position: sticky;
+        top: var(--cart-dock-top, 0px);
+        align-self: start;
+        width: var(--cart-width);
+        /* Fliegt immer von ausserhalb des Bildschirms ein - unabhängig davon,
+           wo die Grid-Spalte das Panel zum Start platziert */
+        animation: cart-slide-in-desktop 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        /* Feste Höhe: bis zum unteren Rand, minus Body-Padding
+           (bündig mit dem Seitenraster). Kein Scroll-JS -> kein Ruckeln.
+           Wichtig: Mit dieser Höhe endet die Seite exakt am Dock-Punkt,
+           es gibt kein totes Überscrollen. */
+        height: calc(100dvh - var(--cart-dock-top, 0px) - var(--spacing));
+        z-index: 900;
+        padding: 0;
+        /* Trennung zur Produktspalte: von der Linie her leicht lila, dann in Grau ausfaden */
+        background:
+            linear-gradient(
+                90deg,
+                var(--cart-rail-edge) 0%,
+                var(--cart-rail) 22%,
+                color-mix(in srgb, var(--cart-rail), var(--bg) 35%) 100%
+            );
+        border-radius: 0 0 0 12px;
+    }
+
+    .sidebar-panel::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--accent-soft);
+    }
+
+}
+
+/* Dezenter Schließen-Pfeil am vertikalen Strich (Sidebar gleitet nach rechts weg) */
+.cart-collapse-btn {
+    position: absolute;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--card), transparent 8%);
+    color: var(--muted);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cart-collapse-btn .material-symbols-rounded {
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.cart-collapse-btn:hover {
+    color: var(--text);
+    background: var(--card);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 749.98px) {
+    .cart-collapse-btn {
+        left: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}
+
+@media (min-width: 750px) {
+    .cart-collapse-btn {
+        left: 0;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* --- INNENLEBEN (CARDS, SCROLL) --- */
+
+.cart-header-box,
+.cart-footer-box,
+.cart-item-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-left: 20px;
+    /* Abstand zur vertikalen Linie (wie Card-Gap) */
+    margin-right: 0;
+    /* Rechts bündig mit den restlichen Elementen der Seite */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Header (im Card-Design wie die restlichen Cards der App) */
+.cart-header-box {
+    flex-shrink: 0;
+    /* Rechts 10px wie .cart-item-card → Mülleimer in einer Linie */
+    padding: 15px 10px 15px 20px;
+    margin-top: 10px;
+    /* Gleiche Luft wie der source-disclaimer links - lockert das Layout auf */
+    margin-bottom: 15px;
+    position: relative;
+    border: none;
+    border-radius: 16px;
+    border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+.cart-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.cart-section-head > h3 {
+    min-width: 0;
+    flex: 1;
+}
+
+/* Feste Slot-Breite: Abschnitts- und Artikel-Mülleimer deckungsgleich */
+.cart-section-head .btn-delete,
+.cart-item-card .btn-delete {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* Der farbige Strich unten, wie bei .card */
+.cart-header-box::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+}
+
+/* Trenner „Warenkorb“ innerhalb der Bestell-Sidebar (gleicher Card-Look) */
+.cart-items-box .cart-section-divider {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 8px;
+    margin-bottom: 5px;
+    flex-shrink: 0;
+}
+
+/* Wrapper um den Scrollbereich: Anker für die Scroll-Hinweis-Pfeile */
+.cart-items-wrap {
+    position: relative;
+    flex-grow: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mitte (Interner Scrollbereich, füllt den Platz zwischen Header und Footer) */
+.cart-items-box {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+/* Schwebende Pfeile: signalisieren, dass es oben/unten weitergeht.
+   Klick springt zum Anfang bzw. Ende.
+   Zentrierung über left/right + margin auto (KEIN transform - Alpine-
+   Transitions setzen eigene Inline-Transforms und würden es überschreiben). */
+.cart-scroll-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 30px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card), transparent 8%);
+    color: var(--accent-soft);
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+.cart-scroll-hint .material-symbols-rounded {
+    font-size: 22px;
+    line-height: 1;
+}
+
+/* Oben: im Scrollbereich verankert (linke Kante um die Linien-Spalte korrigiert) */
+.cart-scroll-hint.top {
+    top: 6px;
+    left: var(--spacing);
+}
+
+/* Unten: am Footer verankert, sitzt direkt über dessen Oberkante
+   und ist damit in jeder Scroll-Position sichtbar */
+.cart-scroll-hint.bottom {
+    bottom: calc(100% + 6px);
+}
+
+.cart-items-box::-webkit-scrollbar {
+    display: none;
+}
+
+/* Footer (obere Ecken eckig)
+   Der Gradient (::before) passt durch die eckigen oberen Ecken exakt hinein. */
+.cart-footer-box {
+    flex-shrink: 0;
+    padding: 15px 20px;
+    margin-top: 15px;
+    position: relative;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* Desktop: Footer klebt am unteren Viewport-Rand (mit Spacing-Abstand,
+   bündig zum Seitenraster) - auch solange das Panel noch nicht angedockt
+   ist und bei leerem Warenkorb.
+   (Muss NACH der Basis-Regel stehen, sonst gewinnt position: relative.)
+   Die zwei harten Schatten decken die Bereiche über UND unter dem Footer ab:
+   Items verschwinden im grauen Band darüber und blitzen nicht mehr im Spalt
+   zwischen Footer und Bildschirm-Unterkante durch. */
+@media (min-width: 750px) {
+    .cart-footer-box {
+        position: sticky;
+        bottom: var(--spacing);
+        z-index: 5;
+        box-shadow:
+            0 -15px 0 0 var(--cart-rail),
+            0 var(--spacing) 0 0 var(--cart-rail),
+            0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+}
+
+.cart-footer-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(to right, var(--accent), var(--accent-soft));
+}
+
+/* Sekundär: lokale Cart-Änderungen verwerfen → gespeicherte Bestellung */
+.cart-reset-btn {
+    background: var(--soft) !important;
+    color: var(--text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* --- 4. DEINE ITEM-STYLES (KOMPLETT UNVERÄNDERT) --- */
+
+.cart-item-card {
+    display: flex;
+    padding: 10px;
+    gap: 12px;
+    margin-bottom: 0;
+    /* Wird vom 'gap' der cart-items-box übernommen */
+    margin-left: 0;
+    /* Setzen wir hier auf 0, weil die items-box das Padding hat */
+    margin-right: 0;
+    align-items: stretch;
+}
+
+.cart-item-card .thumb {
+    width: 80px;
+    height: auto;
+    align-self: stretch;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: var(--soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cart-item-card .thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--color-red-text);
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.btn-delete:hover {
+    background: rgba(255, 77, 77, 0.1);
+}
+
+/* --- BUTTONS & INPUTS MASTER SIZE --- */
+/* Alle interaktiven Elemente sollen exakt gleich hoch sein */
+#cart-open,
+#history-open-btn,
+.qty-control,
+.custom-dd,
+#search-input,
+.add-btn,
+.icon-only,
+.toggle-btn {
+    height: var(--input-height);
+    min-height: var(--input-height);
+    box-sizing: border-box;
+    font-size: 14px;
+    /* Verhindert Wackeln auf Touch-Geräten */
+    touch-action: none !important;
+}
+
+.add-btn {
+    box-shadow: none;
+    /* Standard: Kein Schatten */
+}
+
+#mode-btn-self.active {
+    background: linear-gradient(to right, var(--accent), var(--accent-soft)) !important;
+}
+
+#mode-btn-delivery.active {
+    background: linear-gradient(to right, var(--accent-soft), var(--accent)) !important;
+}
+
+/* --- MAIN BUTTONS (Warenkorb, Hinzufügen) --- */
+#cart-open,
+.add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 700;
+
+    /* Lila Verlauf */
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    color: var(--accent-contrast);
+    border: none;
+
+    /* 3D-Effekt & Glow */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+#cart-open:active,
+.add-btn:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#cart-clear {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px var(--shadow);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+
+}
+
+#history-checkout-btn {
+    width: 100%;
+
+    /* Farben aus deinen Variablen */
+    background: var(--color-red-soft);
+    color: var(--color-red-text);
+    border: 1px solid var(--color-red-border);
+
+    /* Layout & Text */
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 800;
+    /* Etwas fetter für Wichtigkeit */
+    font-size: 1rem;
+    text-align: center;
+    cursor: pointer;
+
+    height: auto;
+    /* Automatische Höhe erlauben */
+    max-height: none;
+    /* Maximale Höhe entfernen */
+    line-height: 1.3;
+    /* Damit 2 Zeilen nicht gequetscht aussehen */
+    white-space: normal;
+
+    /* Animation */
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+    /* Abstand nach oben (optional, sieht meist besser aus) */
+    margin-top: 15px;
+}
+
+/* Deaktivierte Buttons */
+.add-btn.disabled,
+.add-btn:disabled,
+.qty-control.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Quadratische Buttons (nur Icon) */
+.add-btn.icon-only {
+    width: 100%;
+    padding: 0;
+    font-size: 0;
+}
+
+.add-btn.icon-only svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* --- SECONDARY BUTTONS (Historie etc.) --- */
+#history-open-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+#finalize-checkout-btn {
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+    width: 100%;
+    background: var(--color-green-soft);
+    color: var(--color-green-text);
+    border: 1px solid var(--color-green-border);
+}
+
+.badge-teams {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    padding: 0 6px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--card, #23272c);
+    border: 2px solid var(--card, #23272c);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    letter-spacing: 0.5px;
+    /* Der weiße Schimmer-Effekt oben */
+    box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.2)
+}
+
+.badge-green {
+    background-color: #27b863;
+}
+
+.badge-red {
+    background-color: #bd5147;
+}
+
+/* --- INPUTS (Suchfeld) --- */
+#search-input {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 0 35px 0 12px;
+    /* Platz für das X rechts */
+    width: 100%;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+/* --- QTY CONTROL (Plus/Minus Taster) --- */
+.qty-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+.qty-control button {
+    height: 100%;
+    width: 32px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--accent-soft);
+    font-weight: 700;
+    font-size: 18px;
+    /* Kleiner Lichteffekt oben am Symbol */
+    filter: drop-shadow(0 -1px 0 color-mix(in srgb, var(--accent), black 40%));
+
+    text-shadow: 0 0 5px color-mix(in srgb, var(--accent-soft), transparent 30%);
+
+    transition: all 0.1s ease-out;
+
+}
+
+.qty-control .val {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- CUSTOM DROPDOWNS --- */
+.custom-dd {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.custom-dd-header {
+    height: 100%;
+    padding: 0 12px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+.custom-dd.open .custom-dd-header {
+    border-color: var(--accent-soft);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-soft), transparent 85%);
+}
+
+.custom-dd-arrow {
+    color: var(--accent-soft);
+    font-size: 18px;
+    margin-left: auto;
+    text-shadow: 0 0 8px var(--accent-soft);
+    transition: transform 0.2s;
+}
+
+.custom-dd-arrow::after {
+    content: '▼';
+}
+
+.custom-dd.open .custom-dd-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-dd-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--accent-soft);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.custom-dd.open .custom-dd-list {
+    display: block;
+}
+
+.custom-dd-item {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+}
+
+.custom-dd-item.selected {
+    display: none;
+}
+
+.custom-dd-item.super-category-title {
+    font-weight: bold;
+    color: var(--accent-soft);
+    background: var(--card);
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+/* =========================================
+   3. SHELL & NAVIGATION
+   ========================================= */
+
+#info-card {
+    padding: 0 20px;
+}
+
+/* --- TOP INFO AREA (Wetter, Sprache, Uhr) --- */
+.info-card-head {
+    /* Grid für exakte Drittel-Aufteilung */
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center !important;
+
+    width: 100%;
+    min-height: 80px;
+    margin: 0 auto;
+
+    /* Unten eckig, damit es nahtlos an den Rand passt (falls oben angedockt) */
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+
+    position: relative;
+}
+
+/* Der farbige Strich unter der Info-Karte */
+.info-card-head::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+}
+
+/* Elemente im Header ausrichten */
+.header-weather {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* Etwas mehr Abstand zwischen Icon und Text */
+    font-size: 1.1rem;
+    /* Schriftgröße bleibt wie gewünscht */
+}
+
+#hw-icon {
+    font-size: 3rem;
+    /* Schriftgröße bleibt wie gewünscht */
+}
+
+#lang-switch {
+    justify-self: center;
+    min-width: 60px;
+    padding: 0 10px;
+}
+
+#header-clock {
+    justify-self: end;
+    font-size: 1.2rem;
+    font-weight: bold;
+    font-family: monospace;
+    color: #aeb5d1;
+}
+
+/* --- NAVIGATION: vorige Seite, aktuelle, nächste --- */
+.shell-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 42px;
+    padding: 2px 6px;
+    background: rgba(30, 30, 35, 0.85);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+    position: relative;
+    z-index: 4000;
+}
+
+.shell-nav-side {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+    max-width: 100%;
+    padding: 6px 2px;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.62);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.shell-nav-side.is-next {
+    justify-content: flex-end;
+}
+
+.shell-nav-side:disabled {
+    visibility: hidden;
+}
+
+.shell-nav-side .material-symbols-rounded {
+    flex: 0 0 auto;
+    font-size: 1.25rem;
+}
+
+.shell-nav-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shell-nav-current {
+    padding: 0 8px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.header-tools {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.header-tools .shell-btn {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 8px;
+}
+
+.header-pay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--muted, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+}
+
+.header-pay .material-symbols-rounded {
+    font-size: 1.45rem;
+}
+
+/* --- NAVIGATION BAR (Tabs) --- */
+.shell-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    /* Glas-Effekt Hintergrund */
+    background: rgba(30, 30, 35, 0.85);
+    backdrop-filter: blur(10px);
+
+    position: relative;
+    z-index: 4000;
+
+    /* Dünne weiße Linie oben für 3D-Effekt */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+
+    /* Verhindert versehentliches Scrollen beim Tippen */
+    touch-action: none !important;
+}
+
+body.is-cal-tab .shell-bar,
+body.is-cal-tab #info-card {
+    display: none !important;
+}
+
+body.is-cal-tab .shell-nav {
+    padding-top: max(4px, env(safe-area-inset-top, 0px));
+    flex: 0 0 auto;
+}
+
+/* Die Tab-Buttons */
+.shell-btn {
+    flex: 1;
+    /* Teilt Platz gleichmäßig auf */
+    background: transparent;
+    border: none;
+    outline: none;
+
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 20px 0;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+/* Aktiver Tab */
+.shell-btn.active {
+    color: var(--accent-contrast);
+    /* Helles Icon */
+    background: linear-gradient(to top, rgba(124, 77, 255, 0.05), transparent);
+}
+
+/* Der leuchtende Strich unter dem aktiven Tab */
+.shell-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    box-shadow: 0 -2px 8px color-mix(in srgb, var(--accent), transparent 70%);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    animation: expandLine 0.2s ease-out forwards;
+}
+
+/* Text-Verlauf im aktiven Tab */
+.shell-btn.active span {
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 300% auto;
+    filter: drop-shadow(0 0 8px rgba(124, 77, 255, 0.4));
+}
+
+@keyframes expandLine {
+    from {
+        transform: scaleX(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scaleX(1);
+        opacity: 1;
+    }
+}
+
+/* --- GLOBAL LAYOUT CONTAINERS --- */
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+}
+
+.world {
+    display: none;
+    /* Standardmäßig ausblenden */
+    min-height: 100vh;
+}
+
+.world.active {
+    display: block;
+    /* Nur aktiven Tab zeigen */
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* --- SUPER HEADINGS (Die großen Titel mit Strich) --- */
+.super-heading {
+    position: relative;
+    padding-bottom: 8px;
+    font-size: 1.5rem;
+    display: block;
+    margin: 8px 0;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.super-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    border-radius: 2px;
+}
+
+/* Text-Verlauf */
+.super-heading span {
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 100vw auto;
+    filter: drop-shadow(0 -1px 0 color-mix(in srgb, var(--accent), black 40%));
+}
+
+
+
+/* =========================================
+   4. CATALOG & ORDER HEADER
+   ========================================= */
+
+/* --- STICKY HEADER CONTAINER --- */
+#tab-order .header {
+    /* Sticky übernimmt jetzt der .shop-header-wrap - die Card selbst ist normal im Fluss */
+
+    /* Layout & Optik */
+    display: flex;
+    flex-direction: column;
+    /* Mobile First: Untereinander */
+    gap: var(--spacing);
+
+    background: var(--card);
+    border-radius: 0 0 16px 16px;
+    /* Unten abgerundet */
+    border-bottom: var(--border-th) solid var(--accent-soft);
+    padding: var(--spacing);
+}
+
+/* --- HEADER INHALT (Buttons & Suche) --- */
+
+/* Zeile 1: Buttons (Bestellung/Warenkorb) */
+.header-top {
+    display: flex;
+    gap: var(--spacing);
+    width: 100%;
+}
+
+/* Buttons teilen sich den Platz fair auf (50/50 auf Mobile) */
+.header-top>* {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Zeile 2: Suche & Dropdown */
+.header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    width: 100%;
+    /* Stabilisiert die Höhe, damit nichts springt beim Laden */
+    min-height: var(--input-height);
+}
+
+/* Suchfeld-Container */
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    /* Füllt den restlichen Platz */
+    width: 100%;
+}
+
+/* Das "X" im Suchfeld */
+.search-clear-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--muted);
+    padding: 5px;
+    line-height: 1;
+}
+
+/* --- LIEFERTAG-AUSWAHL (nutzt toggle-btn / .active Look) --- */
+.delivery-day-picker {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Kein lila Card-Strich unter dem Day-Picker */
+.delivery-day-picker.card {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.delivery-day-picker.card::after {
+    display: none;
+}
+
+.delivery-day-picker::-webkit-scrollbar {
+    display: none;
+}
+
+.delivery-day-picker .delivery-day-chip {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 64px;
+    height: auto;
+    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 4px;
+    line-height: 1.15;
+}
+
+.delivery-day-chip-day {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.delivery-day-chip-date {
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+/* Aktiver Tag: gleicher Look wie Liefer-Toggle */
+.delivery-day-picker .toggle-btn.active {
+    color: #fff;
+    background: linear-gradient(to right, var(--accent-soft), var(--accent));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.delivery-day-picker .toggle-btn.active .delivery-day-chip-day,
+.delivery-day-picker .toggle-btn.active .delivery-day-chip-date {
+    color: #fff;
+}
+
+.delivery-day-chip.is-blocked {
+    opacity: 0.55;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+}
+
+.delivery-day-chip.is-blocked.has-order {
+    text-decoration: none;
+    opacity: 0.75;
+}
+
+.delivery-day-chip.is-blocked:not(.active) {
+    cursor: pointer;
+}
+
+/* Gesperrter Liefertag: Shop + Warenkorb ausgrauen, Tagesleiste bleibt bedienbar */
+#tab-order.shop-day-locked .shop-layout,
+#tab-order.shop-day-locked .header-top .add-btn:last-child {
+    opacity: 0.4;
+    filter: grayscale(0.35);
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.delivery-day-chip-mark {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.delivery-day-chip-mark .material-symbols-rounded {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.delivery-day-chip-mark.ok {
+    background: var(--color-green-soft, #dcf5e4);
+    color: var(--color-green-text, #1b7a3d);
+}
+
+/* Auch auf aktivem (lila) Chip: Haken bleibt grün */
+.delivery-day-picker .toggle-btn.active .delivery-day-chip-mark.ok {
+    background: var(--color-green-soft, #dcf5e4);
+    color: var(--color-green-text, #1b7a3d);
+}
+
+.delivery-day-chip-mark.no {
+    background: var(--color-red-soft, #fde2e2);
+    color: var(--color-red-text, #b42318);
+}
+
+/* --- DEADLINE INFO (Infozeile zum gewählten Tag) --- */
+.deadline-info {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--radius);
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    display: none;
+    margin-top: 8px;
+}
+
+/* Ampel-Farben */
+.deadline-info.green {
+    background-color: var(--color-green-soft);
+    color: var(--color-green-text);
+    border: 1px solid var(--color-green-border);
+}
+
+.deadline-info.red {
+    background-color: var(--color-red-soft);
+    color: var(--color-red-text);
+    border: 1px solid var(--color-red-border);
+}
+
+/* --- KATALOG GRID (Produkte) --- */
+#all-categories,
+.category-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+}
+
+.cat-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-top: 10px;
+    padding-left: 5px;
+    border-left: 3px solid var(--accent-soft);
+    line-height: 1.2;
+}
+
+/* Kategorien ausserhalb des Viewports werden nicht layoutet/gerendert.
+   Macht die Seite generell schneller und ist entscheidend für die
+   Warenkorb-Animation: Die animierte Spaltenbreite loest sonst in jedem
+   Frame ein Neu-Layout ALLER Produktkarten aus (Ruckeln / Frame-Drops). */
+.category-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+}
+
+/* Das Grid für die Produkt-Karten */
+.grid-list {
+    display: grid;
+    /* Karten sind mind. 320px breit, füllen aber den Platz.
+       min(320px, 100%): Ist der Container schmaler als 320px (z. B. bei
+       offenem Warenkorb), schrumpfen die Karten mit, statt unter den
+       Warenkorb zu laufen. */
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+/* Jede Karte ist ein Container: Ihre INNERE Aufteilung richtet sich nach
+   der eigenen Kartenbreite (nicht nach der Bildschirmbreite) */
+.grid-list > .card {
+    container-type: inline-size;
+}
+
+/* --- DISCLAIMER (Info-Box über Produkten) --- */
+.source-disclaimer {
+    background-color: var(--soft);
+    padding: 12px 15px;
+    margin: 10px 0;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.4;
+    border-left: 3px solid var(--border);
+}
+
+.source-disclaimer a {
+    color: var(--text);
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+/* =========================================
+   MEDIA QUERY: DESKTOP (> 768px)
+   ========================================= */
+/* Hier schalten wir den Header von "untereinander" auf "nebeneinander" um */
+@media (min-width: 768px) {
+    #tab-order .header {
+        flex-direction: row;
+        /* Alles in eine Zeile */
+        flex-wrap: wrap;
+        /* Umbruch erlaubt (für Deadline) */
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* 1. Suche & Dropdown (Links) */
+    .header-row {
+        order: 1;
+        flex: 1;
+        /* Nimmt den meisten Platz in der Mitte */
+        margin-bottom: 0;
+    }
+
+    /* 2. Buttons (Rechts) */
+    .header-top {
+        order: 2;
+        width: auto;
+        /* Nur so breit wie nötig */
+        margin-bottom: 0;
+    }
+
+    .header-top>* {
+        flex: initial;
+        /* Buttons wachsen nicht unnötig */
+        width: auto;
+    }
+
+    /* 3. Deadline (Ganz unten, volle Breite) */
+    .deadline-info {
+        order: 3;
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+
+/* =========================================
+   5. MODALS & OVERLAYS
+   ========================================= */
+
+/* --- HISTORIE MODAL --- */
+.history-modal .history-panel {
+    width: 480px;
+    max-height: 85vh;
+    padding: 16px;
+    gap: 16px;
+}
+
+.history-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.history-panel-head h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.history-close {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.history-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.history-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 16px;
+}
+
+.history-group-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 4px 0 8px;
+}
+
+.history-group-label + .history-list + .history-group-label {
+    margin-top: 20px;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.history-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 16px;
+    background: var(--card);
+    border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+    position: relative;
+}
+
+.history-card::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+}
+
+.history-card.is-self {
+    cursor: default;
+}
+
+.history-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.history-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.history-card-day {
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.history-card-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.history-status {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+}
+
+.history-status.ok {
+    background: var(--color-green-soft);
+    color: var(--color-green-text);
+    border-color: var(--color-green-border);
+}
+
+.history-status.done {
+    opacity: 0.9;
+}
+
+.history-status.self {
+    color: var(--text);
+}
+
+.history-card-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.95em;
+}
+
+.history-line-name {
+    font-weight: 700;
+    min-width: 0;
+}
+
+.history-line-extra {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+
+.history-line-price {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.history-card-total {
+    text-align: right;
+    font-weight: 800;
+    font-size: 1.15em;
+    color: var(--accent-soft);
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+}
+
+.history-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+}
+
+.history-stay-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--card);
+    border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+}
+
+.history-stay-total span {
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.8em;
+}
+
+.history-stay-total strong {
+    font-size: 1.5em;
+    font-weight: 900;
+    color: var(--accent);
+}
+
+.history-checkout-btn {
+    width: 100%;
+    padding: 12px;
+    height: auto;
+    font-size: 1.1rem;
+    background: #bd5147;
+    gap: 8px;
+}
+
+/* --- BASIS MODAL (Admin, Warenkorb, Historie) --- */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    /* JS schaltet auf 'flex' */
+    align-items: center;
+    justify-content: center;
+
+    /* Hintergrund abdunkeln + Weichzeichnen */
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    z-index: 5000;
+}
+
+/* Der weiße/graue Kasten in der Mitte */
+.modal .panel {
+    background: var(--bg);
+    padding: var(--spacing);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+
+    /* Layout */
+    width: 600px;
+    /* Standardbreite */
+    max-width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+}
+
+/* Admin-Modal braucht mehr Platz */
+#admin-modal .panel {
+    width: 960px;
+}
+
+/* --- ADMIN SPEZIFISCH --- */
+.import-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    background: var(--surface);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.import-zone.dragover {
+    border-color: var(--accent-soft);
+    background: rgba(108, 37, 179, 0.1);
+}
+
+/* --- PRODUKT INFO MODAL (Fullscreen Overlay) --- */
+#product-info-modal {
+    background: rgba(0, 0, 0, 0.9);
+    /* Fast schwarz für Fokus */
+    z-index: 10000;
+    padding: 20px;
+}
+
+#product-info-modal .modal-content {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#info-modal-img {
+    max-height: 40vh;
+    /* Bild nicht zu riesig auf Handys */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+/* Box für Allergene */
+.allergen-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    width: 100%;
+}
+
+.allergen-label {
+    display: block;
+    font-size: 0.8em;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.allergen-values {
+    display: block;
+    font-weight: bold;
+    color: #ff6b6b;
+    font-size: 1.1em;
+    margin-top: 4px;
+}
+
+
+/* --- WARENKORB & HISTORIE LISTEN --- */
+#cart-items-container,
+#history-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Einzelne Zeile im Warenkorb */
+.cart-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: var(--soft);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    gap: 10px;
+}
+
+/* Preis hervorheben */
+.cart-item-price {
+    font-weight: 700;
+    color: var(--accent-soft);
+    min-width: 70px;
+    text-align: right;
+}
+
+/* X-Button (Entfernen) */
+.cart-remove-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cart-remove-btn:hover {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+    background: rgba(255, 0, 0, 0.1);
+}
+
+
+/* --- WILLKOMMEN & CHECKOUT (Hübsche Karten) --- */
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.welcome-card {
+    background: var(--card);
+    width: 100%;
+    max-width: 480px;
+    padding: 40px 30px;
+    border-radius: 24px;
+    text-align: center;
+
+    border: 1px solid var(--accent);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    /* Animation beim Öffnen */
+    animation: modalSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.welcome-features {
+    background: var(--surface);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid var(--border);
+}
+
+.feature-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-weight: 600;
+    color: var(--text);
+}
+
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(50px) scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* =========================================
+   6. INFO TAB & WANDERUNGEN
+   ========================================= */
+
+/* --- INFO GRID (Masonry Layout) --- */
+/* Nutzt CSS Columns für ein Pinterest-artiges Layout */
+.info-grid {
+    column-count: 2;
+    /* PC: 2 Spalten */
+    column-gap: var(--spacing);
+    width: 100%;
+}
+
+/* Damit die Karten nicht zerschnitten werden */
+.info-grid .card {
+    width: 100%;
+    margin-bottom: var(--spacing);
+    break-inside: avoid;
+    /* Verhindert Umbruch innerhalb der Karte */
+}
+
+/* --- INFO KARTEN DETAILS --- */
+
+/* Spezielle Karte: Titel oben, Liste darunter */
+.vertical-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    color: var(--accent-soft);
+    /* Lila Titel */
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    font-weight: 700;
+}
+
+/* Layout für WLAN/App (Text links, QR rechts) */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.info-text {
+    flex: 1;
+}
+
+.info-qr {
+    flex-shrink: 0;
+    background: #fff;
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.info-qr img {
+    display: block;
+    width: 100px;
+    height: 100px;
+}
+
+/* Listen in Info-Karten (z.B. Restaurants) */
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.info-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.small-desc {
+    display: block;
+    font-size: 0.85em;
+    color: var(--muted);
+}
+
+/* Icons für Links (Pfeil nach oben rechts) */
+.icon-only-btn {
+    width: 38px !important;
+    padding: 0 !important;
+    text-decoration: none !important;
+    font-size: 1.2rem;
+}
+
+/* Detail-Zeilen (Icon + Text) */
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.detail-row .icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--soft);
+    border-radius: 50%;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+
+/* --- WETTER GRID (3 Tage Vorschau) --- */
+#weather-forecast-grid.info-wchips {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    text-align: center;
+}
+
+#weather-forecast-grid.info-wchips:empty {
+    display: none;
+    margin: 0;
+}
+
+.forecast-day {
+    background: var(--soft);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.weather-img-large {
+    width: 50px;
+    height: 50px;
+    margin: 5px 0;
+}
+
+.f-temp {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+#weather-forecast-card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Info-Seite: Leiste, Notfall, Agenda-Zeilen --- */
+.info-app {
+    gap: 12px;
+}
+
+.info-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.info-heading {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.info-switch {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.info-switch-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.info-switch-btn.is-on {
+    background: var(--accent-soft);
+    color: #fff;
+}
+
+.info-sos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-sos-nums {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.info-sos-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 76px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: #ff5252;
+    color: #fff;
+    text-decoration: none;
+}
+
+.info-sos-btn .material-symbols-rounded {
+    font-size: 2rem;
+}
+
+.info-sos-btn small {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 650;
+    opacity: 0.92;
+}
+
+.info-sos-btn strong {
+    display: block;
+    font-size: 1.8rem;
+    line-height: 1.05;
+}
+
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+}
+
+.info-kicker {
+    margin: 2px 4px -4px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.info-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+}
+
+.info-status .material-symbols-rounded {
+    color: #d4b483;
+}
+
+.info-whero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 96px;
+}
+
+.info-weather-loading {
+    color: var(--muted);
+    padding: 12px 4px;
+}
+
+.info-whero-icon {
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+}
+
+.info-whero-day {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.info-whero-temp {
+    font-size: 2.7rem;
+    font-weight: 800;
+    line-height: 1;
+    margin: 2px 0 6px;
+}
+
+.info-whero-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.info-wchips {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.info-wchips:empty {
+    display: none;
+}
+
+.info-wchip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 4px 10px;
+    text-align: center;
+}
+
+.info-wchip-day {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: capitalize;
+}
+
+.info-wchip img {
+    width: 40px;
+    height: 40px;
+    margin: 4px auto;
+}
+
+.info-wchip-temp {
+    display: block;
+    font-weight: 800;
+    font-size: 1.05rem;
+}
+
+.info-wchip-min {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.info-connect {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.info-copy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.info-copy {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.info-copy-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-copy-label {
+    display: block;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.info-copy strong {
+    display: block;
+    font-size: 1.2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.info-copy.is-mono strong {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.04em;
+}
+
+.info-copy .material-symbols-rounded {
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.info-copy.is-copied {
+    border-color: #7dcea0;
+}
+
+.info-copy.is-copied .material-symbols-rounded {
+    color: #7dcea0;
+}
+
+.info-app-note {
+    margin: 2px 2px 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.info-qrs {
+    display: flex;
+    gap: 10px;
+}
+
+.info-qr {
+    margin: 0;
+    background: #fff;
+    padding: 8px 8px 6px;
+    border-radius: 12px;
+}
+
+.info-qr img {
+    display: block;
+    width: 120px;
+    height: 120px;
+}
+
+.info-qr figcaption {
+    margin-top: 4px;
+    text-align: center;
+    color: #343a40;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.info-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-line {
+    --line: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-left-color: var(--line);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    text-align: left;
+    font: inherit;
+}
+
+.info-line.is-house { --line: #d4b483; }
+.info-line.is-link { --line: #7eb6ff; }
+.info-line.is-food { --line: #e2a15a; }
+.info-line.is-sos { --line: #ff8a80; background: var(--card); }
+
+.info-line-ico {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--line) 18%, transparent);
+    color: var(--line);
+}
+
+.info-line-ico .material-symbols-rounded {
+    font-size: 1.35rem;
+}
+
+.info-line-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-line-text strong {
+    display: block;
+    font-size: 1rem;
+}
+
+.info-line-text p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+.info-go {
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.info-fold {
+    --line: var(--accent-soft);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--line);
+    background: var(--surface);
+}
+
+.info-fold summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 12px 14px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.info-fold summary::-webkit-details-marker {
+    display: none;
+}
+
+.info-fold ol {
+    margin: 0 16px 14px 66px;
+    padding: 0 0 0 18px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.95rem;
+}
+
+.info-chev {
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.info-fold[open] .info-chev {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 767px) {
+    .info-connect {
+        grid-template-columns: 1fr;
+    }
+
+    .info-app-qr,
+    .info-app-note {
+        display: none;
+    }
+
+    .info-whero-temp {
+        font-size: 2.2rem;
+    }
+
+    .info-qr img {
+        width: 104px;
+        height: 104px;
+    }
+}
+
+
+/* =========================================
+   WANDERUNGEN (ACTIVITIES)
+   ========================================= */
+
+/* --- SAISON TOGGLE (Sommer / Winter) --- */
+.season-container {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    display: flex;
+    padding: var(--spacing);
+    gap: var(--spacing);
+    background: var(--card);
+}
+
+.toggle-btn-container {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    z-index: 2000;
+}
+
+.toggle-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+/* Aktiver Zustand (Glow & Verlauf) */
+.toggle-btn.active {
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn[onclick*='summer'].active {
+    background: linear-gradient(to right, var(--accent), var(--accent-soft));
+}
+
+.toggle-btn[onclick*='winter'].active {
+    background: linear-gradient(to right, var(--accent-soft), var(--accent));
+}
+
+/* 2. SOMMER: Verlauf von Accent -> Soft */
+.toggle-btn[onclick*='self'].active {
+    background: linear-gradient(to right,
+            var(--accent),
+            var(--accent-soft));
+}
+
+/* 3. WINTER: Verlauf von Soft -> Accent */
+.toggle-btn[onclick*='delivery'].active {
+    background: linear-gradient(to right,
+            var(--accent-soft),
+            var(--accent));
+}
+
+
+/* --- FILTER SECTION (Slider & Tags) --- */
+.filter-section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: var(--spacing);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Dropdowns in einer Zeile (Tablet: umbrechen) */
+.filter-dropdown-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.multi-select-dd {
+    flex: 1 1 140px;
+    min-width: 120px;
+    position: relative;
+}
+
+.tours-filter-panel .tours-check-option {
+    margin: 0;
+    padding: 4px 2px;
+}
+
+.tours-check-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    align-items: center;
+}
+
+/* Dropdown Header */
+.multi-select-dd .dd-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Dropdown Liste */
+.multi-select-dd .dd-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--accent-soft);
+    z-index: 50;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.multi-select-dd.open .dd-list {
+    display: block;
+}
+
+.multi-select-dd.open .dd-header {
+    border-color: var(--accent-soft);
+}
+
+.multi-select-dd.open .custom-dd-arrow {
+    transform: rotate(180deg);
+}
+
+/* Einzelnes Item (Die Checkbox-Zeile) */
+.dd-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+}
+
+.dd-checkbox-item:hover {
+    background: var(--soft);
+}
+
+/* Die Checkbox selbst (Simuliert) */
+.chk-box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--muted);
+    /* Inaktiv: Grau */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+/* Haken (erstmal unsichtbar) */
+.chk-box::after {
+    content: '✓';
+    font-size: 12px;
+    color: white;
+    font-weight: bold;
+    display: none;
+}
+
+/* ZUSTAND: AUSGEWÄHLT */
+.dd-checkbox-item.checked .chk-box {
+    background: var(--accent-soft);
+    border-color: var(--accent-soft);
+}
+
+.dd-checkbox-item.checked .chk-box::after {
+    display: block;
+    /* Haken zeigen */
+}
+
+.dd-checkbox-item.checked {
+    color: var(--text);
+    /* Hellerer Text bei Auswahl */
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 50% / 50% */
+    gap: 40px;
+    /* Abstand zwischen den Slider-Gruppen */
+    width: 100%;
+    align-items: start;
+}
+
+.range-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+/* --- TITEL ZENTRIERT --- */
+.filter-label {
+    text-align: center;
+    /* Macht den Text mittig */
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    width: 100%;
+}
+
+/* Zeile mit Zahlen und Slider */
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+/* Die Zahlen links/rechts */
+.slider-val {
+    font-family: monospace;
+    font-size: 0.95rem;
+    color: var(--text);
+    min-width: 45px;
+    /* Damit nichts springt wenn Zahlen größer werden */
+    text-align: center;
+}
+
+/* --- DIE SCHIENE (JETZT DÜNN: 4px) --- */
+.slider-wrapper {
+    position: relative;
+    flex-grow: 1;
+
+    height: 4px;
+    /* <--- HIER: Dünn gemacht! */
+
+    border-radius: 2px;
+    background: var(--border);
+    /* Graue Basis */
+
+    /* Lila Füllung (wird von JS berechnet) */
+    background-image: linear-gradient(to right,
+            transparent var(--a),
+            var(--accent-soft) var(--a),
+            var(--accent-soft) var(--b),
+            transparent var(--b));
+
+    display: flex;
+    align-items: center;
+}
+
+/* Die Inputs (unsichtbar, nur Griffe sichtbar) */
+.dual-range {
+    position: absolute;
+    width: 100%;
+    height: 0;
+    /* Input hat keine Höhe, nur der Griff zählt */
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    background: none;
+    pointer-events: none;
+    top: 50%;
+    /* Sitzt mittig auf der 4px Linie */
+}
+
+/* Der Griff (Thumb) - Weiß und rund */
+.dual-range::-webkit-slider-thumb {
+    pointer-events: auto;
+    appearance: none;
+
+    width: 18px;
+    height: 18px;
+
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    cursor: grab;
+
+    /* Zentrierung auf der dünnen Linie */
+    margin-top: -2px;
+    /* (ThumbHeight 18px / 2) - (TrackHeight 4px / 2) = 7px */
+}
+
+/* =========================================
+   TOUREN & KATEGORIEN
+   ========================================= */
+.tour-main-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tour-category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tours-check-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tours-check-option input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--accent-soft);
+}
+
+.tours-start-select {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.tour-category-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: none;
+    /* Firefox */
+    margin-bottom: 25px;
+}
+
+.tour-category-tabs::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+/* Die neuen runden Tabs */
+.cat-tab {
+    gap: 5px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
+
+
+}
+
+.cat-tab span {
+    font-size: 1.2rem;
+}
+
+/* Aktiver Zustand (Gradient) */
+.cat-tab.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    color: var(--accent-contrast, white);
+    border-color: transparent;
+}
+
+.tour-counter {
+    text-align: center;
+    margin: 10px 0 20px 0;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* --- WANDER KARTEN --- */
+#hike-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing);
+}
+
+/* Kombination: Wenn ein Element beide Klassen hat (.card und .hike-card) */
+.card.hike-card {
+    /* 1. LAYOUT RESET: Wir wollen Flexbox (Spalte), kein Grid */
+    display: flex !important;
+    flex-direction: column !important;
+
+    /* 2. PADDING RESET: Die Karte selbst soll kein Padding haben, 
+       weil deine Bilder bis an den Rand gehen sollen */
+    padding: 0 !important;
+
+    gap: 0 !important;
+
+    /* 3. VERLAUF SICHTBAR MACHEN: */
+    /* overflow muss visible sein, sonst wird der untere Verlauf-Strich abgeschnitten! */
+    overflow: visible !important;
+
+    /* Höhe automatisch wachsen lassen */
+    height: auto;
+}
+
+.hike-card .image-container {
+    height: 200px;
+    background: var(--surface);
+    position: relative;
+    /* Bild füllt den Bereich */
+    border-top-left-radius: inherit;
+    /* Erbt die 16px von .card */
+    border-top-right-radius: inherit;
+}
+
+
+.hike-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ==========================================
+   App-Feeling: Verhindert blaues Markieren/Flackern
+   ========================================== */
+.hike-card,
+.hike-card img {
+    user-select: none;
+    /* Verhindert Text-Markieren am PC */
+    -webkit-user-select: none;
+    /* Für Safari/Apple */
+    -webkit-tap-highlight-color: transparent;
+    /* Verhindert das blaue Aufblinken am Tablet/Handy */
+    outline: none;
+    /* Verhindert Fokus-Rahmen */
+}
+
+.hike-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 10px 0;
+}
+
+.tag-badge {
+    font-size: 0.75rem;
+    background: var(--soft);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+/* Ein-Spalten-Modus (wird per JS aktiviert, wenn wenige Ergebnisse) */
+.one-column-mode {
+    grid-template-columns: 1fr !important;
+}
+
+.one-column-mode .hike-card {
+    flex-direction: row;
+}
+
+.one-column-mode .image-container {
+    width: 100%;
+    height: auto;
+}
+
+/* Verhindert das Markieren und Ziehen des Bildes in der Lightbox */
+#lightbox-img {
+    touch-action: pan-y;
+    /* Erlaubt vertikales Scrollen, blockiert horizontales für JS */
+    user-select: none;
+    /* Kein Text markieren */
+    -webkit-user-select: none;
+    /* Safari */
+    -webkit-user-drag: none;
+    /* Kein Bild-Ziehen */
+}
+
+/* 4. VIDEO BUTTON (In der Wanderkarte) */
+.hike-card .add-btn {
+    /* Verlauf: Soft -> Accent -> Soft */
+    background: linear-gradient(to right,
+            var(--accent-soft),
+            var(--accent),
+            var(--accent-soft)) !important;
+
+    background-size: 100% auto;
+    border: none;
+    color: #fff;
+
+    /* HIER KOMBINIEREN WIR BEIDES: */
+    /* 1. Weiße Linie innen */
+    /* 2. Lila Leuchten außen */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 12px rgba(108, 37, 179, 0.4) !important;
+
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hike-card .add-btn:active {
+    transform: scale(0.98);
+    /* Beim Klicken wird der Schatten etwas kleiner */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 2px 6px rgba(108, 37, 179, 0.4) !important;
+}
+
+
+/* =========================================
+   7. MEDIA QUERIES (RESPONSIVE LAYOUT)
+   ========================================= */
+
+/* --- MOBILE FIRST (Standard) --- */
+/* Die meisten Styles oben sind bereits für Mobile ausgelegt.
+   Hier kommen nur spezifische Anpassungen für kleine Screens (< 768px). */
+
+@media (max-width: 767px) {
+
+    .page-content {
+        padding-top: var(--safe-top);
+    }
+
+    /* Header bis an den Bildschirmrand, Inhalt bleibt eingerückt */
+    #info-card.info-card-head {
+        width: calc(100% + (2 * var(--spacing)));
+        max-width: none;
+        margin-left: calc(-1 * var(--spacing));
+        margin-right: calc(-1 * var(--spacing));
+        border-radius: 0 !important;
+        box-sizing: border-box;
+    }
+
+    #info-card.info-card-head::after {
+        left: 0;
+        right: 0;
+    }
+
+    /* 1. App-Download-Karte ausblenden (Platz sparen am Handy) */
+    #mobile-app-card {
+        display: none !important;
+    }
+
+    /* 2. Filter & Slider untereinander stapeln */
+    .filter-row {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+
+    .filter-dropdown-row {
+        flex-direction: column;
+    }
+
+    .tours-map-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+    }
+
+    .tours-map-stage,
+    .tours-overview-map {
+        min-height: 360px;
+        height: min(55dvh, 480px);
+    }
+
+    .tours-route-bar {
+        flex: 1 1 auto;
+        width: 100%;
+        height: auto;
+        max-height: none;
+    }
+
+    .tours-sel-photos img {
+        width: 140px;
+        height: 105px;
+        cursor: zoom-in;
+    }
+
+    /* 3. Info-Grid einspaltig */
+    .info-grid {
+        column-count: 1;
+    }
+
+    /* 4. Karten-Layout Handy (Bild links, Text rechts ist Standard oben, 
+          aber hier stellen wir sicher, dass nichts gequetscht wird) */
+    .card .thumb {
+        height: auto;
+        align-self: stretch;
+        /* Bild wächst mit der Karte mit */
+    }
+
+    /* 5. Header Layout: Alles untereinander */
+    #tab-order .header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        height: auto !important;
+        gap: 10px !important;
+    }
+
+    /* Reihenfolge im Header ändern */
+    .header-top {
+        order: -1;
+        margin-bottom: 0;
+    }
+
+    /* Buttons ganz oben */
+    .header-row {
+        order: 0;
+        margin: 0;
+    }
+
+    /* Suche in der Mitte */
+    #order-deadline-info {
+        order: 10;
+    }
+
+    /* Ampel ganz unten */
+
+    /* 6. Alte Icon-Leiste, falls noch vorhanden */
+    .shell-bar {
+        flex-wrap: wrap;
+    }
+
+    .shell-nav {
+        min-height: 40px;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .shell-nav-side {
+        font-size: 0.8rem;
+        padding: 6px 0;
+    }
+
+    .shell-nav-current {
+        font-size: 0.95rem;
+        padding: 0 6px;
+    }
+
+    .shell-btn {
+        flex: 0 0 50%;
+        /* Genau 50% Breite */
+        width: 50%;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        /* Trennlinie */
+    }
+
+    /* 7. Action Group (Warenkorb & Menge) mobil optimieren */
+    .action-group {
+        width: 100%;
+        flex-direction: row-reverse;
+        /* Button links, Menge rechts */
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .qty-control {
+        width: 110px;
+    }
+
+    /* Fixe Breite für +/- */
+    .action-group .add-btn {
+        flex: 1;
+    }
+
+    /* Haupt-Inhaltsbereich (Text + Actions) */
+    .content-wrapper .card-main-row {
+        display: flex;
+        flex-direction: column;
+        /* Stapelt Text und Actions übereinander */
+        justify-content: flex-start;
+        /* FIX: Zieht alles nach oben (kein riesen Abstand!) */
+        flex-grow: 1;
+        /* Füllt Platz bis zur Note aus */
+        width: 100%;
+    }
+
+    .modal .panel {
+        max-height: 70vh !important;
+    }
+
+    #weather-forecast-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    #weather-forecast-grid .forecast-day:nth-child(n+4) {
+        display: none !important;
+    }
+}
+
+
+/* --- DESKTOP LAYOUT (> 768px) --- */
+/* Hier schalten wir um auf "Nebeneinander" */
+
+@media (min-width: 768px) {
+
+    /* 1. Header Layout: Alles in einer Zeile */
+    #tab-order .header {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Links: Suche & Dropdown (nimmt den meisten Platz) */
+    .header-row {
+        order: 1;
+        flex: 1;
+        margin-bottom: 0;
+        min-width: 400px;
+        /* Damit die Suche nicht zu klein wird */
+    }
+
+    /* Rechts: Buttons */
+    .header-top {
+        order: 2;
+        width: auto;
+        justify-content: flex-end;
+    }
+
+    /* Unten: Ampel (volle Breite) */
+    #order-deadline-info {
+        order: 3;
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    /* 2. Action Group am PC (Kompakt untereinander) */
+    .action-group {
+        flex-direction: column;
+        width: 100px;
+    }
+}
+
+
+/* =========================================
+   8. FINAL POLISH & ACCESSIBILITY
+   ========================================= */
+
+/* --- ZITTER-SCHUTZ (Touch Action) --- */
+/* Verhindert, dass der Browser beim schnellen Tippen scrollt oder zoomt */
+button,
+.add-btn,
+.shell-btn,
+.qty-control,
+input[type="range"],
+.toggle-btn {
+    touch-action: manipulation;
+}
+
+/* --- FIX FÜR STATISCHE DROPDOWNS (1 VARIANTE) --- */
+/* Erlaubt Scrollen, wenn der Finger auf einem inaktiven Dropdown landet */
+
+.custom-dd.static-dd {
+    /* 1. Scrollen wieder aktivieren */
+    touch-action: manipulation !important;
+
+    /* 2. Klicks "durchfallen" lassen (wirkt wie Text) */
+    pointer-events: none;
+}
+
+/* WICHTIG: Damit die Kind-Elemente das nicht blockieren */
+.custom-dd.static-dd .custom-dd-header,
+.custom-dd.static-dd .custom-dd-item {
+    touch-action: manipulation !important;
+}
+
+/* --- HOVER EFFEKTE (Nur PC) --- */
+/* Auf Handys stören Hover-Effekte oft, daher nur wenn 'hover' möglich ist */
+@media (hover: hover) {
+
+    button:not(:disabled):hover,
+    .add-btn:not(:disabled):hover {
+        transform: translateY(-1px);
+        filter: brightness(1.1);
+    }
+
+    .card:hover {
+        border-color: var(--accent-soft);
+        /* Dezentes Aufleuchten der Karte */
+    }
+}
+
+/* --- PRINT STYLES (Falls jemand druckt) --- */
+@media print {
+
+    .shell-bar,
+    .shell-nav,
+    .header-top,
+    .add-btn,
+    .qty-control {
+        display: none !important;
+    }
+
+    body,
+    .card {
+        background: #fff;
+        color: #000;
+    }
+
+    .card {
+        border: 1px solid #ccc;
+        box-shadow: none;
+        break-inside: avoid;
+    }
+}
+
+#categoryDropdownRoot {
+    display: block !important;
+    width: var(--dd-width) !important;
+    /* Deine Dropdown-Breite */
+    height: 38px;
+    /* Ungefähre Höhe */
+    min-width: var(--dd-width);
+    /* Darf nicht schrumpfen */
+}
+
+/* =========================================
+   9. TOAST NOTIFICATIONS (Feedback)
+   ========================================= */
+
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 11000;
+    /* Muss höher sein als alle Modals (höchstes Modal hat 10000) */
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    width: 90%;
+    max-width: 400px;
+    pointer-events: none;
+    /* Klicks gehen durch den leeren Container durch */
+}
+
+.toast {
+    background: var(--surface);
+    /* Standard Dunkelgrau */
+    color: var(--text);
+    border: 1px solid var(--border);
+
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+
+    /* Animation Start-Zustand (unsichtbar & leicht oben) */
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Schöner "Bounce" Effekt */
+
+    pointer-events: auto;
+    /* Der Toast selbst ist klickbar/blockiert Maus */
+}
+
+/* Zustand wenn sichtbar (wird per JS .add('show') gesetzt) */
+.toast.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* --- FARB-VARIANTEN --- */
+
+/* Erfolg (Grün) */
+.toast.success {
+    background: var(--color-green-soft);
+    color: var(--color-green-text);
+    border-color: var(--color-green-border);
+}
+
+/* Fehler (Rot) */
+.toast.error {
+    background: var(--color-red-soft);
+    color: var(--color-red-text);
+    border-color: var(--color-red-border);
+}
+
+/* Info (Blau - nutzen wir dein Akzent-Blau für PayPal als Basis oder Standard) */
+.toast.info {
+    background: var(--card);
+    border-left: 4px solid var(--accent);
+    /* Lila Balken links */
+}
+
+/* Warnung (Gelb/Orange - falls du es brauchst) */
+.toast.warning {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffeeba;
+}
+
+/* --- TOUREN ÜBERSICHTSKARTE --- */
+.tours-map-block {
+    margin: 4px 0 var(--spacing);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tours-overview-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    min-height: 28px;
+}
+
+.tours-overview-toolbar .tours-map-legend {
+    flex: 1;
+}
+
+.tours-map-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    height: min(70dvh, 640px);
+    min-height: 420px;
+}
+
+.tours-map-col {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tours-map-stage {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+}
+
+.tours-overview-map {
+    z-index: 1;
+    background: var(--soft);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
+}
+
+.tours-map-selection {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 500;
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px 16px;
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.tours-map-selection[hidden] {
+    display: none !important;
+}
+
+.tours-sel-photos {
+    display: flex;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.tours-sel-photos[hidden] {
+    display: none !important;
+}
+
+.tours-sel-photos img,
+.tours-sel-photo {
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: zoom-in;
+}
+
+.tours-sel-desc {
+    display: block;
+    flex: 1 1 100%;
+    margin-top: 2px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+    white-space: normal;
+}
+
+.tours-segment-drawer {
+    margin-top: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    overflow: hidden;
+}
+
+.tours-segment-drawer-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+    user-select: none;
+}
+
+.tours-segment-drawer-summary::-webkit-details-marker {
+    display: none;
+}
+
+.tours-segment-drawer-summary::after {
+    content: '▸';
+    color: var(--muted);
+    transition: transform 0.15s ease;
+}
+
+.tours-segment-drawer[open] .tours-segment-drawer-summary::after {
+    transform: rotate(90deg);
+}
+
+.tours-segment-drawer-count {
+    margin-left: auto;
+    margin-right: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.tours-segment-drawer .hike-grid {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.tours-sel-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.tours-sel-body strong {
+    display: block;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    margin-bottom: 4px;
+}
+
+.tours-sel-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.tours-sel-meta[hidden] {
+    display: none !important;
+}
+
+.tours-sel-hut {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #b45309;
+    margin-bottom: 6px;
+}
+
+.tours-sel-hut[hidden] {
+    display: none !important;
+}
+
+.tours-sel-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--accent-soft);
+}
+
+.tours-sel-stats[hidden] {
+    display: none !important;
+}
+
+.tours-sel-stats .tours-sel-seg {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.tours-sel-open,
+.tours-sel-route-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* .add-btn setzt display:inline-flex und gewinnt sonst gegen [hidden] */
+.tours-sel-route-btn[hidden],
+.tours-sel-open[hidden] {
+    display: none !important;
+}
+
+.tours-map-selection.is-desktop .tours-sel-open {
+    display: none !important;
+}
+
+.trip-detail-map-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.trip-detail-map-stage .trip-detail-map {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.trip-detail-seg-info {
+    /* gleiche Leiste wie Übersicht, ohne „Tour öffnen“ */
+}
+
+.tours-overview-empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.tours-map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.tours-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.tours-legend-item i {
+    display: inline-block;
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.tours-legend-item i.tours-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.tours-route-bar {
+    flex: 0 0 300px;
+    width: 300px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+}
+
+.tours-route-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.tours-route-head strong {
+    font-size: 1.05rem;
+    line-height: 1.2;
+}
+
+.tours-route-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.tours-route-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.35;
+}
+
+.tours-route-stats {
+    margin-top: 8px;
+}
+
+.tours-route-stats-total {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--accent-soft);
+}
+
+.tours-route-stats-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.tours-route-mode-stat {
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    line-height: 1.25;
+}
+
+.tours-route-mode-stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mode-color, #3d9b6a);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.tours-route-mode-stat-label {
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.tours-route-mode-stat-vals {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.tours-route-start {
+    margin-top: 12px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tours-route-start[hidden] {
+    display: none !important;
+}
+
+.tours-route-start-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 2px;
+}
+
+.tours-route-start strong {
+    display: block;
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.tours-route-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.tours-route-steps:empty {
+    display: none;
+}
+
+.tours-route-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.tours-route-step:last-child {
+    border-bottom: none;
+}
+
+.tours-route-step-name {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 8px;
+    line-height: 1.35;
+    font-weight: 600;
+}
+
+.tours-route-arrow {
+    color: var(--accent-soft);
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.tours-route-end {
+    min-width: 0;
+}
+
+.tours-route-step-note {
+    flex: 1 1 100%;
+    margin: 0;
+    padding-left: 1.4rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.tours-route-step-mode {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-self: end;
+    width: auto;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.tours-route-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.tours-route-icon-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.tours-route-icon-btn:hover {
+    background: var(--soft);
+}
+
+.tours-route-icon-btn.btn-delete {
+    color: var(--color-red-text);
+}
+
+.tours-route-mode-btn,
+.tours-route-mode-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 32px;
+    max-width: 40px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0;
+    border-radius: 8px;
+    padding: 4px 6px;
+    color: #fff;
+    background: linear-gradient(
+        135deg,
+        var(--mode-color, #3d9b6a),
+        color-mix(in srgb, var(--mode-color, #3d9b6a) 72%, white)
+    );
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 3px 10px color-mix(in srgb, var(--mode-color, #3d9b6a), transparent 55%);
+}
+
+.tours-route-mode-btn {
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.tours-route-mode-btn:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+.tours-route-mode-tag {
+    border: none;
+}
+
+.tours-mode-chooser {
+    position: absolute;
+    inset: 0;
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.tours-mode-chooser[hidden] {
+    display: none !important;
+}
+
+.tours-mode-chooser-inner {
+    position: relative;
+    width: min(360px, 100%);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    padding-top: 18px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tours-mode-chooser-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tours-mode-chooser-close:hover {
+    background: var(--soft);
+    color: var(--text);
+}
+
+.tours-mode-chooser-inner strong {
+    font-size: 1.05rem;
+    padding-right: 28px;
+}
+
+.tours-mode-chooser-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tours-mode-pick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(
+        135deg,
+        var(--mode-color, #3d9b6a),
+        color-mix(in srgb, var(--mode-color, #3d9b6a) 68%, white)
+    );
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 12px color-mix(in srgb, var(--mode-color, #3d9b6a), transparent 55%);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.tours-mode-pick:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
+body.trip-detail-open {
+    overflow: hidden !important;
+}
+
+/* --- TRIP DETAIL: Vollbild --- */
+.trip-detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    background: var(--bg);
+    display: flex;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.trip-detail-panel {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg);
+    box-sizing: border-box;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+}
+
+.trip-detail-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-shrink: 0;
+    padding: 12px 14px 8px;
+}
+
+.trip-detail-heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.trip-detail-heading h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    line-height: 1.25;
+}
+
+.trip-detail-close {
+    position: static;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.trip-variant-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 0 14px 10px;
+}
+
+.trip-variant-chip {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.trip-variant-chip.active {
+    background: var(--accent-soft);
+    color: #fff;
+    border-color: transparent;
+}
+
+.trip-detail-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 6px;
+    color: var(--accent-soft);
+    font-weight: 700;
+}
+
+.trip-detail-map {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    border-radius: 0;
+    overflow: hidden;
+    z-index: 1;
+    background: #343a40;
+}
+
+.trip-detail-footer {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 22vh;
+    overflow-y: auto;
+    padding: 12px 14px 14px;
+}
+
+.trip-detail-desc {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.trip-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.trip-detail-actions .add-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trip-detail-fallback {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* Planungsmodus */
+.tours-mode-budgets {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.tours-mode-budget {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 14px;
+    align-items: center;
+    padding: 10px 12px;
+    border-left: 3px solid var(--mode-color, var(--accent));
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 0 8px 8px 0;
+}
+
+.tours-mode-budget-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tours-mode-budget-title-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+.tours-mode-budget-sliders {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    min-width: 0;
+    align-items: start;
+}
+
+.tours-budget-range .filter-label {
+    font-size: 0.78rem;
+    margin-bottom: 2px;
+}
+
+.tours-budget-range .slider-row {
+    gap: 0;
+}
+
+.tours-mode-icon,
+.tours-filter-mode-icon,
+.tours-route-mode-icon,
+.tours-mode-pick-icon,
+.tours-mode-budget-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+    color: var(--mode-color, currentColor);
+}
+
+.tours-filter-mode-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.tours-route-bar .tours-mode-icon,
+.tours-route-bar .tours-route-mode-icon,
+.tours-route-bar .tours-route-mode-stat-icon,
+.tours-route-bar .tours-mode-pick-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.tours-route-bar .tours-mode-budget-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.dd-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tours-filter-mode-label {
+    flex: 1;
+}
+
+.tours-route-mode-stat-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.tours-route-mode-btn span,
+.tours-route-mode-tag span {
+    display: none;
+}
+
+.tours-mode-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tours-mode-pick-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.tours-plan-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tours-plan-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.tours-plan-label {
+    flex: 0 0 42px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tours-plan-value {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.95rem;
+}
+
+.tours-plan-vias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+
+.tours-plan-via-empty {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.tours-plan-via-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.tours-plan-via-remove {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+    color: var(--muted);
+}
+
+.tours-trip-shape {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    font-size: 0.82rem;
+}
+
+.tours-trip-shape label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.tours-plan-status {
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-height: 1.2em;
+}
+
+.tours-plan-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: stretch;
+}
+
+.tours-plan-actions-row #tours-plan-compute {
+    flex: 1.4;
+    margin-top: 0;
+}
+
+.tours-plan-secondary-btn {
+    flex: 1;
+    margin-top: 0;
+    background: transparent !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.tours-plan-secondary-btn.is-active {
+    border-color: var(--accent, #3d9b6a) !important;
+    color: var(--accent, #3d9b6a) !important;
+}
+
+#tours-plan-loop-reverse {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.tours-plan-saved-row {
+    display: none;
+}
+
+.tours-saved-list {
+    margin-top: 14px;
+}
+
+.tours-saved-list[hidden] {
+    display: none !important;
+}
+
+.tours-saved-head {
+    font-size: 0.85rem;
+    font-weight: 650;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+
+.tours-saved-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tours-saved-card {
+    background: var(--card, #3a4148);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.tours-saved-card-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+}
+
+.tours-saved-card-toggle {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    width: 40px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tours-saved-card.is-open .tours-saved-card-toggle {
+    color: var(--text);
+}
+
+.tours-saved-card-summary {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 8px 12px 0;
+    text-align: left;
+}
+
+.tours-saved-card-title {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.tours-saved-card-stats {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.tours-saved-card-preview {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tours-saved-card-load {
+    border: none;
+    background: rgba(61, 155, 106, 0.22);
+    color: var(--text);
+    padding: 0 12px;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tours-saved-card-load:hover {
+    background: rgba(61, 155, 106, 0.35);
+}
+
+.tours-saved-card-takeaway {
+    border: none;
+    background: color-mix(in srgb, var(--accent), transparent 78%);
+    color: var(--text);
+    padding: 0 12px;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tours-saved-card-takeaway:hover {
+    background: color-mix(in srgb, var(--accent), transparent 65%);
+}
+
+.tours-saved-card.is-active {
+    box-shadow:
+        inset 2px 0 0 var(--accent-soft),
+        0 0 0 1px color-mix(in srgb, var(--accent), transparent 70%),
+        0 0 22px color-mix(in srgb, var(--accent), transparent 78%);
+    background:
+        linear-gradient(
+            90deg,
+            var(--cart-rail-edge) 0%,
+            var(--cart-rail) 28%,
+            var(--card, #3a4148) 100%
+        );
+}
+
+.tours-saved-card-del {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tours-saved-card-del:hover {
+    color: var(--color-red-text, #e57373);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.tours-saved-card-detail {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 14px 14px;
+    max-height: min(58vh, 520px);
+    overflow: auto;
+}
+
+.tours-saved-card-detail[hidden] {
+    display: none !important;
+}
+
+.tours-saved-elev {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    width: 100%;
+}
+
+.tours-saved-elev-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.tours-saved-elev-svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.tours-saved-elev-grid {
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 1;
+}
+
+.tours-saved-elev-label {
+    fill: var(--muted, #a8b0b8);
+    font-size: 9px;
+    font-family: inherit;
+}
+
+.tours-saved-elev-area {
+    fill: color-mix(in srgb, var(--accent), transparent 82%);
+}
+
+.tours-saved-elev-line {
+    stroke: var(--accent-soft);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.tours-saved-elev-note {
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: right;
+}
+
+.tours-saved-elev-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.tours-saved-elev-modes span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tours-saved-elev-modes i {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.tours-legend-note {
+    opacity: 0.85;
+    font-size: 0.78rem;
+}
+
+.tours-saved-elev-loading {
+    padding: 18px 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.14);
+    border-radius: 8px;
+}
+
+.tours-saved-block {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tours-saved-block:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.tours-saved-block-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.tours-saved-block-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.tours-saved-block--node .tours-saved-block-title::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #7ec8a0;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.tours-saved-block--seg .tours-saved-block-title::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 3px;
+    border-radius: 2px;
+    background: #e85d04;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.tours-saved-block-title {
+    margin: 0 0 6px;
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+.tours-saved-block-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.tours-saved-block-desc {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--text);
+    white-space: pre-wrap;
+}
+
+.tours-saved-photos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    max-width: 46%;
+}
+
+.tours-saved-photo {
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 72px;
+    height: 54px;
+    flex: 0 0 auto;
+}
+
+.tours-saved-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tours-map-stage.tours-route-loaded {
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--accent-soft), transparent 35%),
+        0 0 28px color-mix(in srgb, var(--accent), transparent 70%);
+    border-radius: 12px;
+}
+
+.tours-route-bar.tours-route-loaded {
+    box-shadow:
+        inset 2px 0 0 var(--accent-soft),
+        0 0 18px color-mix(in srgb, var(--accent), transparent 78%);
+    background:
+        linear-gradient(
+            90deg,
+            var(--cart-rail-edge) 0%,
+            var(--cart-rail) 40%,
+            transparent 100%
+        );
+}
+
+.tours-route-dir-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
+.tours-route-dir-arrow {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #e85d04;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.tours-takeaway-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(10, 12, 14, 0.72);
+}
+
+.tours-takeaway-overlay[hidden] {
+    display: none !important;
+}
+
+.tours-takeaway-dialog {
+    width: min(420px, 100%);
+    background: var(--card, #3a4148);
+    color: var(--text);
+    border-radius: 16px;
+    padding: 18px 18px 20px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.tours-takeaway-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.tours-takeaway-lead {
+    margin: 0 0 16px;
+    font-size: 0.92rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.tours-takeaway-lan {
+    margin: 0 0 14px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.tours-takeaway-lan[hidden] {
+    display: none !important;
+}
+
+.tours-takeaway-lan label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.tours-takeaway-lan-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.tours-takeaway-lan-row input {
+    flex: 1;
+    min-width: 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.88rem;
+}
+
+.tours-takeaway-lan-row .add-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.tours-takeaway-lan-hint {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.tours-takeaway-lan-hint code {
+    font-size: 0.85em;
+}
+
+.tours-takeaway-qr-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+}
+
+.tours-takeaway-qr {
+    width: 220px;
+    height: 220px;
+    display: block;
+}
+
+.tours-takeaway-status {
+    margin: 12px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 1.2em;
+}
+
+.tours-takeaway-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.78rem;
+    word-break: break-all;
+    color: var(--accent-soft, #7ec8a0);
+    text-align: center;
+}
+
+.tours-sel-route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tours-sel-route-actions .tours-sel-route-btn {
+    margin: 0;
+}
+
+.tours-sel-alt-btn {
+    background: transparent !important;
+    color: var(--accent-soft) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.wx-place {
+    margin: 0 6px 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.wx-board {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(76px, 1fr));
+    gap: 4px;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.wx-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px 4px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.wx-col.is-on {
+    background: rgba(108, 37, 179, 0.28);
+    box-shadow: inset 0 0 0 1px var(--accent-soft, #9b6dff);
+}
+
+.wx-col-name {
+    width: 100%;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wx-col-icon-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.wx-night {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    z-index: 3;
+    transform: translate(calc(-50% - 2px), -50%);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid #0e1016;
+    background: #1c2230;
+    color: #e7edf5;
+    pointer-events: none;
+}
+
+.wx-night .material-symbols-rounded {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.wx-night.is-rainy,
+.wx-night.is-thunderstorm,
+.wx-night.is-weather_snowy {
+    color: #7eb6ff;
+}
+
+.wx-night.is-bedtime,
+.wx-night.is-partly_cloudy_night {
+    color: #d7e4f8;
+}
+
+.wx-col-icon {
+    font-size: 1.9rem;
+    line-height: 1;
+    color: #f0c14a;
+}
+
+.wx-col-icon.is-cloud,
+.wx-col-icon.is-foggy {
+    color: #c5ccd6;
+}
+
+.wx-col-icon.is-partly_cloudy_day {
+    color: #e7d7a1;
+}
+
+.wx-col-icon.is-rainy,
+.wx-col-icon.is-thunderstorm,
+.wx-col-icon.is-weather_snowy {
+    color: #7eb6ff;
+}
+
+.wx-col-max {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.05;
+}
+
+.wx-col-min {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+.wx-pop-pct {
+    min-height: 0.9rem;
+    color: #9ecbff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.wx-rain {
+    width: 92%;
+    height: 48px;
+    margin-top: 4px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+}
+
+.wx-rain-slot {
+    flex: 1 1 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.wx-rain-bar {
+    display: block;
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    background: #4c9be8;
+}
+
+.wx-rain-note {
+    margin: 8px 4px 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.wx-detail {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.wx-detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+
+.wx-detail-head strong {
+    font-size: 1.05rem;
+}
+
+.wx-detail-head span {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.wx-hours {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.wx-hour {
+    flex: 0 0 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.wx-hour.is-now {
+    border-color: var(--accent-soft, #9b6dff);
+}
+
+.wx-hour-time {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.wx-hour-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    color: #f0c14a;
+}
+
+.wx-hour-icon.is-cloud,
+.wx-hour-icon.is-foggy {
+    color: #c5ccd6;
+}
+
+.wx-hour-icon.is-partly_cloudy_day {
+    color: #e7d7a1;
+}
+
+.wx-hour-icon.is-rainy,
+.wx-hour-icon.is-thunderstorm,
+.wx-hour-icon.is-weather_snowy {
+    color: #7eb6ff;
+}
+
+.wx-hour strong {
+    font-size: 0.82rem;
+}
+
+.wx-hour-track {
+    width: 12px;
+    height: 22px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.wx-hour-bar {
+    display: block;
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    background: #4c9be8;
+}
+
+.wx-hour-rain {
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 650;
+}
+
+.wx-col-rain,
+.wx-col-wind {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+    line-height: 1.2;
+}
+
+.wx-col-rain {
+    margin-top: 6px;
+}
+
+.wx-col-sun {
+    margin-top: 4px;
+    min-width: 2.2rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.wx-col-sun.is-on {
+    background: #f3d36b;
+    color: #2c2610;
+    font-weight: 800;
+}
+
+@media (max-width: 767px) {
+    .info-switch-btn {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+
+    .wx-board {
+        grid-template-columns: repeat(7, 76px);
+    }
+}

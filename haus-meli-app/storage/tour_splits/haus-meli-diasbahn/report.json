@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "name": "Haus Meli",
+      "lat": 47.069961,
+      "lng": 10.398723,
+      "flags": [
+        "start"
+      ]
+    },
+    {
+      "name": "Diasbahn Talstation",
+      "lat": 47.060256,
+      "lng": 10.374533,
+      "flags": [
+        "seilbahn"
+      ]
+    },
+    {
+      "name": "Diasbahn Bergstation",
+      "lat": 47.067115,
+      "lng": 10.359023,
+      "flags": [
+        "seilbahn"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "name": "Haus Meli -> Diasbahn Talstation",
+      "from": "Haus Meli",
+      "to": "Diasbahn Talstation",
+      "out_and_back": true,
+      "bidirectional": true,
+      "note": "GPX ist Hin+Retour; Geometrie nur Hin. out_and_back empfohlen.",
+      "gpx_file": "hin_haus-meli-diasbahn-talstation.gpx",
+      "distance_km": 2.95,
+      "elevation_m": 49,
+      "point_count": 105
+    },
+    {
+      "name": "Diasbahn Talstation -> Haus Meli",
+      "from": "Diasbahn Talstation",
+      "to": "Haus Meli",
+      "out_and_back": false,
+      "bidirectional": true,
+      "note": "Optional Gegenrichtung; sonst bidirectional auf Hin-Segment.",
+      "gpx_file": "retour_diasbahn-talstation-haus-meli.gpx",
+      "distance_km": 2.95,
+      "elevation_m": 83,
+      "point_count": 105
+    },
+    {
+      "name": "Diasbahn Bergstation -> Diasbahn Talstation",
+      "from": "Diasbahn Bergstation",
+      "to": "Diasbahn Talstation",
+      "out_and_back": false,
+      "bidirectional": true,
+      "distance_km": 0.0,
+      "elevation_m": 0,
+      "point_count": 2,
+      "gpx_file": "seilbahn_diasbahn-berg-tal.gpx",
+      "note": "Seilbahn: immer 0 km / 0 Hm",
+      "transport": "cable_car"
+    }
+  ],
+  "source_gpx": "2026-07-19_3122009650_Haus Meli - Diasbahn.gpx",
+  "tal_snap_m": 0.0,
+  "analysis": "Track ist reiner Hin+Retour Haus Meli <-> Diasbahn Talstation (Bergstation nicht auf dem Track)."
+}

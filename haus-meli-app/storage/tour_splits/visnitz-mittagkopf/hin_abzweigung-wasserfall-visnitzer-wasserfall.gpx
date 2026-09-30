@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Abzweigung Wasserfall → Visnitzer Wasserfall</name></metadata>
+  <trk><name>Abzweigung Wasserfall → Visnitzer Wasserfall</name><trkseg>
+      <trkpt lat="47.0559660" lon="10.3724700"><ele>1317.4</ele></trkpt>
+      <trkpt lat="47.0558580" lon="10.3722510"><ele>1320.6</ele></trkpt>
+      <trkpt lat="47.0557620" lon="10.3721590"><ele>1322.2</ele></trkpt>
+      <trkpt lat="47.0556140" lon="10.3721100"><ele>1324.3</ele></trkpt>
+      <trkpt lat="47.0555160" lon="10.3721900"><ele>1325.8</ele></trkpt>
+  </trkseg></trk>
+</gpx>

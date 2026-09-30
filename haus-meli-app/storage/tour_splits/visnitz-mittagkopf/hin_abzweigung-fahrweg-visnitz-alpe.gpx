@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Abzweigung Fahrweg → Visnitz Alpe</name></metadata>
+  <trk><name>Abzweigung Fahrweg → Visnitz Alpe</name><trkseg>
+      <trkpt lat="47.0518100" lon="10.3766860"><ele>1562.8</ele></trkpt>
+      <trkpt lat="47.0525920" lon="10.3770360"><ele>1563.6</ele></trkpt>
+      <trkpt lat="47.0529260" lon="10.3770330"><ele>1567.8</ele></trkpt>
+      <trkpt lat="47.0530610" lon="10.3769870"><ele>1569.8</ele></trkpt>
+      <trkpt lat="47.0531000" lon="10.3769990"><ele>1570.4</ele></trkpt>
+      <trkpt lat="47.0531050" lon="10.3770970"><ele>1571.4</ele></trkpt>
+      <trkpt lat="47.0530260" lon="10.3771590"><ele>1572.6</ele></trkpt>
+      <trkpt lat="47.0528080" lon="10.3771840"><ele>1575.8</ele></trkpt>
+      <trkpt lat="47.0525600" lon="10.3773580"><ele>1579.8</ele></trkpt>
+      <trkpt lat="47.0523730" lon="10.3773330"><ele>1582.5</ele></trkpt>
+      <trkpt lat="47.0517880" lon="10.3773710"><ele>1591.1</ele></trkpt>
+      <trkpt lat="47.0513300" lon="10.3774730"><ele>1598.8</ele></trkpt>
+      <trkpt lat="47.0511910" lon="10.3775880"><ele>1601.5</ele></trkpt>
+      <trkpt lat="47.0506950" lon="10.3776260"><ele>1609.8</ele></trkpt>
+      <trkpt lat="47.0502440" lon="10.3774090"><ele>1617.7</ele></trkpt>
+      <trkpt lat="47.0496120" lon="10.3771960"><ele>1629.0</ele></trkpt>
+      <trkpt lat="47.0493680" lon="10.3769440"><ele>1634.3</ele></trkpt>
+      <trkpt lat="47.0489390" lon="10.3769840"><ele>1641.9</ele></trkpt>
+      <trkpt lat="47.0480200" lon="10.3762470"><ele>1659.2</ele></trkpt>
+      <trkpt lat="47.0477620" lon="10.3761060"><ele>1663.5</ele></trkpt>
+      <trkpt lat="47.0474610" lon="10.3757310"><ele>1669.6</ele></trkpt>
+      <trkpt lat="47.0473260" lon="10.3753920"><ele>1673.7</ele></trkpt>
+      <trkpt lat="47.0471180" lon="10.3750640"><ele>1678.5</ele></trkpt>
+      <trkpt lat="47.0470540" lon="10.3750720"><ele>1679.4</ele></trkpt>
+      <trkpt lat="47.0470280" lon="10.3751770"><ele>1680.5</ele></trkpt>
+      <trkpt lat="47.0471610" lon="10.3756810"><ele>1685.5</ele></trkpt>
+      <trkpt lat="47.0471690" lon="10.3758170"><ele>1686.8</ele></trkpt>
+      <trkpt lat="47.0470970" lon="10.3758130"><ele>1687.7</ele></trkpt>
+      <trkpt lat="47.0467560" lon="10.3751460"><ele>1695.5</ele></trkpt>
+      <trkpt lat="47.0458910" lon="10.3747850"><ele>1708.4</ele></trkpt>
+      <trkpt lat="47.0455530" lon="10.3744580"><ele>1714.8</ele></trkpt>
+      <trkpt lat="47.0445380" lon="10.3740120"><ele>1731.6</ele></trkpt>
+      <trkpt lat="47.0442410" lon="10.3739650"><ele>1736.6</ele></trkpt>
+      <trkpt lat="47.0438360" lon="10.3734220"><ele>1745.6</ele></trkpt>
+      <trkpt lat="47.0433570" lon="10.3732530"><ele>1753.8</ele></trkpt>
+      <trkpt lat="47.0430240" lon="10.3729170"><ele>1760.5</ele></trkpt>
+      <trkpt lat="47.0425530" lon="10.3726170"><ele>1768.6</ele></trkpt>
+      <trkpt lat="47.0421050" lon="10.3722520"><ele>1776.6</ele></trkpt>
+      <trkpt lat="47.0413690" lon="10.3719870"><ele>1788.5</ele></trkpt>
+      <trkpt lat="47.0400580" lon="10.3718610"><ele>1804.5</ele></trkpt>
+      <trkpt lat="47.0399210" lon="10.3719830"><ele>1806.5</ele></trkpt>
+      <trkpt lat="47.0398530" lon="10.3721440"><ele>1808.0</ele></trkpt>
+      <trkpt lat="47.0393130" lon="10.3722890"><ele>1813.9</ele></trkpt>
+      <trkpt lat="47.0390660" lon="10.3724080"><ele>1816.4</ele></trkpt>
+      <trkpt lat="47.0385540" lon="10.3721870"><ele>1821.5</ele></trkpt>
+      <trkpt lat="47.0381740" lon="10.3721900"><ele>1825.1</ele></trkpt>
+      <trkpt lat="47.0381330" lon="10.3721510"><ele>1825.6</ele></trkpt>
+      <trkpt lat="47.0380910" lon="10.3720770"><ele>1826.2</ele></trkpt>
+      <trkpt lat="47.0380430" lon="10.3720200"><ele>1826.8</ele></trkpt>
+      <trkpt lat="47.0378900" lon="10.3719550"><ele>1828.3</ele></trkpt>
+  </trkseg></trk>
+</gpx>

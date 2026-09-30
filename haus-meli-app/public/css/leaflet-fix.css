@@ -1,0 +1,35 @@
+/**
+ * App-spezifische Leaflet-Anpassungen (nach leaflet.css).
+ */
+
+#tours-overview-map {
+    height: 100% !important;
+    min-height: 420px !important;
+    max-height: none !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background: #343a40;
+    z-index: 1;
+}
+
+.trip-detail-map-stage {
+    height: 100% !important;
+    min-height: 200px !important;
+    width: 100% !important;
+}
+
+#trip-detail-map {
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 200px !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    position: relative !important;
+    z-index: 1;
+}
+
+/* Globales * { box-sizing:border-box } — Tiles brauchen content-box */
+.leaflet-container .leaflet-tile {
+    box-sizing: content-box !important;
+}

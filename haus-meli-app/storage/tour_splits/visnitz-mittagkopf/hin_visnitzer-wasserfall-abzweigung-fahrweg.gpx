@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Visnitzer Wasserfall → Abzweigung Fahrweg</name></metadata>
+  <trk><name>Visnitzer Wasserfall → Abzweigung Fahrweg</name><trkseg>
+      <trkpt lat="47.0555160" lon="10.3721900"><ele>1325.8</ele></trkpt>
+      <trkpt lat="47.0556140" lon="10.3721100"><ele>1327.3</ele></trkpt>
+      <trkpt lat="47.0557620" lon="10.3721590"><ele>1329.4</ele></trkpt>
+      <trkpt lat="47.0558580" lon="10.3722510"><ele>1331.0</ele></trkpt>
+      <trkpt lat="47.0559660" lon="10.3724700"><ele>1333.5</ele></trkpt>
+      <trkpt lat="47.0559960" lon="10.3727480"><ele>1336.1</ele></trkpt>
+      <trkpt lat="47.0560650" lon="10.3728970"><ele>1337.8</ele></trkpt>
+      <trkpt lat="47.0565000" lon="10.3733200"><ele>1345.7</ele></trkpt>
+      <trkpt lat="47.0567500" lon="10.3734910"><ele>1351.3</ele></trkpt>
+      <trkpt lat="47.0567900" lon="10.3735480"><ele>1352.4</ele></trkpt>
+      <trkpt lat="47.0567970" lon="10.3736270"><ele>1353.5</ele></trkpt>
+      <trkpt lat="47.0567490" lon="10.3736460"><ele>1354.5</ele></trkpt>
+      <trkpt lat="47.0566430" lon="10.3735960"><ele>1356.7</ele></trkpt>
+      <trkpt lat="47.0564470" lon="10.3735870"><ele>1360.6</ele></trkpt>
+      <trkpt lat="47.0560340" lon="10.3737250"><ele>1369.1</ele></trkpt>
+      <trkpt lat="47.0556130" lon="10.3736170"><ele>1377.7</ele></trkpt>
+      <trkpt lat="47.0554250" lon="10.3732660"><ele>1387.0</ele></trkpt>
+      <trkpt lat="47.0552490" lon="10.3732180"><ele>1393.2</ele></trkpt>
+      <trkpt lat="47.0546330" lon="10.3738730"><ele>1419.3</ele></trkpt>
+      <trkpt lat="47.0545570" lon="10.3738610"><ele>1422.0</ele></trkpt>
+      <trkpt lat="47.0545760" lon="10.3740780"><ele>1427.1</ele></trkpt>
+      <trkpt lat="47.0544660" lon="10.3741020"><ele>1430.9</ele></trkpt>
+      <trkpt lat="47.0544250" lon="10.3741660"><ele>1433.0</ele></trkpt>
+      <trkpt lat="47.0542450" lon="10.3742290"><ele>1439.4</ele></trkpt>
+      <trkpt lat="47.0537350" lon="10.3746960"><ele>1461.2</ele></trkpt>
+      <trkpt lat="47.0536350" lon="10.3748620"><ele>1466.7</ele></trkpt>
+      <trkpt lat="47.0534600" lon="10.3749690"><ele>1473.6</ele></trkpt>
+      <trkpt lat="47.0532360" lon="10.3753530"><ele>1486.2</ele></trkpt>
+      <trkpt lat="47.0530260" lon="10.3755430"><ele>1495.2</ele></trkpt>
+      <trkpt lat="47.0523600" lon="10.3760260"><ele>1517.3</ele></trkpt>
+      <trkpt lat="47.0521470" lon="10.3761050"><ele>1522.8</ele></trkpt>
+      <trkpt lat="47.0516450" lon="10.3764010"><ele>1536.2</ele></trkpt>
+      <trkpt lat="47.0517190" lon="10.3765150"><ele>1538.8</ele></trkpt>
+  </trkseg></trk>
+</gpx>

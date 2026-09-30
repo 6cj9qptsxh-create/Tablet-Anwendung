@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Diasbahn Bergstation → Abzweigung Niederelbe Hütte</name></metadata>
+  <trk><name>Diasbahn Bergstation → Abzweigung Niederelbe Hütte</name><trkseg>
+      <trkpt lat="47.0671150" lon="10.3590230"><ele>1829.4</ele></trkpt>
+      <trkpt lat="47.0672290" lon="10.3590390"><ele>1829.4</ele></trkpt>
+      <trkpt lat="47.0672350" lon="10.3589700"><ele>1829.4</ele></trkpt>
+      <trkpt lat="47.0670040" lon="10.3583260"><ele>1829.4</ele></trkpt>
+      <trkpt lat="47.0670720" lon="10.3583480"><ele>1829.4</ele></trkpt>
+      <trkpt lat="47.0674160" lon="10.3581240"><ele>1832.1</ele></trkpt>
+      <trkpt lat="47.0674290" lon="10.3580240"><ele>1833.0</ele></trkpt>
+      <trkpt lat="47.0673820" lon="10.3578630"><ele>1834.6</ele></trkpt>
+      <trkpt lat="47.0673840" lon="10.3576450"><ele>1836.5</ele></trkpt>
+      <trkpt lat="47.0673440" lon="10.3575450"><ele>1837.5</ele></trkpt>
+      <trkpt lat="47.0669790" lon="10.3573850"><ele>1842.5</ele></trkpt>
+      <trkpt lat="47.0668510" lon="10.3572030"><ele>1844.9</ele></trkpt>
+      <trkpt lat="47.0667890" lon="10.3571950"><ele>1845.7</ele></trkpt>
+      <trkpt lat="47.0666600" lon="10.3569380"><ele>1848.5</ele></trkpt>
+      <trkpt lat="47.0666790" lon="10.3567450"><ele>1850.3</ele></trkpt>
+      <trkpt lat="47.0667210" lon="10.3565920"><ele>1851.8</ele></trkpt>
+      <trkpt lat="47.0669990" lon="10.3564160"><ele>1856.2</ele></trkpt>
+      <trkpt lat="47.0670900" lon="10.3563900"><ele>1857.7</ele></trkpt>
+      <trkpt lat="47.0672120" lon="10.3564050"><ele>1859.6</ele></trkpt>
+      <trkpt lat="47.0675810" lon="10.3566930"><ele>1866.0</ele></trkpt>
+      <trkpt lat="47.0676460" lon="10.3567430"><ele>1867.2</ele></trkpt>
+      <trkpt lat="47.0677350" lon="10.3566230"><ele>1869.0</ele></trkpt>
+  </trkseg></trk>
+</gpx>

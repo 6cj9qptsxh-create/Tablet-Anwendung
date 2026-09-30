@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Abzweigung Fahrweg → schöne Aussicht</name></metadata>
+  <trk><name>Abzweigung Fahrweg → schöne Aussicht</name><trkseg>
+      <trkpt lat="47.0517190" lon="10.3765150"><ele>1538.8</ele></trkpt>
+      <trkpt lat="47.0514870" lon="10.3765390"><ele>1544.6</ele></trkpt>
+      <trkpt lat="47.0513780" lon="10.3765070"><ele>1547.4</ele></trkpt>
+      <trkpt lat="47.0513350" lon="10.3765640"><ele>1548.8</ele></trkpt>
+      <trkpt lat="47.0513740" lon="10.3766480"><ele>1550.5</ele></trkpt>
+      <trkpt lat="47.0512500" lon="10.3765570"><ele>1552.8</ele></trkpt>
+      <trkpt lat="47.0512230" lon="10.3764340"><ele>1554.1</ele></trkpt>
+      <trkpt lat="47.0512200" lon="10.3763900"><ele>1554.5</ele></trkpt>
+      <trkpt lat="47.0512340" lon="10.3762120"><ele>1556.2</ele></trkpt>
+      <trkpt lat="47.0514130" lon="10.3757690"><ele>1561.1</ele></trkpt>
+      <trkpt lat="47.0522080" lon="10.3742000"><ele>1579.9</ele></trkpt>
+      <trkpt lat="47.0524430" lon="10.3735930"><ele>1587.0</ele></trkpt>
+      <trkpt lat="47.0525660" lon="10.3731550"><ele>1591.8</ele></trkpt>
+      <trkpt lat="47.0525700" lon="10.3729740"><ele>1593.7</ele></trkpt>
+      <trkpt lat="47.0526690" lon="10.3726070"><ele>1597.7</ele></trkpt>
+      <trkpt lat="47.0526730" lon="10.3723330"><ele>1600.5</ele></trkpt>
+      <trkpt lat="47.0523120" lon="10.3730330"><ele>1607.9</ele></trkpt>
+      <trkpt lat="47.0522040" lon="10.3735520"><ele>1612.1</ele></trkpt>
+      <trkpt lat="47.0521680" lon="10.3727350"><ele>1618.5</ele></trkpt>
+      <trkpt lat="47.0522920" lon="10.3719130"><ele>1623.9</ele></trkpt>
+      <trkpt lat="47.0525260" lon="10.3715680"><ele>1624.2</ele></trkpt>
+      <trkpt lat="47.0525220" lon="10.3713060"><ele>1624.4</ele></trkpt>
+      <trkpt lat="47.0523330" lon="10.3706870"><ele>1624.8</ele></trkpt>
+      <trkpt lat="47.0523090" lon="10.3700820"><ele>1625.2</ele></trkpt>
+      <trkpt lat="47.0523840" lon="10.3696820"><ele>1625.4</ele></trkpt>
+      <trkpt lat="47.0524110" lon="10.3690250"><ele>1624.6</ele></trkpt>
+      <trkpt lat="47.0524030" lon="10.3686210"><ele>1624.1</ele></trkpt>
+      <trkpt lat="47.0523520" lon="10.3682530"><ele>1623.7</ele></trkpt>
+      <trkpt lat="47.0522440" lon="10.3680530"><ele>1623.3</ele></trkpt>
+  </trkseg></trk>
+</gpx>

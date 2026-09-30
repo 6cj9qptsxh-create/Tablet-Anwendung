@@ -1,0 +1,317 @@
+{
+  "note": "Segmente an Abzw: Durrich→Abzw, Abzw↔Lichtsee (Spur), Abzw→Blankasee. Kein Lichtsee→Blankasee. Abstieg Riffler→Edmund→Diasbahn.",
+  "snap": {
+    "Haus Meli": {
+      "idx": 0,
+      "m": 0.6
+    },
+    "Durrich Alpe": {
+      "idx": 202,
+      "m": 0.0
+    },
+    "Abzweigung Lichtsee": {
+      "idx": 233,
+      "m": 0.0
+    },
+    "Lichtsee": {
+      "idx": 238,
+      "m": 0.0
+    },
+    "Abzweigung nach Spur": {
+      "idx": 243,
+      "m": 0.0
+    },
+    "Blankasee": {
+      "idx": 332,
+      "m": 0.0
+    },
+    "Edmund aufwaerts": {
+      "idx": 452,
+      "m": 0.0
+    },
+    "Hoher Riffler": {
+      "idx": 581,
+      "m": 0.0
+    },
+    "Edmund abstieg": {
+      "idx": 709,
+      "m": 11.5
+    },
+    "Diasbahn Berg": {
+      "idx": 965,
+      "m": 0.0
+    }
+  },
+  "nodes": [
+    {
+      "name": "Haus Meli",
+      "lat": 47.069961,
+      "lng": 10.398723,
+      "flags": [
+        "start"
+      ]
+    },
+    {
+      "name": "Durrich Alpe",
+      "lat": 47.085255,
+      "lng": 10.39396,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Abzweigung Lichtsee",
+      "lat": 47.089566,
+      "lng": 10.389693,
+      "flags": [
+        "junction"
+      ]
+    },
+    {
+      "name": "Lichtsee",
+      "lat": 47.089489,
+      "lng": 10.388942,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Blankasee",
+      "lat": 47.099581,
+      "lng": 10.3764,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Edmund-Graf-Hütte",
+      "lat": 47.105967,
+      "lng": 10.355834,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Hoher Riffler",
+      "lat": 47.115954,
+      "lng": 10.370957,
+      "flags": [
+        "highlight"
+      ]
+    },
+    {
+      "name": "Diasbahn Bergstation",
+      "lat": 47.067115,
+      "lng": 10.359023,
+      "flags": [
+        "seilbahn"
+      ]
+    },
+    {
+      "name": "Diasbahn Talstation",
+      "lat": 47.060256,
+      "lng": 10.374533,
+      "flags": [
+        "seilbahn"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "name": "Haus Meli → Durrich Alpe",
+      "from": "Haus Meli",
+      "to": "Durrich Alpe",
+      "gpx_file": "hin_haus-meli-durrich-alpe.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 3.85,
+      "elevation_m": 678,
+      "point_count": 203
+    },
+    {
+      "name": "Durrich Alpe → Abzweigung Lichtsee",
+      "from": "Durrich Alpe",
+      "to": "Abzweigung Lichtsee",
+      "gpx_file": "hin_durrich-alpe-abzweigung-lichtsee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 0.65,
+      "elevation_m": 100,
+      "point_count": 32
+    },
+    {
+      "name": "Abzweigung Lichtsee → Lichtsee",
+      "from": "Abzweigung Lichtsee",
+      "to": "Lichtsee",
+      "gpx_file": "hin_abzweigung-lichtsee-lichtsee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 0.06,
+      "elevation_m": 7,
+      "point_count": 6
+    },
+    {
+      "name": "Lichtsee → Abzweigung Lichtsee",
+      "from": "Lichtsee",
+      "to": "Abzweigung Lichtsee",
+      "gpx_file": "hin_lichtsee-abzweigung-lichtsee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 0.06,
+      "elevation_m": 7,
+      "point_count": 6
+    },
+    {
+      "name": "Abzweigung Lichtsee → Blankasee",
+      "from": "Abzweigung Lichtsee",
+      "to": "Blankasee",
+      "gpx_file": "hin_abzweigung-lichtsee-blankasee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 1.94,
+      "elevation_m": 402,
+      "point_count": 90
+    },
+    {
+      "name": "Blankasee → Edmund-Graf-Hütte",
+      "from": "Blankasee",
+      "to": "Edmund-Graf-Hütte",
+      "gpx_file": "hin_blankasee-edmund-graf-h-tte.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 2.31,
+      "elevation_m": 226,
+      "point_count": 121
+    },
+    {
+      "name": "Edmund-Graf-Hütte → Hoher Riffler",
+      "from": "Edmund-Graf-Hütte",
+      "to": "Hoher Riffler",
+      "gpx_file": "hin_edmund-graf-h-tte-hoher-riffler.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 2.38,
+      "elevation_m": 685,
+      "point_count": 130
+    },
+    {
+      "name": "Hoher Riffler → Edmund-Graf-Hütte",
+      "from": "Hoher Riffler",
+      "to": "Edmund-Graf-Hütte",
+      "gpx_file": "hin_hoher-riffler-edmund-graf-h-tte.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 2.36,
+      "elevation_m": 4,
+      "point_count": 129
+    },
+    {
+      "name": "Edmund-Graf-Hütte → Diasbahn Bergstation",
+      "from": "Edmund-Graf-Hütte",
+      "to": "Diasbahn Bergstation",
+      "gpx_file": "hin_edmund-graf-h-tte-diasbahn-bergstation.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "hin",
+      "distance_km": 6.55,
+      "elevation_m": 287,
+      "point_count": 257
+    },
+    {
+      "name": "Durrich Alpe → Haus Meli",
+      "from": "Durrich Alpe",
+      "to": "Haus Meli",
+      "gpx_file": "retour_durrich-alpe-haus-meli.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "retour",
+      "distance_km": 3.85,
+      "elevation_m": 0,
+      "point_count": 203
+    },
+    {
+      "name": "Abzweigung Lichtsee → Durrich Alpe",
+      "from": "Abzweigung Lichtsee",
+      "to": "Durrich Alpe",
+      "gpx_file": "retour_abzweigung-lichtsee-durrich-alpe.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "retour",
+      "distance_km": 0.65,
+      "elevation_m": 0,
+      "point_count": 32
+    },
+    {
+      "name": "Blankasee → Abzweigung Lichtsee",
+      "from": "Blankasee",
+      "to": "Abzweigung Lichtsee",
+      "gpx_file": "retour_blankasee-abzweigung-lichtsee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "retour",
+      "distance_km": 1.94,
+      "elevation_m": 0,
+      "point_count": 90
+    },
+    {
+      "name": "Edmund-Graf-Hütte → Blankasee",
+      "from": "Edmund-Graf-Hütte",
+      "to": "Blankasee",
+      "gpx_file": "retour_edmund-graf-h-tte-blankasee.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "retour",
+      "distance_km": 2.31,
+      "elevation_m": 256,
+      "point_count": 121
+    },
+    {
+      "name": "Diasbahn Bergstation → Edmund-Graf-Hütte",
+      "from": "Diasbahn Bergstation",
+      "to": "Edmund-Graf-Hütte",
+      "gpx_file": "retour_diasbahn-bergstation-edmund-graf-h-tte.gpx",
+      "bidirectional": false,
+      "out_and_back": false,
+      "is_highlight": true,
+      "direction": "retour",
+      "distance_km": 6.55,
+      "elevation_m": 817,
+      "point_count": 257
+    },
+    {
+      "name": "Diasbahn Bergstation → Diasbahn Talstation",
+      "from": "Diasbahn Bergstation",
+      "to": "Diasbahn Talstation",
+      "distance_km": 0.0,
+      "elevation_m": 0,
+      "point_count": 2,
+      "bidirectional": true,
+      "out_and_back": false,
+      "is_highlight": false,
+      "transport": "cable_car",
+      "gpx_file": "seilbahn_diasbahn-berg-tal.gpx",
+      "direction": "seilbahn"
+    }
+  ]
+}

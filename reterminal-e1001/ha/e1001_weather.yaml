@@ -1,0 +1,3 @@
+# Wetter für Seite 2 kommt aus der Tablet-App.
+# Sensoren stehen in e1001_rest.yaml unter rest: (nicht mehr unter template:).
+# Den früheren template-Block mit weather.get_forecasts entfernen.

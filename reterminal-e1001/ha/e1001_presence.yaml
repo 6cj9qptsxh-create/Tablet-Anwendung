@@ -1,0 +1,36 @@
+# Anwesenheit unter "template:".
+# Wetter nicht mehr hier: das kam von weather.forecast_home.
+# Die Sensoren E1001 Wetter Tage/Stunden stehen in e1001_rest.yaml unter rest:.
+
+template:
+  # Anwesenheit: Handy da = device_tracker home und Schlafen-Helfer aus.
+  # Nachtdienst: nicht zu Hause → zählt nicht, auch wenn wach. Licht bleibt Backup.
+  - binary_sensor:
+      - name: E1001 Jemand da
+        unique_id: e1001_jemand_da
+        device_class: presence
+        state: >
+          {% set lukas_da = is_state('device_tracker.iphone_von_lukas', 'home')
+              and is_state('input_boolean.lukas_schlafen', 'off') %}
+          {% set melanie_da = is_state('device_tracker.iphone_von_melanie', 'home')
+              and is_state('input_boolean.melanie_schlafen', 'off') %}
+          {% set licht = is_state('light.led_buro', 'on')
+              or is_state('light.led_tv', 'on')
+              or is_state('light.stehlampe', 'on') %}
+          {{ lukas_da or melanie_da or licht }}
+        attributes:
+          modus: Zuhause und wach, oder Licht
+          grund: >
+            {% set ns = namespace(teile=[]) %}
+            {% if is_state('device_tracker.iphone_von_lukas', 'home')
+                and is_state('input_boolean.lukas_schlafen', 'off') %}
+              {% set ns.teile = ns.teile + ['Lukas zu Hause'] %}
+            {% endif %}
+            {% if is_state('device_tracker.iphone_von_melanie', 'home')
+                and is_state('input_boolean.melanie_schlafen', 'off') %}
+              {% set ns.teile = ns.teile + ['Melanie zu Hause'] %}
+            {% endif %}
+            {% if is_state('light.led_buro', 'on') %}{% set ns.teile = ns.teile + ['LED Büro'] %}{% endif %}
+            {% if is_state('light.led_tv', 'on') %}{% set ns.teile = ns.teile + ['LED TV'] %}{% endif %}
+            {% if is_state('light.stehlampe', 'on') %}{% set ns.teile = ns.teile + ['Stehlampe'] %}{% endif %}
+            {{ ns.teile | join(', ') if ns.teile else 'nichts — kein Refresh' }}

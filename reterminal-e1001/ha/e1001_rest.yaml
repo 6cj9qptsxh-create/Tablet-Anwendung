@@ -1,0 +1,36 @@
+# Referenz: denselben Block direkt unter "rest:" in configuration.yaml halten.
+# Include ist optional, nicht nötig.
+
+- resource: http://192.168.1.10:8081/api/e1001/agenda
+  scan_interval: 300
+  sensor:
+    - name: E1001 Schichten
+      unique_id: e1001_schichten
+      value_template: "{{ value_json.shifts_count }}"
+      json_attributes:
+        - shifts_text
+    - name: E1001 Termine
+      unique_id: e1001_termine
+      value_template: "{{ value_json.notes_count }}"
+      json_attributes:
+        - notes_text
+        - birthdays_text
+    - name: E1001 Geburtstage
+      unique_id: e1001_geburtstage
+      value_template: "{{ value_json.birthdays_count }}"
+      json_attributes:
+        - birthdays_text
+
+- resource: http://192.168.1.10:8081/api/e1001/weather
+  scan_interval: 900
+  sensor:
+    - name: E1001 Wetter Tage
+      unique_id: e1001_wetter_tage
+      value_template: "{{ value_json.days_count }}"
+      json_attributes:
+        - days_text
+    - name: E1001 Wetter Stunden
+      unique_id: e1001_wetter_stunden
+      value_template: "{{ value_json.hours_count }}"
+      json_attributes:
+        - hours_text

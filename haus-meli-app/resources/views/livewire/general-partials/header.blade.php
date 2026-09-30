@@ -1,0 +1,17 @@
+<div id="info-card" class="card info-card-head" x-show="currentTab !== 'events'" x-cloak>
+
+		<div id="header-weather" class="header-weather">
+			<span id="hw-icon">⛅</span>
+			<span id="hw-temp">--°C</span>
+		</div>
+
+		<div class="header-tools">
+			<button class="shell-btn" id="lang-switch" onclick="toggleLanguage()" style="font-size: 1.2rem;">🇩🇪</button>
+			<button type="button" class="header-pay" title="Zahlen" onclick="document.getElementById('checkout-overlay').style.display='flex'">
+				<span class="material-symbols-rounded">receipt_long</span>
+			</button>
+		</div>
+
+		<div id="header-clock">00:00:00</div>
+
+	</div>

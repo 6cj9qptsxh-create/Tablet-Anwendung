@@ -1,0 +1,230 @@
+substitutions:
+  name: reterminal-e1001
+  friendly_name: E1001
+
+  wz_temp: sensor.sonoff_temperatursensor_snzb_02p_temperatur_2
+  wz_hum: sensor.sonoff_temperatursensor_snzb_02p_luftfeuchtigkeit_2
+  terr_temp: sensor.sonoff_temperatursensor_snzb_02p_temperatur
+  terr_hum: sensor.sonoff_temperatursensor_snzb_02p_luftfeuchtigkeit
+  agenda_shifts: sensor.e1001_schichten
+  agenda_notes: sensor.e1001_termine
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  on_boot:
+    priority: 600
+    then:
+      - output.turn_on: bsp_battery_enable
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+logger:
+  hardware_uart: UART0
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "E1001-Setup"
+    password: "hausmeli123"
+
+captive_portal:
+
+spi:
+  clk_pin: GPIO7
+  mosi_pin: GPIO9
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Vienna
+
+output:
+  - platform: gpio
+    pin: GPIO21
+    id: bsp_battery_enable
+
+sensor:
+  - platform: homeassistant
+    id: wz_temp
+    entity_id: ${wz_temp}
+  - platform: homeassistant
+    id: wz_hum
+    entity_id: ${wz_hum}
+  - platform: homeassistant
+    id: terr_temp
+    entity_id: ${terr_temp}
+  - platform: homeassistant
+    id: terr_hum
+    entity_id: ${terr_hum}
+
+text_sensor:
+  - platform: homeassistant
+    id: schichten_text
+    entity_id: ${agenda_shifts}
+    attribute: shifts_text
+  - platform: homeassistant
+    id: termine_text
+    entity_id: ${agenda_notes}
+    attribute: notes_text
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      mode: INPUT_PULLUP
+      inverted: true
+    id: taste_rechts
+    name: "Aktualisieren"
+    on_press:
+      then:
+        - component.update: epaper_display
+
+font:
+  - file: "gfonts://Inter@700"
+    id: font_time
+    size: 28
+    glyphs: &de_glyphs
+      - " !%&()+,-_./:?=°"
+      - "0123456789"
+      - "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      - "abcdefghijklmnopqrstuvwxyz"
+      - "ÄÖÜäöüß"
+  - file: "gfonts://Inter@700"
+    id: font_value
+    size: 32
+    glyphs: *de_glyphs
+  - file: "gfonts://Inter@700"
+    id: font_label
+    size: 15
+    glyphs: *de_glyphs
+  - file: "gfonts://Inter@500"
+    id: font_small
+    size: 14
+    glyphs: *de_glyphs
+
+display:
+  - platform: waveshare_epaper
+    id: epaper_display
+    model: 7.50inv2alt
+    cs_pin: GPIO10
+    dc_pin: GPIO11
+    reset_pin:
+      number: GPIO12
+      inverted: false
+    busy_pin:
+      number: GPIO13
+      inverted: true
+    update_interval: 300s
+    lambda: |-
+      it.fill(Color::WHITE);
+      auto now = id(ha_time).now();
+      if (now.is_valid()) {
+        it.strftime(788, 10, id(font_time), TextAlign::TOP_RIGHT, "%H:%M", now);
+      }
+
+      it.print(24, 12, id(font_label), "WOHNZIMMER");
+      it.print(280, 12, id(font_label), "TERRASSE");
+
+      if (!isnan(id(wz_temp).state))
+        it.printf(24, 34, id(font_value), "%.1f C", id(wz_temp).state);
+      else
+        it.print(24, 34, id(font_value), "-");
+      if (!isnan(id(wz_hum).state))
+        it.printf(24, 72, id(font_small), "%.0f %%", id(wz_hum).state);
+
+      if (!isnan(id(terr_temp).state))
+        it.printf(280, 34, id(font_value), "%.1f C", id(terr_temp).state);
+      else
+        it.print(280, 34, id(font_value), "-");
+      if (!isnan(id(terr_hum).state))
+        it.printf(280, 72, id(font_small), "%.0f %%", id(terr_hum).state);
+
+      it.filled_rectangle(24, 98, 752, 2);
+
+      it.print(24, 110, id(font_label), "SCHICHTEN");
+      it.print(412, 110, id(font_label), "TERMINE + GEBURTSTAGE");
+      it.filled_rectangle(400, 110, 2, 350);
+
+      std::string shifts = id(schichten_text).has_state() ? id(schichten_text).state : "";
+      std::string notes = id(termine_text).has_state() ? id(termine_text).state : "";
+
+      if (shifts.empty()) {
+        it.print(24, 134, id(font_small), "keine Schichten");
+      } else {
+        int y = 134;
+        std::string line;
+        // Handle both "real" newlines ("\n"/"\r") and JSON-escaped literals ("\\n"/"\\r").
+        auto emit_line = [&](int x, int &y_ref, std::string &current_line) {
+          if (!current_line.empty() && y_ref <= 460) {
+            it.printf(x, y_ref, id(font_small), "%s", current_line.c_str());
+            y_ref += 22;
+          }
+          current_line.clear();
+        };
+
+        for (size_t i = 0; i < shifts.size(); i++) {
+          char c = shifts[i];
+          if (c == '\n' || c == '\r') {
+            emit_line(24, y, line);
+            continue;
+          }
+          if (c == '\\' && (i + 1) < shifts.size()) {
+            char n = shifts[i + 1];
+            if (n == 'n' || n == 'r') {
+              emit_line(24, y, line);
+              i++;  // consume the 'n'/'r'
+              continue;
+            }
+          }
+          line += c;
+        }
+        emit_line(24, y, line);
+      }
+
+      if (notes.empty()) {
+        it.print(412, 134, id(font_small), "keine Termine");
+      } else {
+        int y = 134;
+        std::string line;
+        // Handle both "real" newlines ("\n"/"\r") and JSON-escaped literals ("\\n"/"\\r").
+        auto emit_line = [&](int x, int &y_ref, std::string &current_line) {
+          if (!current_line.empty() && y_ref <= 460) {
+            it.printf(x, y_ref, id(font_small), "%s", current_line.c_str());
+            y_ref += 22;
+          }
+          current_line.clear();
+        };
+
+        for (size_t i = 0; i < notes.size(); i++) {
+          char c = notes[i];
+          if (c == '\n' || c == '\r') {
+            emit_line(412, y, line);
+            continue;
+          }
+          if (c == '\\' && (i + 1) < notes.size()) {
+            char n = notes[i + 1];
+            if (n == 'n' || n == 'r') {
+              emit_line(412, y, line);
+              i++;  // consume the 'n'/'r'
+              continue;
+            }
+          }
+          line += c;
+        }
+        emit_line(412, y, line);
+      }

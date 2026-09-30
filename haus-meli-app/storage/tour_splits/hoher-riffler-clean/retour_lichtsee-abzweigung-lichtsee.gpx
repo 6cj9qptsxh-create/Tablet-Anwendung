@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Lichtsee → Abzweigung Lichtsee</name></metadata>
+  <trk><name>Lichtsee → Abzweigung Lichtsee</name><trkseg>
+      <trkpt lat="47.0894890" lon="10.3889420"><ele>1998.9</ele></trkpt>
+      <trkpt lat="47.0895220" lon="10.3889590"><ele>1998.4</ele></trkpt>
+      <trkpt lat="47.0894890" lon="10.3892230"><ele>1995.8</ele></trkpt>
+      <trkpt lat="47.0895160" lon="10.3893300"><ele>1994.7</ele></trkpt>
+      <trkpt lat="47.0895130" lon="10.3895660"><ele>1992.4</ele></trkpt>
+      <trkpt lat="47.0895660" lon="10.3896930"><ele>1990.9</ele></trkpt>
+  </trkseg></trk>
+</gpx>

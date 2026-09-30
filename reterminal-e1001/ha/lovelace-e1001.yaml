@@ -1,0 +1,66 @@
+title: E1001
+views:
+  - title: Übersicht
+    path: e1001
+    type: masonry
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            title: Wohnzimmer
+            entities:
+              - entity: sensor.sonoff_temperatursensor_snzb_02p_temperatur_2
+                name: Temperatur
+              - entity: sensor.sonoff_temperatursensor_snzb_02p_luftfeuchtigkeit_2
+                name: Luftfeuchte
+          - type: entities
+            title: Terrasse
+            entities:
+              - entity: sensor.sonoff_temperatursensor_snzb_02p_temperatur
+                name: Temperatur
+              - entity: sensor.sonoff_temperatursensor_snzb_02p_luftfeuchtigkeit
+                name: Luftfeuchte
+
+      - type: horizontal-stack
+        cards:
+          - type: markdown
+            content: >
+              ### Termine
+
+              {% set t = state_attr('sensor.e1001_termine', 'notes_text') %}
+              {% if t %}
+              {% for line in t.split('\n') %}
+              - {{ line }}
+              {% endfor %}
+              {% else %}
+              keine Termine
+              {% endif %}
+          - type: vertical-stack
+            cards:
+              - type: markdown
+                content: >
+                  ### Geburtstage
+
+                  {% set b = state_attr('sensor.e1001_geburtstage', 'birthdays_text') %}
+                  {% if not b %}
+                  {% set b = state_attr('sensor.e1001_termine', 'birthdays_text') %}
+                  {% endif %}
+                  {% if b %}
+                  {% for line in b.split('\n') %}
+                  - {{ line }}
+                  {% endfor %}
+                  {% else %}
+                  keine Geburtstage
+                  {% endif %}
+              - type: markdown
+                content: >
+                  ### Schichten
+
+                  {% set t = state_attr('sensor.e1001_schichten', 'shifts_text') %}
+                  {% if t %}
+                  {% for line in t.split('\n') %}
+                  - {{ line }}
+                  {% endfor %}
+                  {% else %}
+                  keine Schichten
+                  {% endif %}

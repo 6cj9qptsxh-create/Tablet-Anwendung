@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Haus Meli Split" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Visnitz Alpe → Abzweigung Mittagkopf</name></metadata>
+  <trk><name>Visnitz Alpe → Abzweigung Mittagkopf</name><trkseg>
+      <trkpt lat="47.0378900" lon="10.3719550"><ele>1828.3</ele></trkpt>
+      <trkpt lat="47.0374840" lon="10.3717820"><ele>1832.9</ele></trkpt>
+      <trkpt lat="47.0372800" lon="10.3717980"><ele>1835.2</ele></trkpt>
+      <trkpt lat="47.0363640" lon="10.3717360"><ele>1845.4</ele></trkpt>
+      <trkpt lat="47.0361940" lon="10.3719520"><ele>1847.9</ele></trkpt>
+      <trkpt lat="47.0358600" lon="10.3719100"><ele>1850.6</ele></trkpt>
+      <trkpt lat="47.0354640" lon="10.3721380"><ele>1853.6</ele></trkpt>
+      <trkpt lat="47.0354150" lon="10.3722040"><ele>1854.1</ele></trkpt>
+      <trkpt lat="47.0354010" lon="10.3722530"><ele>1854.4</ele></trkpt>
+      <trkpt lat="47.0353970" lon="10.3723450"><ele>1854.8</ele></trkpt>
+      <trkpt lat="47.0361910" lon="10.3728660"><ele>1861.0</ele></trkpt>
+      <trkpt lat="47.0365120" lon="10.3730030"><ele>1864.7</ele></trkpt>
+      <trkpt lat="47.0369370" lon="10.3730950"><ele>1869.9</ele></trkpt>
+      <trkpt lat="47.0370110" lon="10.3732460"><ele>1871.5</ele></trkpt>
+      <trkpt lat="47.0379320" lon="10.3737740"><ele>1883.5</ele></trkpt>
+      <trkpt lat="47.0385470" lon="10.3744220"><ele>1894.8</ele></trkpt>
+      <trkpt lat="47.0390740" lon="10.3749190"><ele>1904.1</ele></trkpt>
+      <trkpt lat="47.0394320" lon="10.3755660"><ele>1911.9</ele></trkpt>
+      <trkpt lat="47.0396220" lon="10.3758040"><ele>1914.6</ele></trkpt>
+      <trkpt lat="47.0398580" lon="10.3760010"><ele>1917.5</ele></trkpt>
+      <trkpt lat="47.0401850" lon="10.3759710"><ele>1921.1</ele></trkpt>
+      <trkpt lat="47.0410860" lon="10.3765730"><ele>1932.2</ele></trkpt>
+      <trkpt lat="47.0416520" lon="10.3773400"><ele>1942.6</ele></trkpt>
+      <trkpt lat="47.0420280" lon="10.3775760"><ele>1948.0</ele></trkpt>
+      <trkpt lat="47.0423420" lon="10.3784730"><ele>1957.2</ele></trkpt>
+      <trkpt lat="47.0426880" lon="10.3789180"><ele>1963.1</ele></trkpt>
+      <trkpt lat="47.0428280" lon="10.3793010"><ele>1967.0</ele></trkpt>
+      <trkpt lat="47.0433130" lon="10.3795050"><ele>1973.5</ele></trkpt>
+      <trkpt lat="47.0435970" lon="10.3797650"><ele>1977.5</ele></trkpt>
+      <trkpt lat="47.0437340" lon="10.3806360"><ele>1981.4</ele></trkpt>
+      <trkpt lat="47.0438530" lon="10.3809660"><ele>1983.0</ele></trkpt>
+      <trkpt lat="47.0446670" lon="10.3813080"><ele>1988.5</ele></trkpt>
+      <trkpt lat="47.0450450" lon="10.3816670"><ele>1993.8</ele></trkpt>
+      <trkpt lat="47.0458260" lon="10.3819540"><ele>2003.5</ele></trkpt>
+      <trkpt lat="47.0459590" lon="10.3821490"><ele>2005.8</ele></trkpt>
+      <trkpt lat="47.0461870" lon="10.3828840"><ele>2012.7</ele></trkpt>
+      <trkpt lat="47.0463030" lon="10.3834430"><ele>2018.1</ele></trkpt>
+      <trkpt lat="47.0463300" lon="10.3838230"><ele>2021.6</ele></trkpt>
+      <trkpt lat="47.0466540" lon="10.3843810"><ele>2028.4</ele></trkpt>
+      <trkpt lat="47.0468050" lon="10.3845490"><ele>2031.0</ele></trkpt>
+      <trkpt lat="47.0470240" lon="10.3852270"><ele>2035.2</ele></trkpt>
+      <trkpt lat="47.0472170" lon="10.3855050"><ele>2035.7</ele></trkpt>
+      <trkpt lat="47.0473560" lon="10.3856320"><ele>2036.0</ele></trkpt>
+      <trkpt lat="47.0475120" lon="10.3856580"><ele>2036.2</ele></trkpt>
+      <trkpt lat="47.0481080" lon="10.3852240"><ele>2037.3</ele></trkpt>
+      <trkpt lat="47.0484370" lon="10.3851440"><ele>2038.2</ele></trkpt>
+      <trkpt lat="47.0488070" lon="10.3851100"><ele>2044.0</ele></trkpt>
+      <trkpt lat="47.0490100" lon="10.3853950"><ele>2048.4</ele></trkpt>
+      <trkpt lat="47.0491780" lon="10.3854600"><ele>2051.1</ele></trkpt>
+      <trkpt lat="47.0497780" lon="10.3854140"><ele>2060.5</ele></trkpt>
+      <trkpt lat="47.0499870" lon="10.3856000"><ele>2064.3</ele></trkpt>
+      <trkpt lat="47.0501490" lon="10.3859770"><ele>2072.3</ele></trkpt>
+  </trkseg></trk>
+</gpx>
