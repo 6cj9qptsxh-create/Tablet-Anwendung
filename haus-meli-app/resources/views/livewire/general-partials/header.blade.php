@@ -6,7 +6,7 @@
 		</div>
 
 		<div class="header-tools">
-			<button class="shell-btn" id="lang-switch" onclick="toggleLanguage()" style="font-size: 1.2rem;">🇩🇪</button>
+			<button class="shell-btn" id="lang-switch" onclick="toggleLanguage()">🇩🇪</button>
 			<button type="button" class="header-pay" title="Zahlen" onclick="document.getElementById('checkout-overlay').style.display='flex'">
 				<span class="material-symbols-rounded">receipt_long</span>
 			</button>

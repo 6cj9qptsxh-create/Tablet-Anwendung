@@ -101,7 +101,8 @@ body.is-cal-tab .cal-toolbar {
 body.is-cal-tab .cal-tab-pane {
     flex: 0 0 100%;
     width: 100%;
-    height: 100%;
+    height: auto;
+    align-self: stretch;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -117,9 +118,10 @@ body.is-cal-tab .cal-tab-pane {
 .cal-app {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1 1 0;
     min-height: 0;
-    height: 100%;
+    height: auto;
+    width: 100%;
     gap: var(--spacing);
 }
 
@@ -431,11 +433,21 @@ body.is-cal-tab .cal-tab-pane {
    OUTLOOK KALENDER (2D-App-Scroll System)
    ========================================= */
 .outlook-calendar {
-    flex: 1;
+    flex: 1 1 0;
+    align-self: stretch;
     min-height: 0;
     height: auto;
+    width: 100%;
     overflow: hidden;
     container-type: inline-size;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.outlook-calendar::after {
+    content: none;
 }
 
 .outlook-calendar.cal-view-agenda {
