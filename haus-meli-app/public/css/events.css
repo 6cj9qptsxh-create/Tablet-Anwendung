@@ -88,17 +88,10 @@ body.page-content.is-cal-tab {
     max-height: 100dvh;
     overflow: hidden !important;
     overscroll-behavior: none;
-    padding-top: 0;
-}
-
-body.is-cal-tab .shell-bar,
-body.is-cal-tab #info-card {
-    display: none !important;
 }
 
 body.is-cal-tab .shell-nav {
     flex: 0 0 auto;
-    padding-top: max(4px, env(safe-area-inset-top, 0px));
 }
 
 body.is-cal-tab .cal-toolbar {
@@ -117,7 +110,7 @@ body.is-cal-tab .cal-tab-pane {
 
 @media (max-width: 767px) {
     body.page-content.is-cal-tab {
-        padding-top: 0;
+        padding-top: var(--safe-top);
     }
 }
 
