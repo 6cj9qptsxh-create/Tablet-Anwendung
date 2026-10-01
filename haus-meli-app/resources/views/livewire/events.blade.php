@@ -775,7 +775,7 @@
                     this.pointerId = e.pointerId;
                     this.startX = e.clientX;
                     this.startY = e.clientY;
-                    try { e.currentTarget && e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+                    this._capEl = e.currentTarget;
 
                     const onEvent = !!e.target.closest('.events-month-pill');
                     const startDay = e.target.closest('.events-month-day');
@@ -794,6 +794,7 @@
                         this.moved = true;
                         this.axis = 'select';
                         this.selectedDates = [startDate];
+                        try { this._capEl && this._capEl.setPointerCapture(this.pointerId); } catch (_) {}
                         try { if (navigator.vibrate) navigator.vibrate([18, 35, 22]); } catch (_) {}
                         try { document.body.classList.add('cal-no-select'); } catch (_) {}
                     }, 480);
@@ -825,6 +826,7 @@
                             this.axis = null;
                             return;
                         }
+                        try { this._capEl && this._capEl.setPointerCapture(e.pointerId); } catch (_) {}
                         this.moved = true;
                     }
                     if (this.axis !== 'y') return;

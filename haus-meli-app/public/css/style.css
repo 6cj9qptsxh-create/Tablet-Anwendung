@@ -321,7 +321,7 @@ body {
        Sorgt dafür, dass die Seite bei wenigen Produkten exakt bis zum
        Andocken scrollbar ist - nicht weiter (kein "Herausschieben" des Carts). */
     #tab-order.cart-is-open .shop-content {
-        min-height: calc(100dvh - var(--cart-dock-top, 0px) - var(--spacing));
+        min-height: calc(var(--tab-pane-h, 100dvh) - var(--cart-dock-top, 0px));
     }
 }
 
@@ -421,7 +421,7 @@ body {
            (bündig mit dem Seitenraster). Kein Scroll-JS -> kein Ruckeln.
            Wichtig: Mit dieser Höhe endet die Seite exakt am Dock-Punkt,
            es gibt kein totes Überscrollen. */
-        height: calc(100dvh - var(--cart-dock-top, 0px) - var(--spacing));
+        height: calc(var(--tab-pane-h, 100dvh) - var(--cart-dock-top, 0px));
         z-index: 900;
         padding: 0;
         /* Trennung zur Produktspalte: von der Linie her leicht lila, dann in Grau ausfaden */
@@ -744,8 +744,8 @@ body {
     min-height: var(--input-height);
     box-sizing: border-box;
     font-size: 14px;
-    /* Verhindert Wackeln auf Touch-Geräten */
-    touch-action: none !important;
+    /* Pan erlauben, damit Scrollen auch auf Buttons und Dropdowns startet */
+    touch-action: manipulation !important;
 }
 
 .add-btn {
@@ -3514,6 +3514,104 @@ input[type="range"],
         border-color: var(--accent-soft);
         /* Dezentes Aufleuchten der Karte */
     }
+}
+
+/* --- TAB PAGER: Seiten liegen nebeneinander und folgen dem Finger --- */
+html:has(body.page-content) {
+    height: 100%;
+    overflow: hidden;
+}
+
+body.page-content {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden !important;
+}
+
+.tab-pager {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    width: calc(100% + (2 * var(--spacing)));
+    margin-left: calc(-1 * var(--spacing));
+    margin-right: calc(-1 * var(--spacing));
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.tab-track {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x pan-y;
+}
+
+.tab-track::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-pane {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    align-self: stretch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    background: var(--bg);
+    padding: 0 var(--spacing) var(--spacing);
+}
+
+.tab-pane + .tab-pane {
+    box-shadow: -18px 0 32px rgba(0, 0, 0, 0.28);
+}
+
+.tab-pane .world {
+    display: block;
+    min-height: 0;
+    animation: none;
+}
+
+.tab-pane-events {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.tab-pane .shop-header-wrap {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.tab-pane .leaflet-container {
+    touch-action: none;
+}
+
+.delivery-day-picker,
+.tour-category-tabs,
+.wx-board,
+.wx-hours {
+    overscroll-behavior-x: contain;
 }
 
 /* --- PRINT STYLES (Falls jemand druckt) --- */

@@ -12,7 +12,8 @@
         setSection(name) {
             this.section = name;
             try { localStorage.setItem('hausMeliInfoSection', name); } catch (e) {}
-            window.scrollTo(0, 0);
+            const pane = this.$root.closest('.tab-pane');
+            if (pane) pane.scrollTo(0, 0);
         },
         async copy(key, text) {
             const value = (text || '').replace(/\s+/g, ' ').trim();

@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=62">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=73">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=64">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=75">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,7 +95,7 @@
           return 'order';
         })(),
         menuOpen: false,
-        swipeFrom: null,
+        chromeTab: 'order',
         tabName(tab) {
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
@@ -107,42 +107,70 @@
           const tab = this.neighbor(step);
           if (tab) this.setTab(tab);
         },
-        swipeStart(e) {
-          if (!e.isPrimary) return;
-          if (e.target.closest('a, button, input, textarea, select, label, .leaflet-container, .cal-tab-pane, .wx-hours, .wx-board, .welcome-overlay, .modal-pop')) return;
-          let node = e.target;
-          while (node && node !== document.body) {
-            if (node.scrollWidth > node.clientWidth + 8) {
-              const flow = getComputedStyle(node).overflowX;
-              if (flow === 'auto' || flow === 'scroll') return;
-            }
-            node = node.parentElement;
-          }
-          this.swipeFrom = { x: e.clientX, y: e.clientY };
+        syncPaneBox() {
+          const el = this.$refs.pager;
+          if (!el) return;
+          document.documentElement.style.setProperty('--tab-pane-h', el.clientHeight + 'px');
         },
-        swipeEnd(e) {
-          if (!this.swipeFrom) return;
-          const dx = e.clientX - this.swipeFrom.x;
-          const dy = e.clientY - this.swipeFrom.y;
-          this.swipeFrom = null;
-          if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
-          this.goNeighbor(dx < 0 ? 1 : -1);
+        scrollToTab(tab, smooth) {
+          const track = this.$refs.track;
+          const index = this.tabs.indexOf(tab);
+          if (!track || index < 0) return;
+          const left = index * track.clientWidth;
+          if (Math.abs(track.scrollLeft - left) < 2) return;
+          this._prog = true;
+          track.scrollTo({ left: left, behavior: smooth ? 'smooth' : 'auto' });
+          clearTimeout(this._progTimer);
+          this._progTimer = setTimeout(() => { this._prog = false; }, smooth ? 520 : 80);
         },
-        setTab(tab) {
+        tabFromScroll() {
+          const track = this.$refs.track;
+          if (!track) return null;
+          const width = track.clientWidth || 1;
+          const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(track.scrollLeft / width)));
+          return this.tabs[index] || null;
+        },
+        finishChrome() {
+          this.chromeTab = this.currentTab;
+          if (this.currentTab !== 'events') return;
+          requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('cal-remeasure')));
+          setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
+        },
+        onPagerScroll() {
+          if (this._prog) return;
+          const tab = this.tabFromScroll();
+          if (tab && tab !== this.currentTab) this.setTab(tab, true);
+          clearTimeout(this._scrollEnd);
+          this._scrollEnd = setTimeout(() => this.finishChrome(), 140);
+        },
+        setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
+          const changed = tab !== this.currentTab;
           this.currentTab = tab;
           this.menuOpen = false;
           window.hausMeliStoreTab(tab);
           if (location.hash !== '#' + tab) location.hash = tab;
-          window.scrollTo(0, 0);
+          if (!fromScroll) this.scrollToTab(tab, changed);
+          if (!changed) this.chromeTab = tab;
         }
       }"
-      @pointerdown="swipeStart($event)"
-      @pointerup="swipeEnd($event)"
-      @pointercancel="swipeFrom = null"
-      :class="{ 'is-cal-tab': currentTab === 'events' }"
+      :class="{ 'is-cal-tab': chromeTab === 'events' }"
       x-on:set-app-tab.window="setTab(($event.detail && $event.detail.tab) ? $event.detail.tab : $event.detail)"
       x-init="
+        chromeTab = currentTab;
+        $nextTick(() => requestAnimationFrame(() => {
+          syncPaneBox();
+          scrollToTab(currentTab, false);
+          const pagerEl = $refs.pager;
+          const trackEl = $refs.track;
+          if (pagerEl && window.ResizeObserver) {
+            new ResizeObserver(() => {
+              syncPaneBox();
+              scrollToTab(currentTab, false);
+            }).observe(pagerEl);
+          }
+          if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
+        }));
         window.hausMeliStoreTab(currentTab);
         if (location.hash !== '#' + currentTab) location.hash = currentTab;
         if (currentTab === 'events') {
@@ -168,39 +196,43 @@
         });
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
-          if (tabs.includes(h) && h !== currentTab) currentTab = h;
+          if (tabs.includes(h) && h !== currentTab) setTab(h);
         });
       "
       x-cloak>
 
-    @include('general-partials.header')
+    @include('livewire.general-partials.header')
 
-	@include('general-partials.navigation')
+	@include('livewire.general-partials.navigation')
 
-    <div class="cal-tab-pane" x-show="currentTab === 'events'" x-cloak>
-        @livewire('events')
+    <div class="tab-pager" x-ref="pager">
+        <div class="tab-track" x-ref="track">
+            <section class="tab-pane" data-tab="order">
+                @livewire('shop')
+            </section>
+
+            <section class="tab-pane" data-tab="knx"></section>
+
+            <section class="tab-pane tab-pane-events cal-tab-pane" data-tab="events">
+                @livewire('events')
+            </section>
+
+            <section class="tab-pane" data-tab="info">
+                @livewire('info', ['defer' => true])
+            </section>
+
+            <section class="tab-pane"
+                     data-tab="tours"
+                     x-effect="if (currentTab === 'tours') { window.loadToursBundle && window.loadToursBundle(); $nextTick(() => { setTimeout(() => { window.bootToursGuestApp && window.bootToursGuestApp(); window.invalidateToursOverviewMap && window.invalidateToursOverviewMap(); }, 30); }); }">
+                @livewire('tours', ['defer' => true])
+            </section>
+        </div>
     </div>
 
-    <div x-show="currentTab === 'order'"> @livewire('shop')
-    </div>
-
-    <div x-show="currentTab === 'knx'" x-cloak> 
-    </div>
-
-    <div x-show="currentTab === 'info'" x-cloak> 
-        @livewire('info', ['defer' => true])
-    </div>
-
-    <div x-show="currentTab === 'tours'"
-         x-cloak
-         x-effect="if (currentTab === 'tours') { window.loadToursBundle && window.loadToursBundle(); $nextTick(() => { setTimeout(() => { window.bootToursGuestApp && window.bootToursGuestApp(); window.invalidateToursOverviewMap && window.invalidateToursOverviewMap(); }, 30); }); }">
-        @livewire('tours', ['defer' => true])
-    </div>
-
-    @include('general-modals.lightbox')
-    @include('general-modals.video')
-    @include('general-modals.welcome')
-    @include('general-modals.checkout')
+    @include('livewire.general-modals.lightbox')
+    @include('livewire.general-modals.video')
+    @include('livewire.general-modals.welcome')
+    @include('livewire.general-modals.checkout')
 
     <div id="toast-container"></div>
 
