@@ -1043,7 +1043,7 @@ body {
    ========================================= */
 
 #info-card {
-    padding: 0 20px;
+    padding: 6px 16px;
 }
 
 /* --- TOP INFO AREA (Wetter, Sprache, Uhr) --- */
@@ -1054,7 +1054,7 @@ body {
     align-items: center !important;
 
     width: 100%;
-    min-height: 80px;
+    min-height: 0;
     margin: 0 auto;
 
     /* Unten eckig, damit es nahtlos an den Rand passt (falls oben angedockt) */
@@ -1081,29 +1081,31 @@ body {
     justify-self: start;
     display: flex;
     align-items: center;
-    gap: 12px;
-    /* Etwas mehr Abstand zwischen Icon und Text */
-    font-size: 1.1rem;
-    /* Schriftgröße bleibt wie gewünscht */
+    gap: 8px;
+    font-size: 1rem;
+    line-height: 1;
 }
 
 #hw-icon {
-    font-size: 3rem;
-    /* Schriftgröße bleibt wie gewünscht */
+    font-size: 2.15rem;
+    line-height: 1;
 }
 
 #lang-switch {
     justify-self: center;
-    min-width: 60px;
-    padding: 0 10px;
+    min-width: 44px;
+    padding: 0 6px;
+    font-size: 1.05rem;
+    line-height: 1;
 }
 
 #header-clock {
     justify-self: end;
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     font-weight: bold;
     font-family: monospace;
     color: #aeb5d1;
+    line-height: 1;
 }
 
 /* --- NAVIGATION: vorige Seite, aktuelle, nächste --- */
@@ -1158,14 +1160,19 @@ body {
 }
 
 .shell-nav-current {
-    padding: 7px 16px;
-    border-radius: 999px;
+    padding: 4px 22px;
+    border: 0;
+    border-radius: 0;
     color: #fff;
     font-size: 1.2rem;
     font-weight: 800;
     white-space: nowrap;
-    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px color-mix(in srgb, var(--accent), transparent 55%);
+    background: radial-gradient(ellipse at center,
+        color-mix(in srgb, var(--accent), transparent 8%) 0%,
+        color-mix(in srgb, var(--accent), transparent 28%) 36%,
+        color-mix(in srgb, var(--accent), transparent 68%) 58%,
+        transparent 74%);
+    box-shadow: none;
 }
 
 .header-tools {
@@ -1178,14 +1185,14 @@ body {
 .header-tools .shell-btn {
     flex: 0 0 auto;
     width: auto;
-    padding: 8px;
+    padding: 2px 6px;
 }
 
 .header-pay {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 2px;
     border: 0;
     background: transparent;
     color: var(--muted, rgba(255, 255, 255, 0.7));
@@ -1193,7 +1200,7 @@ body {
 }
 
 .header-pay .material-symbols-rounded {
-    font-size: 1.45rem;
+    font-size: 1.25rem;
 }
 
 /* --- NAVIGATION BAR (Tabs) --- */
@@ -2288,9 +2295,9 @@ body.is-cal-tab .shell-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--spacing);
     flex-wrap: wrap;
-    padding: 8px 12px;
+    padding: var(--spacing);
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -2306,32 +2313,35 @@ body.is-cal-tab .shell-nav {
 .info-switch {
     display: flex;
     flex: 1 1 auto;
-    gap: 4px;
+    gap: 6px;
     width: 100%;
-    padding: 3px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
 }
 
 .info-switch-btn {
     flex: 1 1 0;
-    border: none;
-    color: #fff;
+    border: 1px solid var(--border);
+    color: var(--muted);
     font: inherit;
     font-size: 0.95rem;
     font-weight: 700;
-    padding: 10px 16px;
-    border-radius: 8px;
+    height: var(--input-height);
+    min-height: var(--input-height);
+    padding: 0 12px;
+    border-radius: var(--radius);
     cursor: pointer;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent), black 28%), color-mix(in srgb, var(--accent-soft), black 18%));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    background: var(--surface);
+    box-shadow: none;
 }
 
 .info-switch-btn.is-on {
+    border-color: transparent;
     background: linear-gradient(135deg, var(--accent), var(--accent-soft));
     color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px color-mix(in srgb, var(--accent), transparent 55%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
 }
 
 .info-sos {
@@ -3371,7 +3381,7 @@ body.is-cal-tab .shell-nav {
 
     .shell-nav-current {
         font-size: 1.08rem;
-        padding: 7px 12px;
+        padding: 4px 12px;
     }
 
     .info-toolbar {
@@ -3381,7 +3391,7 @@ body.is-cal-tab .shell-nav {
     }
 
     .info-switch-btn {
-        padding: 12px 4px;
+        padding: 0 8px;
         font-size: 0.95rem;
     }
 
@@ -3558,12 +3568,14 @@ body.page-content {
 }
 
 .tab-track {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     width: 100%;
     max-width: 100%;
+    height: auto;
     min-height: 0;
     min-width: 0;
     display: flex;
+    align-items: stretch;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
@@ -3607,16 +3619,18 @@ body.page-content {
 .tab-pane-events {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    max-height: 100%;
+    align-self: stretch;
+    height: auto;
+    max-height: none;
     padding: 0;
     overflow: hidden;
 }
 
 .tab-pane-events > .cal-app {
-    flex: 1 1 auto;
-    height: 100%;
+    flex: 1 1 0;
+    height: auto;
     min-height: 0;
+    width: 100%;
 }
 
 .tab-pane .shop-header-wrap {
@@ -5520,7 +5534,7 @@ body.trip-detail-open {
 
 @media (max-width: 767px) {
     .info-switch-btn {
-        padding: 12px 4px;
+        padding: 0 8px;
         font-size: 0.95rem;
     }
 
