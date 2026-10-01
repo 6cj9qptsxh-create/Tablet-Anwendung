@@ -46,7 +46,6 @@
      }">
 
     <div class="info-toolbar">
-        <h2 class="info-heading">Infos</h2>
         <div class="info-switch" role="tablist" aria-label="Infobereiche">
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'now' }" :aria-selected="section === 'now'" @click="setSection('now')">Jetzt</button>
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>

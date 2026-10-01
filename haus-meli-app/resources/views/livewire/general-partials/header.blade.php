@@ -1,4 +1,4 @@
-<div id="info-card" class="card info-card-head" x-show="chromeTab !== 'events'" x-cloak>
+<div id="info-card" class="card info-card-head">
 
 		<div id="header-weather" class="header-weather">
 			<span id="hw-icon">⛅</span>
