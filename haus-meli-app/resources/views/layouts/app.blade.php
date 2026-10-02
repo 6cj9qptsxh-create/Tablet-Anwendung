@@ -60,7 +60,7 @@
             path: @json(base_path()),
             toursMap: 70,
             toursPlanner: 31,
-            toursJs: 75,
+            toursJs: 76,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -83,6 +83,7 @@
             window._toursBooting = false;
             clearTimeout(window._toursBootTimer);
             clearTimeout(window._toursBootSoon);
+            clearTimeout(window._toursMapTimer);
             if (window._toursObs) {
                 try { window._toursObs.disconnect(); } catch (e) {}
             }
@@ -90,7 +91,8 @@
         window.loadToursBundle = function () {
             window._toursWanted = true;
             if (window._toursReady) {
-                if (window.bootToursGuestApp) window.bootToursGuestApp();
+                if (window.scheduleToursBoot) window.scheduleToursBoot();
+                else if (window.bootToursGuestApp) window.bootToursGuestApp();
                 return;
             }
             if (window._toursBundle) return;
@@ -126,7 +128,7 @@
                 }
                 const src = chain[step++];
                 const existing = document.querySelector('script[data-tour-src="' + src + '"]');
-                if (existing && existing.dataset.loaded === '1') { next(); return; }
+                if (existing && existing.dataset.loaded === '1') { setTimeout(next, 0); return; }
                 const tag = existing || document.createElement('script');
                 const go = function () {
                     tag.dataset.loaded = '1';
@@ -200,6 +202,7 @@
           });
         },
         wrapTo(tab, step) {
+          if (document.querySelector('#tab-order.cart-is-open')) return;
           const track = this.$refs.track;
           if (!track || this._wrapping || !track.animate) { this.setTab(tab); return; }
           this._wrapping = true;
@@ -234,7 +237,8 @@
           const lastIndex = this.tabs.length - 1;
           track.addEventListener('touchstart', (event) => {
             const index = this.tabs.indexOf(this.currentTab);
-            armed = event.touches.length === 1 && (index === 0 || index === lastIndex) && !blocked(event.target);
+            const cartOpen = !!document.querySelector('#tab-order.cart-is-open');
+            armed = event.touches.length === 1 && (index === 0 || index === lastIndex) && !blocked(event.target) && !cartOpen;
             if (!armed) return;
             startX = event.touches[0].clientX;
             startY = event.touches[0].clientY;
