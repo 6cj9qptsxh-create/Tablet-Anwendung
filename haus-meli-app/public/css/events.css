@@ -132,7 +132,11 @@ body.is-cal-tab .cal-tab-pane {
     z-index: 10001;
     padding: 8px 12px 10px;
     background: var(--card);
-    border: 1px solid var(--border);
+    border-style: solid;
+    border-color: var(--border);
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
     border-bottom: var(--border-th) solid var(--accent-soft);
     border-radius: 16px;
     overflow: visible;
@@ -151,9 +155,10 @@ body.is-cal-tab .cal-tab-pane {
 }
 
 .cal-toolbar.is-filter-open {
+    border-width: 1px;
+    border-color: var(--border);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    border-bottom: 1px solid var(--border);
     z-index: 20001;
 }
 

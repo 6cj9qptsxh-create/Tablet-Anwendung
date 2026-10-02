@@ -2399,6 +2399,10 @@ body.is-cal-tab .shell-nav {
 
 .info-block.wx-board-wrap {
     position: relative;
+    /* Seitliche Ränder auf 0, damit der untere Strich an den Ecken spitz ausläuft wie bei .card */
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
     border-bottom: var(--border-th) solid var(--accent-soft);
 }
 
