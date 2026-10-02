@@ -433,6 +433,11 @@ body.is-cal-tab .cal-tab-pane {
 /* =========================================
    OUTLOOK KALENDER (2D-App-Scroll System)
    ========================================= */
+.card.outlook-calendar {
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .outlook-calendar {
     flex: 1 1 0;
     align-self: stretch;
