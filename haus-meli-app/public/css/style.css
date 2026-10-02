@@ -3637,7 +3637,7 @@ body.page-content {
     align-self: stretch;
     height: auto;
     max-height: none;
-    padding: 0 0 max(var(--spacing), env(safe-area-inset-bottom, 0px));
+    padding: 0 var(--spacing) max(var(--spacing), env(safe-area-inset-bottom, 0px));
     overflow: hidden;
 }
 
