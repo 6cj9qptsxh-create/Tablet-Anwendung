@@ -131,10 +131,13 @@ class MeteoblueForecast
                 $day['max'],
                 $day['min'],
                 (int) ($day['pop'] ?? 0),
-                $this->terminalRain((float) ($day['rain'] ?? 0)),
+                $this->paperRain((string) ($day['rain_text'] ?? '–')),
                 $day['sun_text'] ?? '-',
                 $day['wind_text'] ?? '-',
                 implode(',', $heights),
+                $this->paperIcon((string) ($day['morning']['icon'] ?? '')),
+                $this->paperIcon((string) ($day['afternoon']['icon'] ?? '')),
+                $this->paperIcon((string) ($day['night']['icon'] ?? '')),
             ]);
             if (count($dayLines) >= 5) {
                 break;
@@ -150,8 +153,11 @@ class MeteoblueForecast
                 if ($stamp < $nowKey) {
                     continue;
                 }
-                $rain = number_format((float) $hour['rain'], 1, '.', '');
-                $hourLines[] = substr((string) $hour['time'], 0, 2).'  '.$hour['terminal'].'  '.$hour['temp'].'  '.$rain;
+                $hourLines[] = substr((string) $hour['time'], 0, 2)
+                    .'  '.$this->paperIcon((string) ($hour['icon'] ?? ''))
+                    .'  '.$hour['temp']
+                    .'  '.$this->paperRain((string) ($hour['rain_text'] ?? '–'))
+                    .'  '.(int) ($hour['rain_height'] ?? 0);
                 if (count($hourLines) >= 16) {
                     break 2;
                 }
@@ -375,16 +381,24 @@ class MeteoblueForecast
         return $slots;
     }
 
-    private function terminalRain(float $mm): string
+    private function paperRain(string $text): string
     {
-        if ($mm <= 0) {
-            return '-';
-        }
-        if (abs($mm - round($mm)) < 0.05) {
-            return ((int) round($mm)).'mm';
-        }
+        return str_replace(' L/m²', ' L', $text);
+    }
 
-        return number_format($mm, 1, ',', '').'mm';
+    private function paperIcon(string $icon): string
+    {
+        return match ($icon) {
+            'bedtime' => 'nacht',
+            'partly_cloudy_night' => 'nacht-wolkig',
+            'thunderstorm' => 'gewitter',
+            'weather_snowy', 'weather_mix' => 'schnee',
+            'rainy' => 'regen',
+            'foggy' => 'nebel',
+            'cloud' => 'bewoelkt',
+            'partly_cloudy_day' => 'wolkig',
+            default => $icon === 'sunny' ? 'sonne' : '',
+        };
     }
 
     private function rainHeight(float $mm): int

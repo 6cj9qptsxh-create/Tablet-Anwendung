@@ -504,7 +504,7 @@ display:
         }
       };
 
-      // Heute: jedes zweite Pixel (50 %). Morgen: jedes achte Pixel, heller als Heute.
+      // Morgen: jedes achte Pixel, heller als Heute.
       auto dither_pale = [&](int x, int y, int w, int h) {
         if (w < 2 || h < 2) return;
         const int x1 = x + w;
@@ -517,7 +517,7 @@ display:
         }
       };
 
-      // Geburtstage und Schichten: jedes vierte Pixel.
+      // Heute, fuer Termine, Geburtstage und Schichten: jedes vierte Pixel.
       auto dither_light = [&](int x, int y, int w, int h) {
         if (w < 2 || h < 2) return;
         const int x1 = x + w;
@@ -555,7 +555,8 @@ display:
         bool windy = c.find("wind") != std::string::npos;
         bool mix = c.find("wolkig") != std::string::npos || c.find("partly") != std::string::npos;
         bool cloud = mix || c.find("bewoelkt") != std::string::npos || c.find("cloudy") != std::string::npos;
-        bool night = c.find("klar") != std::string::npos || c.find("night") != std::string::npos;
+        bool nacht = c.find("nacht") != std::string::npos || c.find("night") != std::string::npos;
+        bool night = nacht || c.find("klar") != std::string::npos;
 
         auto stroke = [&](int x1, int y1, int x2, int y2) {
           it.line(x1, y1, x2, y2, FG);
@@ -648,6 +649,22 @@ display:
         if (rain) {
           outline_cloud(cx, cy - size / 7, size * 8 / 10);
           rain_drops(cx, cy + size / 12, size, pour ? 5 : 3);
+          return;
+        }
+        if (nacht && !cloud) {
+          int r = size / 3;
+          it.filled_circle(cx, cy, r, FG);
+          it.filled_circle(cx, cy, r - 2, BG);
+          it.filled_circle(cx + r / 3, cy - r / 8, r - 3, BG);
+          return;
+        }
+        if (nacht) {
+          int r = size / 4;
+          int mx = cx - size / 5;
+          it.filled_circle(mx, cy - size / 8, r, FG);
+          it.filled_circle(mx, cy - size / 8, r - 2, BG);
+          it.filled_circle(mx + r / 3, cy - size / 8 - r / 8, r - 3, BG);
+          outline_cloud(cx + size / 8, cy + size / 10, size * 62 / 100);
           return;
         }
         if (mix) {
@@ -925,7 +942,7 @@ display:
         if (is_today || is_tomorrow) {
           int bg_h = (date.empty() ? 0 : 26) + title_h + 6;
           if (is_today)
-            dither_rect(mid_x, note_y - 3, mid_w, bg_h);
+            dither_light(mid_x, note_y - 3, mid_w, bg_h);
           else
             dither_pale(mid_x, note_y - 3, mid_w, bg_h);
         } else if (notes_shown > 0) {
@@ -1084,6 +1101,20 @@ display:
       card(FULL_X, CARD_Y, FULL_W, TOP_H);
       card(FULL_X, BOT_Y, FULL_W, BOT_H);
 
+      auto liter = [](std::string rain) {
+        if (rain == "-" || rain.empty()) return std::string("–");
+        auto pos = rain.find("L/m");
+        if (pos != std::string::npos) {
+          rain.replace(pos, std::string::npos, "L");
+          return rain;
+        }
+        if (rain.size() >= 2 && rain.compare(rain.size() - 2, 2, "mm") == 0)
+          rain.replace(rain.size() - 2, 2, "L");
+        else if (rain.find('L') == std::string::npos)
+          rain += " L";
+        return rain;
+      };
+
       auto day_entries = split_entries(id(wetter_tage_text).has_state() ? id(wetter_tage_text).state : "");
       if (!id(wetter_tage_text).has_state()) {
         it.print(inner_x, CARD_Y + 70, id(font_desc), FG, "warte auf Home Assistant");
@@ -1092,22 +1123,36 @@ display:
       } else {
         if (day_entries.size() > 5) day_entries.resize(5);
         int col_w = inner_w / (int) day_entries.size();
+        std::vector<std::string> nights;
         for (size_t i = 0; i < day_entries.size(); i++) {
           auto f = split_fields(day_entries[i]);
           std::string day = f.size() > 0 ? f[0] : "";
           std::string cond = f.size() > 1 ? f[1] : "";
           std::string high = f.size() > 2 ? f[2] : "";
           std::string low = f.size() > 3 ? f[3] : "";
-          std::string pop = f.size() > 4 ? f[4] : "";
           std::string rain = f.size() > 5 ? f[5] : "";
           std::string sun = f.size() > 6 ? f[6] : "";
           std::string wind = f.size() > 7 ? f[7] : "";
           std::string slots = f.size() > 8 ? f[8] : "";
+          std::string morning = f.size() > 9 ? f[9] : "";
+          std::string afternoon = f.size() > 10 ? f[10] : "";
+          std::string night = f.size() > 11 ? f[11] : "";
           int cx = inner_x + (int) i * col_w + col_w / 2;
-          if (i > 0)
-            it.filled_rectangle(inner_x + (int) i * col_w, CARD_Y + 6, 1, TOP_H - 18, FG);
+          if (i > 0) {
+            int split_x = inner_x + (int) i * col_w;
+            it.filled_rectangle(split_x, CARD_Y + 6, 1, 28, FG);
+            it.filled_rectangle(split_x, CARD_Y + 100, 1, TOP_H - 112, FG);
+            if (!nights.empty() && !nights.back().empty())
+              weather_icon(split_x, CARD_Y + 64, 22, nights.back());
+          }
+          nights.push_back(night);
           it.print(cx, CARD_Y + 6, id(font_label), FG, TextAlign::TOP_CENTER, day.c_str());
-          weather_icon(cx, CARD_Y + 68, 34, cond);
+          if (!morning.empty() && !afternoon.empty()) {
+            weather_icon(cx - 22, CARD_Y + 64, 26, morning);
+            weather_icon(cx + 22, CARD_Y + 64, 26, afternoon);
+          } else {
+            weather_icon(cx, CARD_Y + 64, 34, cond);
+          }
           std::string temps;
           if (!high.empty()) temps += high + "°";
           if (!low.empty()) temps += (temps.empty() ? "" : "  ") + low + "°";
@@ -1145,11 +1190,7 @@ display:
             it.filled_rectangle(x0 + s * (slot_w + gap), base - bh, slot_w, bh, FG);
           }
 
-          std::string rain_l = rain;
-          if (rain_l == "-" || rain_l.empty()) rain_l = "–";
-          else if (rain_l.find("mm") == std::string::npos) rain_l += "mm";
-          if (!pop.empty() && pop != "0") rain_l = pop + "%  " + rain_l;
-          it.print(cx, CARD_Y + 154, id(font_meta), FG, TextAlign::TOP_CENTER, rain_l.c_str());
+          it.print(cx, CARD_Y + 154, id(font_meta), FG, TextAlign::TOP_CENTER, liter(rain).c_str());
 
           std::string extra;
           if (!sun.empty() && sun != "-") extra = sun;
@@ -1170,20 +1211,18 @@ display:
       } else {
         if (hour_entries.size() > 16) hour_entries.resize(16);
         int col_w = inner_w / (int) hour_entries.size();
-        float max_mm = 0.f;
-        for (size_t i = 0; i < hour_entries.size(); i++) {
-          auto f = split_fields(hour_entries[i]);
-          std::string rain = f.size() > 3 ? f[3] : "0";
-          float mm = strtof(rain.c_str(), nullptr);
-          if (mm > max_mm) max_mm = mm;
-        }
         for (size_t i = 0; i < hour_entries.size(); i++) {
           auto f = split_fields(hour_entries[i]);
           std::string clock = f.size() > 0 ? f[0] : "";
           std::string cond = f.size() > 1 ? f[1] : "";
           std::string temp = f.size() > 2 ? f[2] : "";
           std::string rain = f.size() > 3 ? f[3] : "";
-          float mm = rain.empty() ? 0.f : strtof(rain.c_str(), nullptr);
+          int rain_h = 0;
+          if (f.size() > 4) rain_h = atoi(f[4].c_str());
+          else {
+            float mm = strtof(rain.c_str(), nullptr);
+            if (mm > 0.f) rain_h = mm >= 10.f ? 100 : (int) (mm / 10.f * 100.f);
+          }
           int cx = inner_x + (int) i * col_w + col_w / 2;
           weather_icon(cx, BOT_Y + 48, 26, cond);
           it.print(cx, BOT_Y + 68, id(font_meta), FG, TextAlign::TOP_CENTER, clock.c_str());
@@ -1191,15 +1230,12 @@ display:
             it.print(cx, BOT_Y + 92, id(font_desc), FG, TextAlign::TOP_CENTER, (temp + "°").c_str());
           const int track_h = 26;
           const int base = BOT_Y + 148;
-          if (mm > 0.05f && max_mm > 0.f) {
-            int bh = (int) (track_h * mm / max_mm);
+          if (rain_h > 0) {
+            int bh = track_h * rain_h / 100;
             if (bh < 3) bh = 3;
             it.filled_rectangle(cx - 7, base - bh, 14, bh, FG);
           }
-          std::string rain_l = (mm > 0.05f) ? rain : "–";
-          if (mm > 0.05f && rain_l.find("mm") == std::string::npos)
-            rain_l += " mm";
-          it.print(cx, BOT_Y + 152, id(font_meta), FG, TextAlign::TOP_CENTER, rain_l.c_str());
+          it.print(cx, BOT_Y + 152, id(font_meta), FG, TextAlign::TOP_CENTER, liter(rain).c_str());
         }
       }
       }
