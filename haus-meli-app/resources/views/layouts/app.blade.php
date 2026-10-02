@@ -146,7 +146,17 @@
           const to = this.tabs.indexOf(next);
           const wrapped = Math.abs(to - from) > 1 && ((from === 0 && to === last) || (from === last && to === 0));
           const forward = wrapped ? from === last : to > from;
-          nav.dataset.dir = forward ? 'next' : 'prev';
+          this._navDir = forward ? 'next' : 'prev';
+          this._navPending = true;
+          if (this._touching || this._scrolling) return;
+          this.flushNav();
+        },
+        flushNav() {
+          if (!this._navPending || this._touching || this._scrolling) return;
+          const nav = document.querySelector('.shell-nav');
+          if (!nav) return;
+          this._navPending = false;
+          nav.dataset.dir = this._navDir || 'next';
           nav.classList.remove('is-animating');
           void nav.offsetWidth;
           nav.classList.add('is-animating');
@@ -250,10 +260,16 @@
         },
         onPagerScroll() {
           if (this._prog) return;
+          this._scrolling = true;
           const tab = this.tabFromScroll();
           if (tab && tab !== this.currentTab) this.setTab(tab, true);
           clearTimeout(this._scrollEnd);
-          this._scrollEnd = setTimeout(() => { this.finishChrome(); this.correctSnap(); }, 280);
+          this._scrollEnd = setTimeout(() => {
+            this._scrolling = false;
+            this.finishChrome();
+            this.correctSnap();
+            this.flushNav();
+          }, 160);
         },
         setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
@@ -289,7 +305,10 @@
               clearTimeout(this._progTimer);
               clearTimeout(this._scrollEnd);
             }, { passive: true });
-            const release = () => { this._touching = false; setTimeout(() => this.correctSnap(), 220); };
+            const release = () => {
+              this._touching = false;
+              setTimeout(() => { this.correctSnap(); if (!this._scrolling) this.flushNav(); }, 80);
+            };
             trackEl.addEventListener('touchend', release, { passive: true });
             trackEl.addEventListener('touchcancel', release, { passive: true });
           }
@@ -415,31 +434,42 @@
                 root.setProperty('--nav-shift', shift + 'px');
             }
             var away = false;
-            function reveal() {
+            function syncNav() {
                 if (!phone.matches) {
                     document.body.style.removeProperty('--nav-shift');
                     away = false;
                     return;
                 }
                 var width = Math.max(track.clientWidth, 1);
-                var left = track.scrollLeft;
-                if (!away && left > width * 0.12) {
-                    away = true;
-                    document.body.style.setProperty('--nav-shift', '0px');
-                    return;
-                }
-                if (away && left < 6) {
+                if (track.scrollLeft < width * 0.5) {
                     away = false;
                     update();
+                    return;
                 }
+                if (away) return;
+                away = true;
+                document.body.style.setProperty('--nav-shift', '0px');
             }
             shop.addEventListener('scroll', function () {
-                if (!away) update();
+                if (track.scrollLeft < 6) update();
             }, { passive: true });
-            /* Nur ein einziges Mal beim Verlassen des Shops einblenden.
-               Pro Pixel würde transform/clip-path das Einrasten abreißen. */
-            track.addEventListener('scroll', reveal, { passive: true });
-            window.addEventListener('resize', function () { update(); reveal(); });
+            /* Erst wenn die Seite steht. Mitten in der Bewegung reißt
+               transform/clip-path das Einrasten ab (Shop bleibt halb stehen). */
+            var finger = false;
+            var navTimer;
+            track.addEventListener('touchstart', function () {
+                finger = true;
+                clearTimeout(navTimer);
+            }, { passive: true });
+            track.addEventListener('touchend', function () { finger = false; }, { passive: true });
+            track.addEventListener('touchcancel', function () { finger = false; }, { passive: true });
+            track.addEventListener('scrollend', function () { if (!finger) syncNav(); }, { passive: true });
+            track.addEventListener('scroll', function () {
+                if (finger) return;
+                clearTimeout(navTimer);
+                navTimer = setTimeout(syncNav, 70);
+            }, { passive: true });
+            window.addEventListener('resize', syncNav);
             update();
         });
     </script>
