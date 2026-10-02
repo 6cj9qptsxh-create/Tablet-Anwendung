@@ -618,7 +618,18 @@
                     this._onResize = () => {
                         if (!this.dragging) this.measure();
                     };
+                    this._onRemeasure = () => {
+                        if (!this.dragging) this.measure();
+                    };
                     window.addEventListener('resize', this._onResize, { passive: true });
+                    window.addEventListener('cal-remeasure', this._onRemeasure);
+                    const vp = this.$el.querySelector('.events-month-viewport');
+                    if (vp && window.ResizeObserver) {
+                        this._ro = new ResizeObserver(() => {
+                            if (!this.dragging) this.measure();
+                        });
+                        this._ro.observe(vp);
+                    }
                     this._onMorph = ({ el }) => {
                         if (!this._flushing || !this.$el) return;
                         if (el === this.$el || (this.$el.contains && this.$el.contains(el))) {
@@ -633,11 +644,8 @@
                 destroy() {
                     this.clearLp();
                     if (this._onResize) window.removeEventListener('resize', this._onResize);
-                },
-
-                destroy() {
-                    this.clearLp();
-                    if (this._onResize) window.removeEventListener('resize', this._onResize);
+                    if (this._onRemeasure) window.removeEventListener('cal-remeasure', this._onRemeasure);
+                    if (this._ro) this._ro.disconnect();
                 },
 
                 labelAt(idx) {
@@ -657,6 +665,7 @@
                     const vp = this.$el.querySelector('.events-month-viewport');
                     const h = vp ? vp.clientHeight : 0;
                     if (h >= 80) this.bandW = h;
+                    if (!this.dragging && !this.settling && !this.moved) this.previewTitle(1);
                 },
 
                 bandGap() {
@@ -671,8 +680,11 @@
                 },
 
                 bandStyle() {
-                    const step = this.bandStep();
                     const dx = this.bandX;
+                    if (!(this.bandW > 0) && !this.dragging && !this.settling && !this.moved) {
+                        return '';
+                    }
+                    const step = this.bandStep();
                     if (this.dragging || this.settling || this.moved) {
                         if (dx < -8) this.previewTitle(2);
                         else if (dx > 8) this.previewTitle(0);

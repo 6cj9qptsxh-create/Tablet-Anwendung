@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=69">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=79">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=70">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=80">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
