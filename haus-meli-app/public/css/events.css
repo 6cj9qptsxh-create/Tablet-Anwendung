@@ -133,32 +133,14 @@ body.is-cal-tab .cal-tab-pane {
     padding: 8px 12px 10px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-bottom: var(--border-th) solid var(--accent-soft);
     border-radius: 16px;
     overflow: visible;
-}
-
-.cal-toolbar::after {
-    content: '';
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: -3px;
-    height: var(--border-th);
-    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
-    z-index: 2;
-    pointer-events: none;
 }
 
 .cal-toolbar.is-filter-open {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    border-bottom: 1px solid var(--border);
     z-index: 20001;
-}
-
-.cal-toolbar.is-filter-open::after {
-    content: none;
 }
 
 .cal-toolbar-top {
@@ -460,15 +442,7 @@ body.is-cal-tab .cal-tab-pane {
 }
 
 .card.outlook-calendar::after {
-    content: '';
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 0;
-    height: var(--border-th);
-    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
-    z-index: 200;
-    pointer-events: none;
+    content: none;
 }
 
 .outlook-calendar {
@@ -2099,38 +2073,5 @@ body.cal-creating {
     }
     .agenda-time {
         grid-row: auto;
-    }
-}
-
-/* Handy: Kalender bis an den Bildschirmrand, damit die Geräteecke den Radius setzt.
-   Oben bleiben die 16px, weil die Box nicht an der Bildschirmkante liegt.
-   Der lila Strich sitzt über der Home-Anzeige. */
-@media (max-width: 767px) {
-    .tab-pane-events .card.outlook-calendar {
-        margin-left: calc(-1 * var(--spacing));
-        margin-right: calc(-1 * var(--spacing));
-        margin-bottom: calc(-1 * max(var(--spacing), env(safe-area-inset-bottom, 0px)));
-        width: calc(100% + 2 * var(--spacing));
-        max-width: none;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        border-top-left-radius: 16px;
-        border-top-right-radius: 16px;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-        background: var(--card);
-    }
-
-    .tab-pane-events .card.outlook-calendar.cal-view-week {
-        background: var(--soft);
-    }
-
-    .tab-pane-events .card.outlook-calendar::after {
-        bottom: env(safe-area-inset-bottom, 0px);
-    }
-
-    .tab-pane-events .cal-week-shell,
-    .tab-pane-events .events-month-shell {
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
     }
 }
