@@ -20,7 +20,7 @@ class MeteoblueForecast
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v4.%s.%s',
+            'weather.meteoblue.v5.%s.%s',
             config('weather.lat'),
             config('weather.lon')
         );
@@ -218,6 +218,10 @@ class MeteoblueForecast
                 $stamp = (string) ($hours['time'][$h] ?? '');
                 $code = (int) ($hours['pictocode'][$h] ?? $dayCode);
                 $hourLook = $this->look($code);
+                $isDay = isset($hours['isdaylight'][$h]) ? ((int) $hours['isdaylight'][$h] === 1) : null;
+                if ($isDay === false) {
+                    $hourLook['icon'] = $this->nightSymbol($hourLook['icon']);
+                }
                 $hourRows[] = [
                     'time' => substr($stamp, 11, 5),
                     'temp' => (int) round((float) ($hours['temperature'][$h] ?? 0)),
@@ -229,12 +233,14 @@ class MeteoblueForecast
                     'icon' => $hourLook['icon'],
                     'label' => $hourLook['label'],
                     'terminal' => $hourLook['terminal'],
-                    'daylight' => isset($hours['isdaylight'][$h]) ? ((int) $hours['isdaylight'][$h] === 1) : null,
+                    'daylight' => $isDay,
+                    'sky' => $this->sky($code),
                     'is_now' => substr($stamp, 0, 13) === $nowKey,
                 ];
             }
 
             $look = $this->dayLook($hourRows, $rain, $days['sunshine_time'][$i] ?? null, $dayCode);
+            $halves = $this->dayHalves($hourRows, $days['sunshine_time'][$i] ?? null, $look);
             $when = new \DateTimeImmutable($date, $tz);
             $outDays[] = [
                 'date' => $date,
@@ -251,10 +257,19 @@ class MeteoblueForecast
                 'sun_text' => $this->sunText($days['sunshine_time'][$i] ?? null),
                 'uv' => (int) round((float) ($days['uvindex'][$i] ?? 0)),
                 'icon' => $look['icon'],
-                'label' => $look['label'],
+                'label' => $halves['morning']['label'] === $halves['afternoon']['label']
+                    ? $look['label']
+                    : $halves['morning']['label'].', später '.$halves['afternoon']['label'],
                 'terminal' => $look['terminal'],
+                'morning' => $halves['morning'],
+                'afternoon' => $halves['afternoon'],
+                'night' => null,
                 'hours' => $hourRows,
             ];
+        }
+
+        foreach ($outDays as $i => $outDay) {
+            $outDays[$i]['night'] = $this->nightLook($outDay['hours'], $outDays[$i + 1]['hours'] ?? []);
         }
 
         $current = null;
@@ -332,54 +347,10 @@ class MeteoblueForecast
             $current = $days[0]['hours'][array_key_last($days[0]['hours'])];
         }
 
-        $last = count($days) - 1;
-        foreach ($days as $i => $day) {
-            $days[$i]['night'] = $i < $last
-                ? $this->nightIcon($day['hours'] ?? [], $days[$i + 1]['hours'] ?? [])
-                : null;
-        }
-
         $data['days'] = $days;
         $data['current'] = $current;
 
         return $data;
-    }
-
-    private function nightIcon(array $hours, array $nextHours): ?array
-    {
-        $pick = null;
-        foreach (['00:00', '01:00', '02:00', '03:00'] as $time) {
-            foreach ($nextHours as $hour) {
-                if (substr((string) ($hour['time'] ?? ''), 0, 5) === $time) {
-                    $pick = $hour;
-                    break 2;
-                }
-            }
-        }
-        if ($pick === null) {
-            foreach (array_reverse($hours) as $hour) {
-                $clock = (int) substr((string) ($hour['time'] ?? ''), 0, 2);
-                if ($clock >= 21) {
-                    $pick = $hour;
-                    break;
-                }
-            }
-        }
-        if ($pick === null) {
-            return null;
-        }
-
-        $icon = (string) ($pick['icon'] ?? 'cloud');
-        if ($icon === 'sunny') {
-            $icon = 'bedtime';
-        } elseif ($icon === 'partly_cloudy_day') {
-            $icon = 'partly_cloudy_night';
-        }
-
-        return [
-            'icon' => $icon,
-            'label' => 'Nacht, '.($pick['label'] ?? ''),
-        ];
     }
 
     private function rainSlots(array $hours): array
@@ -469,29 +440,138 @@ class MeteoblueForecast
      */
     private function dayLook(array $rows, float $rain, mixed $sunMinutes, int $dayCode): array
     {
-        $day = [];
-        foreach ($rows as $row) {
-            if (($row['daylight'] ?? null) === true) {
-                $day[] = $row;
-            }
-        }
-        if ($day === []) {
-            foreach ($rows as $row) {
-                $clock = (int) substr((string) ($row['time'] ?? ''), 0, 2);
-                if ($clock >= 7 && $clock <= 20) {
-                    $day[] = $row;
-                }
-            }
-        }
+        [, $day] = $this->splitDay($rows);
         if ($day === []) {
             return $this->look($dayCode);
         }
 
+        $sun = $sunMinutes === null || $sunMinutes === ''
+            ? null
+            : min(1.0, ((float) $sunMinutes) / (count($day) * 60));
+
+        return $this->phaseLook($day, $rain, $sun);
+    }
+
+    /**
+     * Erste und zweite Tageshälfte, getrennt am Mittelpunkt zwischen
+     * Sonnenaufgang und Sonnenuntergang. Die Sonnenscheindauer gibt es nur
+     * für den ganzen Tag. Der Stundenverlauf liefert die Form, die Tagesdauer
+     * eicht sie, damit eine einzelne Sonnenstunde nicht als Sonne zählt.
+     *
+     * @return array{morning: array, afternoon: array}
+     */
+    private function dayHalves(array $rows, mixed $sunMinutes, array $fallback): array
+    {
+        [, $day] = $this->splitDay($rows);
+        $count = count($day);
+        if ($count === 0) {
+            return ['morning' => $fallback, 'afternoon' => $fallback];
+        }
+
+        $first = array_slice($day, 0, (int) ceil($count / 2));
+        $second = array_slice($day, (int) floor($count / 2));
+
+        $known = $sunMinutes !== null && $sunMinutes !== '';
+        $shape = 0.0;
+        foreach ($day as $row) {
+            $shape += $this->rowSky($row);
+        }
+        $actual = $known ? ((float) $sunMinutes) / 60 : 0.0;
+        $scale = $shape > 0 ? min(2.0, $actual / $shape) : 0.0;
+
+        $sunOf = function (array $part) use ($known, $shape, $scale, $actual, $count): ?float {
+            if (! $known) {
+                return null;
+            }
+            if ($shape <= 0) {
+                return min(1.0, $actual / $count);
+            }
+            $sum = 0.0;
+            foreach ($part as $row) {
+                $sum += $this->rowSky($row);
+            }
+
+            return min(1.0, $scale * $sum / count($part));
+        };
+
+        $mm = fn (array $part): float => array_sum(array_map(fn ($row) => (float) ($row['rain'] ?? 0), $part));
+
+        return [
+            'morning' => $this->phaseLook($first, $mm($first), $sunOf($first)),
+            'afternoon' => $this->phaseLook($second, $mm($second), $sunOf($second)),
+        ];
+    }
+
+    /**
+     * Nacht von Sonnenuntergang bis zum Sonnenaufgang des Folgetags.
+     */
+    private function nightLook(array $rows, array $nextRows): ?array
+    {
+        [, , $evening] = $this->splitDay($rows);
+        [$morning] = $nextRows === [] ? [[]] : $this->splitDay($nextRows);
+        $night = array_merge($evening, $morning);
+        if ($night === []) {
+            return null;
+        }
+
+        $mm = array_sum(array_map(fn ($row) => (float) ($row['rain'] ?? 0), $night));
+        $look = $this->phaseLook($night, $mm, null);
+
+        return [
+            'icon' => $this->nightSymbol($look['icon']),
+            'label' => 'Nacht, '.$look['label'],
+        ];
+    }
+
+    /**
+     * Teilt die Stunden eines Tages in Stunden vor Sonnenaufgang, Tageslicht und
+     * Stunden nach Sonnenuntergang. Ohne Tageslicht-Flag gilt 07 bis 20 Uhr.
+     *
+     * @return array{0: array, 1: array, 2: array}
+     */
+    private function splitDay(array $rows): array
+    {
+        $flagged = false;
+        foreach ($rows as $row) {
+            if (($row['daylight'] ?? null) !== null) {
+                $flagged = true;
+                break;
+            }
+        }
+
+        $before = $day = $after = [];
+        foreach ($rows as $row) {
+            if ($flagged) {
+                $isDay = ($row['daylight'] ?? null) === true;
+            } else {
+                $clock = (int) substr((string) ($row['time'] ?? ''), 0, 2);
+                $isDay = $clock >= 7 && $clock <= 20;
+            }
+            if ($isDay) {
+                $day[] = $row;
+            } elseif ($day === []) {
+                $before[] = $row;
+            } else {
+                $after[] = $row;
+            }
+        }
+
+        return [$before, $day, $after];
+    }
+
+    /**
+     * Symbol für einen Abschnitt aus Stundenwerten. $sun ist der Anteil
+     * (0 bis 1) der Zeit mit echtem Sonnenschein, null heißt: aus dem
+     * Wolkenbild der Stunden schätzen.
+     */
+    private function phaseLook(array $rows, float $mm, ?float $sun): array
+    {
+        $count = count($rows);
         $wet = ['thunderstorm' => 0, 'weather_snowy' => 0, 'rainy' => 0];
         $wetHours = 0;
         $fog = 0;
-        $cloudScore = 0.0;
-        foreach ($day as $row) {
+        $sky = 0.0;
+        foreach ($rows as $row) {
             $icon = (string) ($row['icon'] ?? 'sunny');
             if (($row['rain'] ?? 0) >= 0.2) {
                 $wetHours++;
@@ -504,16 +584,10 @@ class MeteoblueForecast
             if ($icon === 'foggy') {
                 $fog++;
             }
-            $cloudScore += match ($icon) {
-                'sunny' => 1.0,
-                'partly_cloudy_day' => 0.5,
-                'cloud', 'foggy' => 0.1,
-                default => 0.0,
-            };
+            $sky += $this->rowSky($row);
         }
-        $daylight = count($day);
 
-        if ($rain >= 1.0 || $wetHours >= 3) {
+        if ($mm >= max(0.3, $count / 13) || $wetHours >= max(2, (int) round($count / 4))) {
             if ($wet['thunderstorm'] > 0) {
                 return $this->look(27);
             }
@@ -524,22 +598,56 @@ class MeteoblueForecast
             return $this->look(23);
         }
 
-        if ($fog * 2 >= $daylight) {
+        if ($fog * 2 >= $count) {
             return $this->look(16);
         }
 
-        $sun = $sunMinutes === null || $sunMinutes === ''
-            ? $cloudScore / $daylight
-            : min(1.0, ((float) $sunMinutes) / ($daylight * 60));
-
-        if ($sun >= 0.7) {
+        $share = $sun ?? $sky / $count;
+        if ($share >= 0.7) {
             return $this->look(1);
         }
-        if ($sun >= 0.35) {
+        if ($share >= 0.35) {
             return $this->look(7);
         }
 
         return $this->look(19);
+    }
+
+    private function rowSky(array $row): float
+    {
+        if (isset($row['sky'])) {
+            return (float) $row['sky'];
+        }
+
+        return match ((string) ($row['icon'] ?? 'sunny')) {
+            'sunny', 'bedtime' => 1.0,
+            'partly_cloudy_day', 'partly_cloudy_night' => 0.5,
+            'cloud', 'foggy' => 0.1,
+            default => 0.0,
+        };
+    }
+
+    /** Wie klar der Himmel laut Stundencode ist, 1 = wolkenlos, 0 = zu. */
+    private function sky(int $code): float
+    {
+        return match (true) {
+            $code >= 1 && $code <= 3 => 1.0,
+            $code >= 4 && $code <= 6 => 0.9,
+            $code >= 7 && $code <= 12 => 0.5,
+            $code >= 13 && $code <= 15 => 0.85,
+            $code >= 16 && $code <= 18 => 0.1,
+            $code >= 19 && $code <= 21 => 0.2,
+            default => 0.0,
+        };
+    }
+
+    private function nightSymbol(string $icon): string
+    {
+        return match ($icon) {
+            'sunny' => 'bedtime',
+            'partly_cloudy_day' => 'partly_cloudy_night',
+            default => $icon,
+        };
     }
 
     private function look(int $code): array

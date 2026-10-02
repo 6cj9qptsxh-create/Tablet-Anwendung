@@ -5272,7 +5272,7 @@ body.trip-detail-open {
 
 .wx-board {
     display: grid;
-    grid-template-columns: repeat(7, minmax(76px, 1fr));
+    grid-template-columns: repeat(7, minmax(84px, 1fr));
     gap: 4px;
     overflow-x: auto;
     text-align: center;
@@ -5309,32 +5309,29 @@ body.trip-detail-open {
 }
 
 .wx-col-icon-wrap {
-    position: relative;
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 3px;
     width: 100%;
 }
 
 .wx-night {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    z-index: 3;
-    transform: translate(calc(-50% - 2px), -50%);
-    width: calc(1.4rem + 6px);
-    height: calc(1.4rem + 6px);
+    flex: none;
+    width: 1.55rem;
+    height: 1.55rem;
+    margin-left: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 2px solid #0e1016;
     background: #1c2230;
-    color: #e7edf5;
-    pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    color: #d7e4f8;
 }
 
 .wx-night .material-symbols-rounded {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     line-height: 1;
 }
 
@@ -5344,13 +5341,13 @@ body.trip-detail-open {
     color: #7eb6ff;
 }
 
-.wx-night.is-bedtime,
-.wx-night.is-partly_cloudy_night {
-    color: #d7e4f8;
+.wx-night.is-cloud,
+.wx-night.is-foggy {
+    color: #aab3c2;
 }
 
 .wx-col-icon {
-    font-size: 1.9rem;
+    font-size: 1.4rem;
     line-height: 1;
     color: #f0c14a;
 }
@@ -5360,7 +5357,8 @@ body.trip-detail-open {
     color: #c5ccd6;
 }
 
-.wx-col-icon.is-partly_cloudy_day {
+.wx-col-icon.is-partly_cloudy_day,
+.wx-col-icon.is-partly_cloudy_night {
     color: #e7d7a1;
 }
 
@@ -5482,6 +5480,11 @@ body.trip-detail-open {
     color: #e7d7a1;
 }
 
+.wx-hour-icon.is-bedtime,
+.wx-hour-icon.is-partly_cloudy_night {
+    color: #d7e4f8;
+}
+
 .wx-hour-icon.is-rainy,
 .wx-hour-icon.is-thunderstorm,
 .wx-hour-icon.is-weather_snowy {
@@ -5551,6 +5554,6 @@ body.trip-detail-open {
     }
 
     .wx-board {
-        grid-template-columns: repeat(7, 76px);
+        grid-template-columns: repeat(7, 84px);
     }
 }

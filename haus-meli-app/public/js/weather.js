@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const icons = {
         sunny: '☀️',
         partly_cloudy_day: '⛅',
+        bedtime: '🌙',
+        partly_cloudy_night: '☁️',
         cloud: '☁️',
         rainy: '🌧️',
         weather_snowy: '🌨️',

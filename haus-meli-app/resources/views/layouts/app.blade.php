@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=75">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=76">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=81">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -294,7 +294,7 @@
             csrfToken: @json(csrf_token()),
         });
     </script>
-    <script src="{{ asset('js/weather.js') }}?v=5"></script>
+    <script src="{{ asset('js/weather.js') }}?v=6"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             
