@@ -10,7 +10,7 @@ use Throwable;
 
 class MeteoblueForecast
 {
-    /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. 1 mm = 1 l/m². */
+    /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. Anzeige in L/m². */
     private const RAIN_FULL_MM = 10.0;
     public function forecast(): array
     {
@@ -430,10 +430,10 @@ class MeteoblueForecast
             return '–';
         }
         if (abs($mm - round($mm)) < 0.05) {
-            return ((int) round($mm)).' l/m²';
+            return ((int) round($mm)).' L/m²';
         }
 
-        return number_format($mm, 1, ',', '').' l/m²';
+        return number_format($mm, 1, ',', '').' L/m²';
     }
 
     private function sunText(mixed $value): ?string

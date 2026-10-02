@@ -160,7 +160,7 @@
                         </button>
                     @endforeach
                 </div>
-                <p class="wx-rain-note">Blaue Balken sind der Regen im Tagesverlauf, links die Nacht und rechts der Abend. Gleiche Höhe ist gleich viel Regen, volle Höhe sind 10 l/m². 1 mm entspricht 1 l/m².</p>
+                <p class="wx-rain-note">Blaue Balken sind der Regen im Tagesverlauf, links die Nacht und rechts der Abend. Gleiche Höhe ist gleich viel Regen, volle Höhe sind 10 L/m².</p>
                 @foreach($forecast['days'] as $index => $day)
                     <div class="wx-detail" x-show="day === {{ $index }}" x-cloak>
                         <div class="wx-detail-head">
