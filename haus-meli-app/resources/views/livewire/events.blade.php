@@ -468,7 +468,7 @@
                 </div>
 
                 <div class="cal-week-bottom" x-ref="vBody"
-                     @scroll.passive="updateOverflowHints()"
+                     @scroll.passive="queueOverflowHints()"
                      x-init="if (window.calWeekPos) $el.scrollTop = window.calWeekPos.vTop || 0">
                     <div class="cal-week-times">
                         <div class="time-col-body">
@@ -1027,10 +1027,7 @@
                 bindOverflowScroll() {
                     const v = this.v() || this.$el.querySelector('.cal-week-bottom');
                     if (!v || this._onVScroll) return;
-                    this._onVScroll = () => {
-                        this.saveWeekPos();
-                        this.updateOverflowHints();
-                    };
+                    this._onVScroll = () => this.queueOverflowHints();
                     v.addEventListener('scroll', this._onVScroll, { passive: true });
                     v.addEventListener('touchmove', this._onVScroll, { passive: true });
                     this.$el.addEventListener('scroll', this._onVScroll, { capture: true, passive: true });
@@ -1110,7 +1107,12 @@
                 },
 
                 queueOverflowHints() {
-                    this.updateOverflowHints();
+                    if (this._hintFrame) return;
+                    this._hintFrame = requestAnimationFrame(() => {
+                        this._hintFrame = 0;
+                        this.saveWeekPos();
+                        this.updateOverflowHints();
+                    });
                 },
 
                 updateOverflowHints() {
@@ -1209,8 +1211,7 @@
                     this.hLeft = this.clampH(left);
                     this.updateWeekTitle();
                     this.maybeExtend();
-                    this.saveWeekPos();
-                    this.updateOverflowHints();
+                    this.queueOverflowHints();
                 },
 
                 updateWeekTitle() {
