@@ -3542,16 +3542,17 @@ input[type="range"],
 /* --- TAB PAGER: Seiten liegen nebeneinander und folgen dem Finger --- */
 html:has(body.page-content) {
     height: 100%;
-    height: -webkit-fill-available;
     overflow: hidden;
 }
 
 body.page-content {
-    /* 100dvh ist auf dem iPhone kürzer als das Fenster: unten bleibt ein
-       toter Streifen, in dem der Inhalt hart abgeschnitten wird. */
-    height: 100%;
+    /* Nicht height: 100% von -webkit-fill-available: das wird auf dem iPhone 0
+       und die Tabs verschwinden. 100dvh hält die Seite, fill-available streckt
+       sie nur, wenn der Wert wirklich größer ist. */
+    height: 100dvh;
+    height: -webkit-fill-available;
     max-height: none;
-    min-height: 0;
+    min-height: 100dvh;
     padding-bottom: 0;
     overflow: hidden !important;
 }
