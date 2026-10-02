@@ -5654,3 +5654,42 @@ body.trip-detail-open {
         animation: none;
     }
 }
+
+
+/* --- TOUREN AUF DEM HANDY: nur gespeicherte Touren ansehen ---
+   Planen, Filter und Segmente gibt es am Tablet und PC. */
+.tours-saved-list.is-empty {
+    display: none;
+}
+
+.tours-saved-empty {
+    margin: 0;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+@media (max-width: 767px) {
+    .tours-saved-list.is-empty {
+        display: block;
+    }
+
+    .tours-filter-panel,
+    .tours-route-bar,
+    .tours-segment-drawer,
+    .tours-takeaway-overlay,
+    #tours-sel-route-actions,
+    #tours-mode-chooser,
+    #tours-overview-empty,
+    .tours-saved-card-takeaway,
+    .tours-saved-card-del {
+        display: none !important;
+    }
+
+    .tours-saved-list {
+        margin-top: var(--spacing);
+    }
+}
