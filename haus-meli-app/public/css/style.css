@@ -3542,12 +3542,15 @@ input[type="range"],
 /* --- TAB PAGER: Seiten liegen nebeneinander und folgen dem Finger --- */
 html:has(body.page-content) {
     height: 100%;
+    height: -webkit-fill-available;
     overflow: hidden;
 }
 
 body.page-content {
-    height: 100dvh;
-    max-height: 100dvh;
+    /* 100dvh ist auf dem iPhone kürzer als das Fenster: unten bleibt ein
+       toter Streifen, in dem der Inhalt hart abgeschnitten wird. */
+    height: 100%;
+    max-height: none;
     min-height: 0;
     padding-bottom: 0;
     overflow: hidden !important;

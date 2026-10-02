@@ -79,13 +79,14 @@
 /* Kalender-Tab: Seite fest, nur das Raster scrollt */
 html:has(body.is-cal-tab) {
     height: 100%;
+    height: -webkit-fill-available;
     overflow: hidden;
     overscroll-behavior: none;
 }
 
 body.page-content.is-cal-tab {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 100%;
+    max-height: none;
     overflow: hidden !important;
     overscroll-behavior: none;
 }
@@ -440,14 +441,6 @@ body.is-cal-tab .cal-tab-pane {
     width: 100%;
     overflow: hidden;
     container-type: inline-size;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    padding-bottom: 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.outlook-calendar::after {
-    content: none;
 }
 
 .outlook-calendar.cal-view-agenda {
