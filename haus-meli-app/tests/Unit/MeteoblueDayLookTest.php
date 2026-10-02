@@ -52,6 +52,13 @@ class MeteoblueDayLookTest extends TestCase
         $this->assertSame('partly_cloudy_day', $this->icon($rows, 0.0, 6 * 60));
     }
 
+    public function test_a_few_sun_hours_give_sun_with_cloud(): void
+    {
+        $rows = $this->rows(array_fill(0, 13, 'sunny'));
+
+        $this->assertSame('partly_cloudy_day', $this->icon($rows, 0.0, 4 * 60));
+    }
+
     public function test_rain_beats_sunshine(): void
     {
         $rain = [0, 0, 0.5, 0.6, 0.4, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -93,7 +100,7 @@ class MeteoblueDayLookTest extends TestCase
 
     public function test_missing_sunshine_falls_back_to_hourly_icons(): void
     {
-        $icons = array_merge(array_fill(0, 3, 'sunny'), array_fill(0, 10, 'cloud'));
+        $icons = array_merge(array_fill(0, 1, 'sunny'), array_fill(0, 12, 'cloud'));
 
         $this->assertSame('cloud', $this->icon($this->rows($icons), 0.0, null));
     }

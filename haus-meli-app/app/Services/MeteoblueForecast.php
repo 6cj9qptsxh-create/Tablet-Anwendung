@@ -603,10 +603,10 @@ class MeteoblueForecast
         }
 
         $share = $sun ?? $sky / $count;
-        if ($share >= 0.7) {
+        if ($share >= 0.65) {
             return $this->look(1);
         }
-        if ($share >= 0.35) {
+        if ($share >= 0.25) {
             return $this->look(7);
         }
 
