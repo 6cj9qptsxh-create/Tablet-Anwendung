@@ -2220,6 +2220,7 @@ window.closeTripDetail = function () {
 // Tours-HTML kommt oft erst per Livewire-defer; das JS-Bundle erst beim Tab-Öffnen.
 // Deshalb nicht nur DOMContentLoaded — bootToursGuestApp() ist wiederholbar bis es greift.
 window.bootToursGuestApp = function () {
+    if (window._toursWanted === false) return false;
     const container = document.getElementById('tours-app-container');
     if (!container) return false;
     if (window._toursGuestBooted) {
