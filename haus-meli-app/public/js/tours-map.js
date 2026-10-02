@@ -356,10 +356,23 @@
         });
         ensureNodePane(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const hideLoading = () => {
+            const el = document.getElementById('tours-map-loading');
+            if (el) el.hidden = true;
+        };
+        const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '&copy; OpenStreetMap',
         }).addTo(map);
+        const onTilesLoaded = () => {
+            if (container.clientWidth < 10 || container.clientHeight < 10) {
+                tiles.once('load', onTilesLoaded);
+                return;
+            }
+            hideLoading();
+        };
+        tiles.once('load', onTilesLoaded);
+        setTimeout(hideLoading, 15000);
 
         map.setView([47.13, 9.82], 11);
         return map;

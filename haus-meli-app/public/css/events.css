@@ -1285,7 +1285,7 @@ body.cal-creating {
     border: 1px solid var(--border);
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: var(--radius);
-    background: var(--card);
+    background: var(--surface);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 

@@ -234,7 +234,7 @@
                 <div class="cal-picker cal-today-wrap">
                     <button type="button"
                             class="toggle-btn cal-chip"
-                            @click="window.calWeekPos = null; window.calWeekJumpDate = null"
+                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; @if($viewMode === 'week') window.calWeekForceToday = Date.now(); @endif"
                             wire:click="goToToday">Heute</button>
                 </div>
                 <div class="cal-picker cal-view-switch" role="tablist" aria-label="Kalenderansicht">
@@ -1029,6 +1029,7 @@
                 },
 
                 destroy() {
+                    this._dead = true;
                     this.hideOverflowHints();
                     if (this._onRemeasure) window.removeEventListener('cal-remeasure', this._onRemeasure);
                     if (this._onHash) window.removeEventListener('hashchange', this._onHash);
@@ -1065,6 +1066,7 @@
                 },
 
                 saveWeekPos() {
+                    if (this._dead || (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000)) return;
                     const h = this.h();
                     const w = h && h.clientWidth ? h.clientWidth / 3 : 0;
                     if (w >= 40) window.calWeekDayW = w;
@@ -1095,7 +1097,12 @@
                         const w = this.measureDayWidth();
                         if (w < 40) return false;
                         const jump = window.calWeekJumpDate;
-                        if (jump) {
+                        const force = window.calWeekForceToday && (Date.now() - window.calWeekForceToday < 4000);
+                        if (force) {
+                            window.calWeekForceToday = 0;
+                            window.calWeekPos = null;
+                            this.scrollToToday(false);
+                        } else if (jump) {
                             window.calWeekJumpDate = null;
                             window.calWeekPos = null;
                             this.scrollToDate(jump, false);
