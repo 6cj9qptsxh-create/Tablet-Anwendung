@@ -231,18 +231,20 @@
             </div>
 
             <div class="cal-toolbar-row">
-                <button type="button"
-                        class="info-switch-btn cal-today-btn"
-                        @click="window.calWeekPos = null; window.calWeekJumpDate = null"
-                        wire:click="goToToday">Heute</button>
-                <div class="info-switch cal-view-switch" role="tablist" aria-label="Kalenderansicht">
+                <div class="cal-picker cal-today-wrap">
+                    <button type="button"
+                            class="toggle-btn cal-chip"
+                            @click="window.calWeekPos = null; window.calWeekJumpDate = null"
+                            wire:click="goToToday">Heute</button>
+                </div>
+                <div class="cal-picker cal-view-switch" role="tablist" aria-label="Kalenderansicht">
                     <button type="button"
                             role="tab"
                             wire:click="setViewMode('week')"
                             @click="window.calWeekPos = null; window.calWeekJumpDate = null"
-                            class="info-switch-btn {{ $viewMode === 'week' ? 'is-on add-btn' : '' }}">3-Tage</button>
-                    <button type="button" role="tab" wire:click="setViewMode('month')" class="info-switch-btn {{ $viewMode === 'month' ? 'is-on add-btn' : '' }}">Monat</button>
-                    <button type="button" role="tab" wire:click="setViewMode('agenda')" class="info-switch-btn {{ $viewMode === 'agenda' ? 'is-on add-btn' : '' }}">Agenda</button>
+                            class="toggle-btn cal-chip {{ $viewMode === 'week' ? 'active' : '' }}">3-Tage</button>
+                    <button type="button" role="tab" wire:click="setViewMode('month')" class="toggle-btn cal-chip {{ $viewMode === 'month' ? 'active' : '' }}">Monat</button>
+                    <button type="button" role="tab" wire:click="setViewMode('agenda')" class="toggle-btn cal-chip {{ $viewMode === 'agenda' ? 'active' : '' }}">Agenda</button>
                 </div>
             </div>
         </div>
