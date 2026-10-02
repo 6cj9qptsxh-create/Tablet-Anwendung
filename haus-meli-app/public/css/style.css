@@ -5752,3 +5752,62 @@ body.trip-detail-open {
         overflow-y: hidden;
     }
 }
+
+
+/* --- BUTTON-CONTAINER IN INFOS: gleiches Grau wie die Filter-Einstellungen --- */
+.info-toolbar.card {
+    background: var(--surface);
+}
+
+.info-toolbar .info-switch-btn:not(.add-btn) {
+    background: transparent;
+    border-color: transparent;
+}
+
+/* --- TOUREN: Ladeanzeige, solange die Karte lädt --- */
+.tours-map-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: 12px;
+    background:
+        linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%) 0 0 / 200% 100%,
+        var(--surface);
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    animation: toursMapShimmer 1.6s linear infinite;
+}
+
+.tours-map-loading[hidden] {
+    display: none;
+}
+
+.tours-map-spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid color-mix(in srgb, var(--accent-soft), transparent 70%);
+    border-top-color: var(--accent-soft);
+    animation: toursMapSpin 0.8s linear infinite;
+}
+
+@keyframes toursMapSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes toursMapShimmer {
+    from {
+        background-position: 200% 0, 0 0;
+    }
+    to {
+        background-position: -200% 0, 0 0;
+    }
+}

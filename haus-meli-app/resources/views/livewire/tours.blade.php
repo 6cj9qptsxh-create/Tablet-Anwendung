@@ -60,6 +60,10 @@
             <div class="tours-map-col">
                 <div class="tours-map-stage">
                     <div id="tours-overview-map" class="tours-overview-map"></div>
+                    <div id="tours-map-loading" class="tours-map-loading" wire:ignore role="status" aria-live="polite">
+                        <span class="tours-map-spinner" aria-hidden="true"></span>
+                        <span>Karte wird geladen …</span>
+                    </div>
                     <div id="tours-map-selection" class="tours-map-selection" hidden>
                         <div id="tours-sel-photos" class="tours-sel-photos" hidden></div>
                         <div class="tours-sel-body">
