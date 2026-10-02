@@ -434,8 +434,15 @@ body.is-cal-tab .cal-tab-pane {
    OUTLOOK KALENDER (2D-App-Scroll System)
    ========================================= */
 .card.outlook-calendar {
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.card.outlook-calendar::after {
+    content: none;
 }
 
 .outlook-calendar {
@@ -471,7 +478,7 @@ body.is-cal-tab .cal-tab-pane {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 16px;
     touch-action: pan-y;
 }
 
@@ -479,7 +486,7 @@ body.is-cal-tab .cal-tab-pane {
     display: flex;
     align-items: stretch;
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--card);
     border-bottom: 1px solid var(--border);
     z-index: 100;
 }
@@ -504,9 +511,7 @@ body.is-cal-tab .cal-tab-pane {
 
 .cal-week-bottom {
     flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: flex-start;
+XX
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;
@@ -529,7 +534,7 @@ body.is-cal-tab .cal-tab-pane {
     width: 50px;
     flex-shrink: 0;
     overflow: hidden;
-    background: var(--surface);
+    background: var(--card);
     border-right: 1px solid var(--border);
     z-index: 40;
     position: sticky;
@@ -576,7 +581,7 @@ body.is-cal-tab .cal-tab-pane {
     display: flex;
     position: relative;
     z-index: 100;
-    background: var(--surface);
+    background: var(--card);
     border-bottom: 2px solid var(--border);
 }
 
@@ -598,7 +603,7 @@ body.is-cal-tab .cal-tab-pane {
     /* Der höchste Wert! Muss über Body UND Header liegen */
     width: 50px;
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--card);
     border-right: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -613,7 +618,7 @@ body.is-cal-tab .cal-tab-pane {
     /* Muss über den Terminen liegen */
     width: 50px;
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--card);
     border-right: 1px solid var(--border);
     height: calc((18 * 60px) + 30px);
 }
@@ -1361,6 +1366,8 @@ body.cal-creating {
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
     flex-shrink: 0;
+    background: var(--card);
+    border-radius: 12px;
 }
 
 .events-month-week {
@@ -1388,7 +1395,7 @@ body.cal-creating {
     padding: 4px 3px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: var(--surface);
+    background: var(--soft);
     color: var(--text);
     cursor: pointer;
     text-align: left;
