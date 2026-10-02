@@ -5706,23 +5706,49 @@ body.trip-detail-open {
         will-change: transform;
     }
 
-    body.page-content .tab-pane {
-        padding-top: var(--nav-h);
-    }
-
+    body.page-content .tab-pane,
     body.page-content .tab-pane-events {
-        padding-top: var(--nav-h);
+        padding-top: calc(var(--nav-h) + var(--spacing));
     }
 
     body.page-content .tab-pane .shop-header-wrap {
         /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding) */
-        top: calc(-1 * var(--nav-h));
+        top: calc(-1 * (var(--nav-h) + var(--spacing)));
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
+    .tours-map-layout,
+    .tours-map-col {
+        height: auto;
+        min-height: 0;
+    }
+
     .tours-map-stage,
     .tours-overview-map {
-        min-height: 200px;
-        height: min(30dvh, 260px);
+        min-height: 0;
+        height: min(26dvh, 230px);
+    }
+}
+
+@media (max-width: 749.98px) {
+    /* Warenkorb deckt das ganze Display ab: Statusleiste aussparen,
+       Navigation ausblenden, Shop dahinter nicht scrollbar */
+    .sidebar-panel {
+        height: var(--app-h, 100dvh);
+        padding-top: var(--safe-top);
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+    }
+
+    .cart-items-box {
+        overscroll-behavior: contain;
+    }
+
+    body.page-content:has(#tab-order.cart-is-open) .shell-nav {
+        visibility: hidden;
+    }
+
+    .tab-pane:has(#tab-order.cart-is-open) {
+        overflow-y: hidden;
     }
 }
