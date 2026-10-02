@@ -1268,6 +1268,8 @@ body.cal-creating {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: auto;
+    padding: 4px;
+    gap: 4px;
 }
 
 /* --- Monatsansicht: Band mit Swipe-Animation --- */
