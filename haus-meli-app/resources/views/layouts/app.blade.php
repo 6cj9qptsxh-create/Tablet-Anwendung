@@ -244,7 +244,7 @@
           const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(track.scrollLeft / width)));
           const nearest = index * width;
           if (Math.abs(track.scrollLeft - nearest) < 2) return;
-          this.scrollToTab(this.tabs[index], true);
+          this.scrollToTab(this.tabs[index], false);
           clearTimeout(this._scrollEnd);
           this._scrollEnd = setTimeout(() => this.finishChrome(), 560);
         },
@@ -283,8 +283,13 @@
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
           if (trackEl) {
-            trackEl.addEventListener('touchstart', () => { this._touching = true; }, { passive: true });
-            const release = () => { this._touching = false; setTimeout(() => this.correctSnap(), 340); };
+            trackEl.addEventListener('touchstart', () => {
+              this._touching = true;
+              this._prog = false;
+              clearTimeout(this._progTimer);
+              clearTimeout(this._scrollEnd);
+            }, { passive: true });
+            const release = () => { this._touching = false; setTimeout(() => this.correctSnap(), 220); };
             trackEl.addEventListener('touchend', release, { passive: true });
             trackEl.addEventListener('touchcancel', release, { passive: true });
           }
@@ -407,19 +412,34 @@
                 }
                 var navH = nav.offsetHeight;
                 var shift = Math.min(Math.max(shop.scrollTop, 0), navH);
-                var visible = 1 - Math.min(1, track.scrollLeft / Math.max(track.clientWidth, 1));
-                root.setProperty('--nav-shift', (shift * visible) + 'px');
+                root.setProperty('--nav-shift', shift + 'px');
             }
-            shop.addEventListener('scroll', update, { passive: true });
-            /* Nicht bei jedem Pixel des Seitwärtsschiebens: das verschiebt die
-               Leiste (transform + clip-path) und reißt auf dem Handy das
-               Einrasten zwischen Shop und Wohnung ab. Erst wenn die Bewegung steht. */
-            var navTimer;
-            track.addEventListener('scroll', function () {
-                clearTimeout(navTimer);
-                navTimer = setTimeout(update, 240);
+            var away = false;
+            function reveal() {
+                if (!phone.matches) {
+                    document.body.style.removeProperty('--nav-shift');
+                    away = false;
+                    return;
+                }
+                var width = Math.max(track.clientWidth, 1);
+                var left = track.scrollLeft;
+                if (!away && left > width * 0.12) {
+                    away = true;
+                    document.body.style.setProperty('--nav-shift', '0px');
+                    return;
+                }
+                if (away && left < 6) {
+                    away = false;
+                    update();
+                }
+            }
+            shop.addEventListener('scroll', function () {
+                if (!away) update();
             }, { passive: true });
-            window.addEventListener('resize', update);
+            /* Nur ein einziges Mal beim Verlassen des Shops einblenden.
+               Pro Pixel würde transform/clip-path das Einrasten abreißen. */
+            track.addEventListener('scroll', reveal, { passive: true });
+            window.addEventListener('resize', function () { update(); reveal(); });
             update();
         });
     </script>
