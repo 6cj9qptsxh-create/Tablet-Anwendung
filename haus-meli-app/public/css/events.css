@@ -1262,14 +1262,36 @@ body.cal-creating {
     cursor: pointer;
 }
 
-/* --- Ansicht-Umschalter: Stil kommt von .info-switch-btn (style.css) --- */
+/* --- Ansicht-Umschalter: gleicher Look wie die Tagesauswahl im Shop --- */
+.cal-picker {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 .cal-toolbar-row .cal-view-switch {
     grid-column: span 3;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: auto;
-    padding: 4px;
-    gap: 4px;
+}
+
+.cal-chip {
+    flex: 1 1 0;
+    min-width: 0;
+    height: var(--input-height);
+    min-height: var(--input-height);
+    padding: 0 8px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.cal-chip.active {
+    background: linear-gradient(to right, var(--accent-soft), var(--accent));
 }
 
 /* --- Monatsansicht: Band mit Swipe-Animation --- */
