@@ -135,12 +135,13 @@
                                 @click="day = {{ $index }}">
                             <span class="wx-col-name">{{ $day['name'] }}</span>
                             <span class="wx-col-icon-wrap">
-                                @if($index > 0 && !empty($forecast['days'][$index - 1]['night']))
-                                    <span class="wx-night is-{{ $forecast['days'][$index - 1]['night']['icon'] }}" title="{{ $forecast['days'][$index - 1]['night']['label'] }}">
-                                        <span class="material-symbols-rounded">{{ $forecast['days'][$index - 1]['night']['icon'] }}</span>
+                                <span class="material-symbols-rounded wx-col-icon is-{{ $day['morning']['icon'] }}" title="Vormittag: {{ $day['morning']['label'] }}">{{ $day['morning']['icon'] }}</span>
+                                <span class="material-symbols-rounded wx-col-icon is-{{ $day['afternoon']['icon'] }}" title="Nachmittag: {{ $day['afternoon']['label'] }}">{{ $day['afternoon']['icon'] }}</span>
+                                @if(!empty($day['night']))
+                                    <span class="wx-night is-{{ $day['night']['icon'] }}" title="{{ $day['night']['label'] }}">
+                                        <span class="material-symbols-rounded">{{ $day['night']['icon'] }}</span>
                                     </span>
                                 @endif
-                                <span class="material-symbols-rounded wx-col-icon is-{{ $day['icon'] }}">{{ $day['icon'] }}</span>
                             </span>
                             <span class="wx-col-max">{{ $day['max'] }}°</span>
                             <span class="wx-col-min">{{ $day['min'] }}°</span>
