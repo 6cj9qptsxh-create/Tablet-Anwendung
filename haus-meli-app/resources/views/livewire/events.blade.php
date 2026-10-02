@@ -227,25 +227,22 @@
                             @endif
                         </div>
                     </div>
-                    <button type="button" class="cal-icon-btn" title="Zurück"
-                            x-on:click="$dispatch('set-app-tab', { tab: 'order' })">
-                        <span class="material-symbols-rounded">close</span>
-                    </button>
                 </div>
             </div>
 
             <div class="cal-toolbar-row">
                 <button type="button"
-                        class="cal-today-btn"
+                        class="info-switch-btn cal-today-btn"
                         @click="window.calWeekPos = null; window.calWeekJumpDate = null"
                         wire:click="goToToday">Heute</button>
-                <div class="cal-view-switch" role="tablist" aria-label="Kalenderansicht">
+                <div class="info-switch cal-view-switch" role="tablist" aria-label="Kalenderansicht">
                     <button type="button"
+                            role="tab"
                             wire:click="setViewMode('week')"
                             @click="window.calWeekPos = null; window.calWeekJumpDate = null"
-                            class="cal-view-btn {{ $viewMode === 'week' ? 'active' : '' }}">3-Tage</button>
-                    <button type="button" wire:click="setViewMode('month')" class="cal-view-btn {{ $viewMode === 'month' ? 'active' : '' }}">Monat</button>
-                    <button type="button" wire:click="setViewMode('agenda')" class="cal-view-btn {{ $viewMode === 'agenda' ? 'active' : '' }}">Agenda</button>
+                            class="info-switch-btn {{ $viewMode === 'week' ? 'is-on add-btn' : '' }}">3-Tage</button>
+                    <button type="button" role="tab" wire:click="setViewMode('month')" class="info-switch-btn {{ $viewMode === 'month' ? 'is-on add-btn' : '' }}">Monat</button>
+                    <button type="button" role="tab" wire:click="setViewMode('agenda')" class="info-switch-btn {{ $viewMode === 'agenda' ? 'is-on add-btn' : '' }}">Agenda</button>
                 </div>
             </div>
         </div>

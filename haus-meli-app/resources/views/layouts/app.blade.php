@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=78">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=84">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=79">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=85">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,12 +129,67 @@
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
         neighbor(step) {
-          const next = this.tabs[this.tabs.indexOf(this.currentTab) + step];
-          return next || null;
+          const count = this.tabs.length;
+          return this.tabs[(this.tabs.indexOf(this.currentTab) + step + count) % count] || null;
         },
         goNeighbor(step) {
           const tab = this.neighbor(step);
-          if (tab) this.setTab(tab);
+          if (!tab) return;
+          if (Math.abs(this.tabs.indexOf(tab) - this.tabs.indexOf(this.currentTab)) > 1) this.wrapTo(tab, step);
+          else this.setTab(tab);
+        },
+        wrapTo(tab, step) {
+          const track = this.$refs.track;
+          if (!track || this._wrapping || !track.animate) { this.setTab(tab); return; }
+          this._wrapping = true;
+          const away = step > 0 ? -22 : 22;
+          const out = track.animate(
+            [{ transform: 'translateX(0)', opacity: 1 }, { transform: 'translateX(' + away + '%)', opacity: 0 }],
+            { duration: 140, easing: 'ease-in', fill: 'forwards' }
+          );
+          out.onfinish = () => {
+            this.setTab(tab, true);
+            this.scrollToTab(tab, false);
+            out.cancel();
+            const back = track.animate(
+              [{ transform: 'translateX(' + (-away) + '%)', opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
+              { duration: 200, easing: 'ease-out' }
+            );
+            back.onfinish = () => { this._wrapping = false; this.finishChrome(); };
+          };
+        },
+        wireWrapSwipe(track) {
+          let startX = 0, startY = 0, armed = false;
+          const blocked = (start) => {
+            for (let node = start; node && node !== track; node = node.parentElement) {
+              if (node.classList && node.classList.contains('leaflet-container')) return true;
+              if (/^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)) return true;
+              if (node.scrollWidth > node.clientWidth + 2) {
+                const overflow = getComputedStyle(node).overflowX;
+                if (overflow === 'auto' || overflow === 'scroll') return true;
+              }
+            }
+            return false;
+          };
+          const lastIndex = this.tabs.length - 1;
+          track.addEventListener('touchstart', (event) => {
+            const index = this.tabs.indexOf(this.currentTab);
+            armed = event.touches.length === 1 && (index === 0 || index === lastIndex) && !blocked(event.target);
+            if (!armed) return;
+            startX = event.touches[0].clientX;
+            startY = event.touches[0].clientY;
+          }, { passive: true });
+          track.addEventListener('touchend', (event) => {
+            if (!armed) return;
+            armed = false;
+            const touch = event.changedTouches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+            const index = this.tabs.indexOf(this.currentTab);
+            if (dx < 0 && index === lastIndex) this.wrapTo(this.tabs[0], 1);
+            else if (dx > 0 && index === 0) this.wrapTo(this.tabs[lastIndex], -1);
+          }, { passive: true });
         },
         syncPaneBox() {
           const el = this.$refs.pager;
@@ -199,6 +254,7 @@
             }).observe(pagerEl);
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
+          if (trackEl) wireWrapSwipe(trackEl);
         }));
         window.hausMeliStoreTab(currentTab);
         if (location.hash !== '#' + currentTab) location.hash = currentTab;
@@ -295,6 +351,7 @@
         });
     </script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
+    <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             
