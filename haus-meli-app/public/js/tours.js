@@ -2220,15 +2220,17 @@ window.closeTripDetail = function () {
 // Tours-HTML kommt oft erst per Livewire-defer; das JS-Bundle erst beim Tab-Öffnen.
 // Deshalb nicht nur DOMContentLoaded — bootToursGuestApp() ist wiederholbar bis es greift.
 window.bootToursGuestApp = function () {
-    if (window._toursWanted === false) return false;
+    if (window._toursWanted === false || window._toursBooting) return false;
     const container = document.getElementById('tours-app-container');
     if (!container) return false;
     if (window._toursGuestBooted) {
+        if (window._toursWanted === false) return true;
         if (typeof window.invalidateToursOverviewMap === 'function') {
             window.invalidateToursOverviewMap();
         }
         return true;
     }
+    window._toursBooting = true;
 
     let graph = { nodes: [], segments: [] };
     try {
@@ -2348,9 +2350,18 @@ window.bootToursGuestApp = function () {
         setupHikeSliders();
     }
     if (typeof window.initPlannerUi === 'function') window.initPlannerUi();
+    if (window._toursWanted === false) {
+        window._toursBooting = false;
+        return false;
+    }
     window.applyTourGraphFilters(true);
 
     window._toursGuestBooted = true;
+    window._toursBooting = false;
+    if (window._toursObs) {
+        try { window._toursObs.disconnect(); } catch (e) {}
+        window._toursObs = null;
+    }
     console.info('[Haus Meli] Tours-UI gebootet', {
         nodes: (window.TOUR_NODES || []).length,
         segments: (window.ALL_SEGMENTS || []).length,
@@ -2358,25 +2369,33 @@ window.bootToursGuestApp = function () {
     return true;
 };
 
-// Sofort oder bei DOM ready (Bundle oft erst nach DOMContentLoaded)
+// Nicht synchron booten: ein Wisch weg soll das Laden noch abbrechen können.
+window.scheduleToursBoot = function () {
+    clearTimeout(window._toursBootSoon);
+    window._toursBootSoon = setTimeout(function () {
+        if (window._toursWanted === false) return;
+        window.bootToursGuestApp && window.bootToursGuestApp();
+    }, 0);
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-        window.bootToursGuestApp && window.bootToursGuestApp();
+        window.scheduleToursBoot();
     });
 } else {
-    window.bootToursGuestApp();
+    window.scheduleToursBoot();
 }
 
-// Deferred Livewire: Container erscheint später
 (function watchToursContainer() {
-    if (window.bootToursGuestApp && window.bootToursGuestApp()) return;
     if (!window.MutationObserver || !document.body) {
         setTimeout(watchToursContainer, 50);
         return;
     }
     const obs = new MutationObserver(function () {
-        if (window.bootToursGuestApp && window.bootToursGuestApp()) obs.disconnect();
+        if (window._toursWanted === false || window._toursGuestBooted) return;
+        window.scheduleToursBoot();
     });
+    window._toursObs = obs;
     obs.observe(document.body, { childList: true, subtree: true });
     setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 60000);
 })();

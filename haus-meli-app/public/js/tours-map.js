@@ -342,9 +342,12 @@
         container.style.width = '100%';
         container.innerHTML = '';
 
+        const phone = window.matchMedia('(max-width: 767px)').matches;
         const map = L.map(container, {
             zoomControl: true,
             attributionControl: true,
+            dragging: !phone,
+            tap: !phone,
             preferCanvas: true,
             fadeAnimation: false,
             zoomAnimation: false,
