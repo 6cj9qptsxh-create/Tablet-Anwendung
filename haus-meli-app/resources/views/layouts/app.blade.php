@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=82">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=83">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=88">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -357,7 +357,11 @@
 
     <script>
         window.APP = Object.assign(window.APP || {}, {
-            lang: @json(str_replace('_', '-', app()->getLocale())),
+            // Sprache kommt vom Gerät (Browser/Handy), Laravel-Locale nur als Fallback
+            lang: (function (fallback) {
+                var l = (navigator.languages && navigator.languages[0]) || navigator.language || fallback || 'de';
+                return String(l).toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
+            })(@json(str_replace('_', '-', app()->getLocale()))),
             // Fallback wenn Bilder nur auf dem Admin-Server liegen (lokal Port 8000)
             toursMediaUrl: @json(rtrim((string) env('TOURS_MEDIA_URL', ''), '/')),
             plannedShareUrl: '/tours/planned/share',
@@ -366,6 +370,7 @@
             csrfToken: @json(csrf_token()),
         });
     </script>
+    <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
     <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
     <script>

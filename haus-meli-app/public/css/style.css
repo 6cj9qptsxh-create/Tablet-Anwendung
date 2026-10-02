@@ -3266,19 +3266,9 @@ body.is-cal-tab .shell-nav {
         padding-top: var(--safe-top);
     }
 
-    /* Header bis an den Bildschirmrand, Inhalt bleibt eingerückt */
+    /* Handy: Uhr, Sprache und Wetter liefert das Gerät bzw. der Infos-Tab */
     #info-card.info-card-head {
-        width: calc(100% + (2 * var(--spacing)));
-        max-width: none;
-        margin-left: calc(-1 * var(--spacing));
-        margin-right: calc(-1 * var(--spacing));
-        border-radius: 0 !important;
-        box-sizing: border-box;
-    }
-
-    #info-card.info-card-head::after {
-        left: 0;
-        right: 0;
+        display: none !important;
     }
 
     /* 1. App-Download-Karte ausblenden (Platz sparen am Handy) */
