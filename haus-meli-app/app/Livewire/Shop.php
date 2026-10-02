@@ -576,7 +576,7 @@ class Shop extends Component
 
         $anzeigeName = $extraInfo ? "$pName ($extraInfo)" : $pName;
 
-        $this->dispatch('open-cart');
+        $this->dispatch('open-cart', skipOnPhone: true);
 
         // Toast feuern! (z.B. "Hinzugefügt: 2x Cola (0,33L)")
         $this->dispatch('notify', message: "Hinzugefügt: {$qty}x {$anzeigeName}");

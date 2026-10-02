@@ -5683,3 +5683,46 @@ body.trip-detail-open {
         margin-top: var(--spacing);
     }
 }
+
+
+/* --- HANDY: Navigationsleiste schwebt über den Seiten ---
+   Im Shop scrollt sie mit dem Inhalt nach oben weg (--nav-shift setzt das Skript). */
+@media (max-width: 767px) {
+    body.page-content {
+        --nav-h: 40px;
+        --nav-shift: 0px;
+    }
+
+    body.page-content .shell-nav {
+        position: absolute;
+        top: var(--safe-top);
+        left: 0;
+        right: 0;
+        height: var(--nav-h);
+        min-height: 0;
+        background: rgb(32, 33, 38);
+        transform: translateY(calc(-1 * var(--nav-shift)));
+        clip-path: inset(var(--nav-shift) 0 0 0);
+        will-change: transform;
+    }
+
+    body.page-content .tab-pane {
+        padding-top: var(--nav-h);
+    }
+
+    body.page-content .tab-pane-events {
+        padding-top: var(--nav-h);
+    }
+
+    body.page-content .tab-pane .shop-header-wrap {
+        /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding) */
+        top: calc(-1 * var(--nav-h));
+    }
+
+    /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
+    .tours-map-stage,
+    .tours-overview-map {
+        min-height: 200px;
+        height: min(30dvh, 260px);
+    }
+}
