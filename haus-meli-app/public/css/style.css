@@ -2397,6 +2397,23 @@ body.is-cal-tab .shell-nav {
     box-shadow: var(--shadow);
 }
 
+.info-block.wx-board-wrap {
+    position: relative;
+    border-bottom: var(--border-th) solid var(--accent-soft);
+}
+
+.info-block.wx-board-wrap::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+    pointer-events: none;
+}
+
 .info-kicker {
     margin: 2px 4px -4px;
     color: var(--muted);
@@ -3613,7 +3630,7 @@ body.page-content {
     align-self: stretch;
     height: auto;
     max-height: none;
-    padding: 0 var(--spacing) max(var(--spacing), env(safe-area-inset-bottom, 0px));
+    padding: 0 var(--spacing) var(--spacing);
     overflow: hidden;
 }
 
