@@ -83,6 +83,14 @@ class MeteoblueDayPartsTest extends TestCase
         $this->assertSame('cloud', $parts['afternoon']['icon']);
     }
 
+    public function test_mixed_day_shows_sun_with_cloud_in_both_halves(): void
+    {
+        $parts = $this->halves($this->day('sunny'), 6 * 60);
+
+        $this->assertSame('partly_cloudy_day', $parts['morning']['icon']);
+        $this->assertSame('partly_cloudy_day', $parts['afternoon']['icon']);
+    }
+
     public function test_clear_night_is_a_moon(): void
     {
         $night = $this->call('nightLook', $this->day('sunny'), $this->day('sunny'));
