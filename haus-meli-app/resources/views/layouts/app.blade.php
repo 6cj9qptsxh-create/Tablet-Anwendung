@@ -60,7 +60,7 @@
             path: @json(base_path()),
             toursMap: 69,
             toursPlanner: 31,
-            toursJs: 73,
+            toursJs: 74,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -74,9 +74,23 @@
             } catch (e) {}
             return null;
         };
+        window._toursWanted = false;
+        window._toursGen = 0;
+        window.cancelToursLoad = function () {
+            window._toursWanted = false;
+            window._toursGen += 1;
+            window._toursBundle = false;
+            clearTimeout(window._toursBootTimer);
+        };
         window.loadToursBundle = function () {
+            window._toursWanted = true;
+            if (window._toursReady) {
+                if (window.bootToursGuestApp) window.bootToursGuestApp();
+                return;
+            }
             if (window._toursBundle) return;
             window._toursBundle = true;
+            const gen = window._toursGen;
             console.info('[Haus Meli] loadToursBundle → map v' + window.HAUS_MELI_BUILD.toursMap
                 + ' / planner v' + window.HAUS_MELI_BUILD.toursPlanner
                 + ' / tours v' + window.HAUS_MELI_BUILD.toursJs);
@@ -84,29 +98,45 @@
             css.rel = 'stylesheet';
             css.href = @json(asset('vendor/leaflet/leaflet.css'));
             document.head.appendChild(css);
-            const s1 = document.createElement('script');
-            s1.src = @json(asset('vendor/leaflet/leaflet.js'));
-            s1.onload = function () {
-                const a = document.createElement('script'); a.src = @json(asset('js/tours-map.js')) + '?v=' + window.HAUS_MELI_BUILD.toursMap;
-                a.onload = function () {
-                    const b = document.createElement('script'); b.src = @json(asset('js/tours-planner.js')) + '?v=' + window.HAUS_MELI_BUILD.toursPlanner;
-                    b.onload = function () {
-                        const c = document.createElement('script'); c.src = @json(asset('js/tours.js')) + '?v=' + window.HAUS_MELI_BUILD.toursJs;
-                        c.onload = function () {
-                            console.info('[Haus Meli] Tours-Bundle geladen. L=', typeof window.L, 'updateToursOverviewMap=', typeof window.updateToursOverviewMap);
-                            if (window.bootToursGuestApp) window.bootToursGuestApp();
-                            setTimeout(function () {
-                                window.bootToursGuestApp && window.bootToursGuestApp();
-                                window.invalidateToursOverviewMap && window.invalidateToursOverviewMap();
-                            }, 80);
-                        };
-                        document.body.appendChild(c);
-                    };
-                    document.body.appendChild(b);
+            const chain = [
+                @json(asset('vendor/leaflet/leaflet.js')),
+                @json(asset('js/tours-map.js')) + '?v=' + window.HAUS_MELI_BUILD.toursMap,
+                @json(asset('js/tours-planner.js')) + '?v=' + window.HAUS_MELI_BUILD.toursPlanner,
+                @json(asset('js/tours.js')) + '?v=' + window.HAUS_MELI_BUILD.toursJs,
+            ];
+            let step = 0;
+            const next = function () {
+                if (!window._toursWanted || gen !== window._toursGen) return;
+                if (step >= chain.length) {
+                    window._toursReady = true;
+                    window._toursBundle = false;
+                    if (window.bootToursGuestApp) window.bootToursGuestApp();
+                    clearTimeout(window._toursBootTimer);
+                    window._toursBootTimer = setTimeout(function () {
+                        if (!window._toursWanted) return;
+                        window.bootToursGuestApp && window.bootToursGuestApp();
+                        window.invalidateToursOverviewMap && window.invalidateToursOverviewMap();
+                    }, 80);
+                    return;
+                }
+                const src = chain[step++];
+                const existing = document.querySelector('script[data-tour-src="' + src + '"]');
+                if (existing && existing.dataset.loaded === '1') { next(); return; }
+                const tag = existing || document.createElement('script');
+                const go = function () {
+                    tag.dataset.loaded = '1';
+                    next();
                 };
-                document.body.appendChild(a);
+                if (!existing) {
+                    tag.src = src;
+                    tag.dataset.tourSrc = src;
+                    tag.onload = go;
+                    document.body.appendChild(tag);
+                } else {
+                    tag.addEventListener('load', go, { once: true });
+                }
             };
-            document.body.appendChild(s1);
+            next();
         };
     </script>
     @livewireStyles
@@ -141,27 +171,28 @@
         animateNav(next, prev) {
           const nav = document.querySelector('.shell-nav');
           if (!nav || !prev || next === prev) return;
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
           const last = this.tabs.length - 1;
           const from = this.tabs.indexOf(prev);
           const to = this.tabs.indexOf(next);
           const wrapped = Math.abs(to - from) > 1 && ((from === 0 && to === last) || (from === last && to === 0));
           const forward = wrapped ? from === last : to > from;
-          this._navDir = forward ? 'next' : 'prev';
-          this._navPending = true;
-          if (this._touching || this._scrolling) return;
-          this.flushNav();
-        },
-        flushNav() {
-          if (!this._navPending || this._touching || this._scrolling) return;
-          const nav = document.querySelector('.shell-nav');
-          if (!nav) return;
-          this._navPending = false;
-          nav.dataset.dir = this._navDir || 'next';
-          nav.classList.remove('is-animating');
-          void nav.offsetWidth;
-          nav.classList.add('is-animating');
-          clearTimeout(this._navTimer);
-          this._navTimer = setTimeout(() => nav.classList.remove('is-animating'), 560);
+          const shift = forward ? '22px' : '-22px';
+          const play = (el, frames, duration, easing) => {
+            if (!el || !el.animate) return;
+            el.getAnimations().forEach((anim) => anim.cancel());
+            el.animate(frames, { duration: duration, easing: easing });
+          };
+          play(nav.querySelector('.shell-nav-current'), [
+            { opacity: 0.15, transform: 'translateX(' + shift + ') scale(0.88)' },
+            { opacity: 1, transform: 'none' }
+          ], 420, 'cubic-bezier(0.34, 1.45, 0.64, 1)');
+          nav.querySelectorAll('.shell-nav-label').forEach((el) => {
+            play(el, [
+              { opacity: 0, transform: 'translateX(' + shift + ')' },
+              { opacity: 1, transform: 'none' }
+            ], 320, 'ease-out');
+          });
         },
         wrapTo(tab, step) {
           const track = this.$refs.track;
@@ -268,7 +299,10 @@
             this._scrolling = false;
             this.finishChrome();
             this.correctSnap();
-            this.flushNav();
+            if (this.currentTab === 'tours' && !this._touching) {
+              window._toursWanted = true;
+              window.loadToursBundle && window.loadToursBundle();
+            }
           }, 160);
         },
         setTab(tab, fromScroll) {
@@ -307,7 +341,13 @@
             }, { passive: true });
             const release = () => {
               this._touching = false;
-              setTimeout(() => { this.correctSnap(); if (!this._scrolling) this.flushNav(); }, 80);
+              setTimeout(() => {
+                this.correctSnap();
+                if (!this._scrolling && this.currentTab === 'tours') {
+                  window._toursWanted = true;
+                  window.loadToursBundle && window.loadToursBundle();
+                }
+              }, 200);
             };
             trackEl.addEventListener('touchend', release, { passive: true });
             trackEl.addEventListener('touchcancel', release, { passive: true });
@@ -321,6 +361,7 @@
           setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
         }
         if (currentTab === 'tours') {
+          window._toursWanted = true;
           window.loadToursBundle && window.loadToursBundle();
         }
         $watch('currentTab', (v, prev) => {
@@ -332,12 +373,7 @@
             setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
             setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 600);
           }
-          if (v === 'tours') {
-            window.loadToursBundle && window.loadToursBundle();
-            setTimeout(() => window.bootToursGuestApp && window.bootToursGuestApp(), 50);
-            setTimeout(() => window.invalidateToursOverviewMap && window.invalidateToursOverviewMap(), 80);
-            setTimeout(() => window.invalidateToursOverviewMap && window.invalidateToursOverviewMap(), 250);
-          }
+          if (v !== 'tours' && window.cancelToursLoad) window.cancelToursLoad();
         });
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
@@ -368,7 +404,7 @@
 
             <section class="tab-pane"
                      data-tab="tours"
-                     x-effect="if (currentTab === 'tours') { window.loadToursBundle && window.loadToursBundle(); $nextTick(() => { setTimeout(() => { window.bootToursGuestApp && window.bootToursGuestApp(); window.invalidateToursOverviewMap && window.invalidateToursOverviewMap(); }, 30); }); }">
+>
                 @livewire('tours', ['defer' => true])
             </section>
         </div>
