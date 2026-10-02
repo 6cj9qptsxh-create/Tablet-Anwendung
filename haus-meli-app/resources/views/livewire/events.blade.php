@@ -1003,6 +1003,22 @@
                         this.bindHBridge();
                         this.bindOverflowScroll();
                         window.calRefreshWeekHints = () => this.updateOverflowHints();
+                        const hEl = this.h();
+                        if (hEl && window.ResizeObserver) {
+                            let lastW = hEl.clientWidth;
+                            new ResizeObserver(() => {
+                                const nowW = hEl.clientWidth;
+                                if (nowW < 120 || Math.abs(nowW - lastW) < 1) return;
+                                const oldDay = lastW / 3;
+                                const idx = oldDay >= 40 ? Math.round(this.hLeft / oldDay) : 0;
+                                lastW = nowW;
+                                const day = this.measureDayWidth();
+                                if (day >= 40) {
+                                    this.setH(idx * day);
+                                    this.updateOverflowHints();
+                                }
+                            }).observe(hEl);
+                        }
                         window.addEventListener('resize', () => {
                             const keep = this.hLeft;
                             this.measureDayWidth();
@@ -1052,8 +1068,10 @@
                     const h = this.h();
                     const w = h && h.clientWidth ? h.clientWidth / 3 : 0;
                     if (w >= 40) window.calWeekDayW = w;
+                    const dayW = this.colWidth();
                     window.calWeekPos = {
                         hLeft: this.hLeft,
+                        hDays: dayW ? this.hLeft / dayW : null,
                         vTop: this.v() ? this.v().scrollTop : ((window.calWeekPos && window.calWeekPos.vTop) || 0),
                     };
                 },
@@ -1061,7 +1079,9 @@
                 restoreWeekPos() {
                     const saved = window.calWeekPos;
                     if (!saved || typeof saved.hLeft !== 'number') return false;
-                    this.hLeft = saved.hLeft;
+                    const day = this.colWidth();
+                    const days = (typeof saved.hDays === 'number') ? saved.hDays : (day ? saved.hLeft / day : null);
+                    this.hLeft = (day && days !== null) ? this.clampH(Math.round(days) * day) : saved.hLeft;
                     const v = this.v();
                     if (v && typeof saved.vTop === 'number') {
                         v.scrollTop = saved.vTop;

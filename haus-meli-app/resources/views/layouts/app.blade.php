@@ -287,6 +287,7 @@
           if (v === 'events') {
             requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('cal-remeasure')));
             setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
+            setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 600);
           }
           if (v === 'tours') {
             window.loadToursBundle && window.loadToursBundle();
