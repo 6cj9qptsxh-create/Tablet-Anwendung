@@ -211,10 +211,10 @@ body.is-cal-tab .cal-tab-pane {
 }
 
 .cal-toolbar-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 6px;
     margin-top: 8px;
 }
 
@@ -1262,42 +1262,12 @@ body.cal-creating {
     cursor: pointer;
 }
 
-/* --- Ansicht Umschalter (Woche / Monat / Agenda) --- */
-.cal-view-switch {
-    display: inline-flex;
-    gap: 4px;
-    padding: 3px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-}
-
-.cal-view-btn {
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 6px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.cal-view-btn.active {
-    background: var(--accent-soft);
-    color: #fff;
-}
-
-.cal-today-btn {
-    padding: 6px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    cursor: pointer;
-    font: inherit;
-    font-weight: bold;
+/* --- Ansicht-Umschalter: Stil kommt von .info-switch-btn (style.css) --- */
+.cal-toolbar-row .cal-view-switch {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: auto;
 }
 
 /* --- Monatsansicht: Band mit Swipe-Animation --- */

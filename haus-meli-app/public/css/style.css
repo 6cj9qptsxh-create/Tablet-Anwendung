@@ -5567,3 +5567,47 @@ body.trip-detail-open {
         grid-template-columns: repeat(7, 80px);
     }
 }
+
+/* --- DRUCK-ANIMATION FÜR BUTTONS ---
+   Beim Drücken federt der Button ein und ein Ring zieht sich auf ihn zusammen.
+   Beim Loslassen springt er zurück und der Ring weitet sich aus und verblasst. */
+.add-btn,
+.info-switch-btn,
+.shell-nav-side,
+.cal-icon-btn {
+    outline: 3px solid transparent;
+    outline-offset: 7px;
+    transition:
+        transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+        outline-color 0.5s ease-out,
+        outline-offset 0.5s ease-out,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
+}
+
+.add-btn:not(:disabled):active,
+.info-switch-btn:not(:disabled):active,
+.shell-nav-side:not(:disabled):active,
+.cal-icon-btn:not(:disabled):active {
+    transform: scale(0.94);
+    outline-color: color-mix(in srgb, var(--accent-soft), transparent 35%);
+    outline-offset: 0;
+    transition-duration: 0.08s;
+}
+
+.add-btn:focus-visible,
+.info-switch-btn:focus-visible,
+.shell-nav-side:focus-visible,
+.cal-icon-btn:focus-visible {
+    outline-color: var(--accent-soft);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .add-btn,
+    .info-switch-btn,
+    .shell-nav-side,
+    .cal-icon-btn {
+        transition: none;
+    }
+}
