@@ -37,7 +37,7 @@
             Livewire.hook('morph.updated', onLivewireMorph);
         }
     "
-    @open-cart.window="cartOpen = true"
+    @open-cart.window="if (!($event.detail && $event.detail.skipOnPhone && window.matchMedia('(max-width: 767px)').matches)) cartOpen = true"
     @close-cart.window="cartOpen = false"
     @close-history.window="historyOpen = false"
     @order-placed.window="cartOpen = false"

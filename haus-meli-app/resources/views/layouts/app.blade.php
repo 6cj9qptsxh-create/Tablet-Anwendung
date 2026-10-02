@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=83">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=84">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=88">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -372,6 +372,30 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var track = document.querySelector('.tab-track');
+            var shop = document.querySelector('.tab-pane[data-tab="order"]');
+            var nav = document.querySelector('.shell-nav');
+            var phone = window.matchMedia('(max-width: 767px)');
+            if (!track || !shop || !nav) return;
+            function update() {
+                var root = document.body.style;
+                if (!phone.matches) {
+                    root.removeProperty('--nav-shift');
+                    return;
+                }
+                var navH = nav.offsetHeight;
+                var shift = Math.min(Math.max(shop.scrollTop, 0), navH);
+                var visible = 1 - Math.min(1, track.scrollLeft / Math.max(track.clientWidth, 1));
+                root.setProperty('--nav-shift', (shift * visible) + 'px');
+            }
+            shop.addEventListener('scroll', update, { passive: true });
+            track.addEventListener('scroll', update, { passive: true });
+            window.addEventListener('resize', update);
+            update();
+        });
+    </script>
     <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
