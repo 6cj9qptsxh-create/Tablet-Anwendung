@@ -2331,25 +2331,23 @@ body.is-cal-tab .shell-nav {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border);
-    color: var(--muted);
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 14px;
     font-weight: 700;
     height: var(--input-height);
     min-height: var(--input-height);
     padding: 0 12px;
     border-radius: 10px;
     cursor: pointer;
-    background: var(--surface);
-    box-shadow: none;
 }
 
-.info-switch-btn.is-on {
-    border-color: transparent;
-    color: var(--accent-contrast);
-    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
+/* Inaktiv: neutral. Der aktive Button trägt zusätzlich .add-btn und bekommt
+   Verlauf, Glanz und Glow unverändert vom Shop-Button. */
+.info-switch-btn:not(.add-btn) {
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface);
+    box-shadow: none;
 }
 
 .info-sos {
@@ -3400,7 +3398,7 @@ body.is-cal-tab .shell-nav {
 
     .info-switch-btn {
         padding: 0 8px;
-        font-size: 0.95rem;
+        font-size: 14px;
     }
 
     .shell-btn {
@@ -5549,7 +5547,7 @@ body.trip-detail-open {
 @media (max-width: 767px) {
     .info-switch-btn {
         padding: 0 8px;
-        font-size: 0.95rem;
+        font-size: 14px;
     }
 
     .wx-board {
