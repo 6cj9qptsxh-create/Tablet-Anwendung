@@ -1283,6 +1283,13 @@
             });
         }
         window.syncSavedRoutesUi();
+        window.pullSavedGuestRoutes();
+        if (!window._savedRoutesVisibilityBound) {
+            window._savedRoutesVisibilityBound = true;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') window.pullSavedGuestRoutes();
+            });
+        }
     };
 
     window.syncTakeawayButton = function () {
@@ -1579,6 +1586,69 @@
         } catch (e) {
             console.warn('save routes', e);
         }
+    };
+
+    // Gespeicherte Touren liegen zusätzlich auf dem Server, damit das Handy sie
+    // anzeigen kann. Der Server ist maßgeblich; lokale Touren, die dort fehlen
+    // und schon einmal übertragen waren, wurden anderswo gelöscht.
+    window.mergeSavedRoutes = function (local, server) {
+        const byId = new Map();
+        const upload = [];
+        (server || []).forEach(item => {
+            if (item && item.id != null) byId.set(String(item.id), Object.assign({}, item, { synced: true }));
+        });
+        (local || []).forEach(item => {
+            if (!item || item.id == null) return;
+            const id = String(item.id);
+            if (byId.has(id) || item.synced) return;
+            byId.set(id, item);
+            upload.push(item);
+        });
+        const merged = Array.from(byId.values())
+            .sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+            .slice(0, 40);
+        return { merged, upload };
+    };
+
+    window.pushSavedGuestRoutes = function (items) {
+        if (!items || !items.length) return Promise.resolve();
+        return fetch('/tours/saved', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, window.getCsrfHeaders()),
+            credentials: 'same-origin',
+            body: JSON.stringify({ routes: items }),
+        }).then(res => {
+            if (!res.ok) return;
+            const ids = new Set(items.map(item => String(item.id)));
+            const list = window.listSavedGuestRoutes().map(item => (
+                ids.has(String(item.id)) ? Object.assign({}, item, { synced: true }) : item
+            ));
+            window.persistSavedGuestRoutes(list);
+        }).catch(err => console.warn('push saved routes', err));
+    };
+
+    window.pullSavedGuestRoutes = function () {
+        if (window._savedRoutesPulling) return Promise.resolve();
+        window._savedRoutesPulling = true;
+        return fetch('/tours/saved', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+                if (!data || !Array.isArray(data.routes)) return;
+                const result = window.mergeSavedRoutes(window.listSavedGuestRoutes(), data.routes);
+                window.persistSavedGuestRoutes(result.merged);
+                if (result.upload.length) window.pushSavedGuestRoutes(result.upload);
+                window.syncSavedRoutesUi();
+            })
+            .catch(err => console.warn('pull saved routes', err))
+            .finally(() => { window._savedRoutesPulling = false; });
+    };
+
+    window.deleteSavedGuestRouteRemote = function (id) {
+        return fetch('/tours/saved/' + encodeURIComponent(id), {
+            method: 'DELETE',
+            headers: window.getCsrfHeaders(),
+            credentials: 'same-origin',
+        }).catch(err => console.warn('delete saved route', err));
     };
 
     window.escapeHtmlText = function (s) {
@@ -2162,10 +2232,13 @@
         if (!host) return;
         const list = window.listSavedGuestRoutes();
         if (!list.length) {
-            host.innerHTML = '';
-            host.hidden = true;
+            host.hidden = false;
+            host.classList.add('is-empty');
+            host.innerHTML = '<div class="tours-saved-head">Gespeicherte Touren</div>'
+                + '<p class="tours-saved-empty">Noch keine Touren gespeichert. Plane eine Tour am Tablet oder PC, sie erscheint danach hier.</p>';
             return;
         }
+        host.classList.remove('is-empty');
         host.hidden = false;
         const fmtDur = (min) => {
             const m = Math.round(Number(min) || 0);
@@ -2329,6 +2402,7 @@
         };
         list.unshift(item);
         window.persistSavedGuestRoutes(list.slice(0, 40));
+        window.pushSavedGuestRoutes([item]);
         if (!window.GUEST_PLAN) window.GUEST_PLAN = {};
         window.GUEST_PLAN.loadedSavedId = item.id;
         window.setLoadedRouteGlow(true);
@@ -2366,6 +2440,10 @@
         window.syncSavedRoutesUi();
         const status = document.getElementById('tours-plan-status');
         if (status) status.textContent = 'Geladen: ' + (item.name || 'Tour');
+        if (window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+            const stage = document.querySelector('.tours-map-stage');
+            if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     };
 
     window.takeawaySavedGuestRoute = function (id) {
@@ -2378,6 +2456,7 @@
         if (!window.confirm('Gespeicherte Tour löschen?')) return;
         const list = window.listSavedGuestRoutes().filter(x => x.id !== id);
         window.persistSavedGuestRoutes(list);
+        window.deleteSavedGuestRouteRemote(id);
         if (window.GUEST_PLAN && window.GUEST_PLAN.loadedSavedId === id) {
             window.GUEST_PLAN.loadedSavedId = null;
             window.setLoadedRouteGlow(false);

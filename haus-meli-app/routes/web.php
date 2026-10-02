@@ -4,6 +4,7 @@ use App\Http\Controllers\E1001AgendaController;
 use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\ElevationController;
 use App\Http\Controllers\PlannedRouteShareController;
+use App\Http\Controllers\SavedToursController;
 use App\Http\Controllers\TripGpxController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,14 @@ Route::get('/tours/share/{token}', [PlannedRouteShareController::class, 'show'])
     ->name('tours.share.show');
 Route::get('/tours/share/{token}/gpx', [PlannedRouteShareController::class, 'gpx'])
     ->name('tours.share.gpx');
+
+Route::get('/tours/saved', [SavedToursController::class, 'index'])
+    ->name('tours.saved.index');
+Route::post('/tours/saved', [SavedToursController::class, 'store'])
+    ->name('tours.saved.store');
+Route::delete('/tours/saved/{id}', [SavedToursController::class, 'destroy'])
+    ->where('id', '[A-Za-z0-9_-]+')
+    ->name('tours.saved.destroy');
 
 Route::post('/tours/elevation', [ElevationController::class, 'lookup'])
     ->name('tours.elevation');
