@@ -5751,6 +5751,16 @@ body.trip-detail-open {
     .tab-pane:has(#tab-order.cart-is-open) {
         overflow-y: hidden;
     }
+
+    body.page-content:has(#tab-order.cart-is-open) .tab-track {
+        overflow-x: hidden;
+        scroll-snap-type: none;
+    }
+
+    .tab-pane .leaflet-container,
+    .tab-pane .leaflet-container.leaflet-touch-drag {
+        touch-action: pan-y !important;
+    }
 }
 
 

@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=87">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=88">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=89">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,9 +58,9 @@
         window.HAUS_MELI_BUILD = {
             id: '2026-09-26-boot-fix',
             path: @json(base_path()),
-            toursMap: 69,
+            toursMap: 70,
             toursPlanner: 31,
-            toursJs: 74,
+            toursJs: 75,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -80,7 +80,12 @@
             window._toursWanted = false;
             window._toursGen += 1;
             window._toursBundle = false;
+            window._toursBooting = false;
             clearTimeout(window._toursBootTimer);
+            clearTimeout(window._toursBootSoon);
+            if (window._toursObs) {
+                try { window._toursObs.disconnect(); } catch (e) {}
+            }
         };
         window.loadToursBundle = function () {
             window._toursWanted = true;
@@ -110,11 +115,11 @@
                 if (step >= chain.length) {
                     window._toursReady = true;
                     window._toursBundle = false;
-                    if (window.bootToursGuestApp) window.bootToursGuestApp();
+                    if (window.scheduleToursBoot) window.scheduleToursBoot();
+                    else if (window.bootToursGuestApp) window.bootToursGuestApp();
                     clearTimeout(window._toursBootTimer);
                     window._toursBootTimer = setTimeout(function () {
                         if (!window._toursWanted) return;
-                        window.bootToursGuestApp && window.bootToursGuestApp();
                         window.invalidateToursOverviewMap && window.invalidateToursOverviewMap();
                     }, 80);
                     return;
@@ -218,7 +223,6 @@
           let startX = 0, startY = 0, armed = false;
           const blocked = (start) => {
             for (let node = start; node && node !== track; node = node.parentElement) {
-              if (node.classList && node.classList.contains('leaflet-container')) return true;
               if (/^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)) return true;
               if (node.scrollWidth > node.clientWidth + 2) {
                 const overflow = getComputedStyle(node).overflowX;
@@ -328,19 +332,53 @@
           if (pagerEl && window.ResizeObserver) {
             new ResizeObserver(() => {
               syncPaneBox();
+              if (this._touching || this._scrolling) return;
               scrollToTab(currentTab, false);
             }).observe(pagerEl);
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
           if (trackEl) {
-            trackEl.addEventListener('touchstart', () => {
+            let sx = 0, sy = 0, carting = false, left0 = 0;
+            trackEl.addEventListener('touchstart', (event) => {
               this._touching = true;
               this._prog = false;
               clearTimeout(this._progTimer);
               clearTimeout(this._scrollEnd);
+              const t = event.touches[0];
+              sx = t ? t.clientX : 0;
+              sy = t ? t.clientY : 0;
+              left0 = trackEl.scrollLeft;
+              carting = !!document.querySelector('#tab-order.cart-is-open');
             }, { passive: true });
-            const release = () => {
+            trackEl.addEventListener('touchmove', (event) => {
+              const t = event.touches[0];
+              if (!t) return;
+              const dx = t.clientX - sx;
+              const dy = t.clientY - sy;
+              if (carting && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+                event.preventDefault();
+              }
+              if (!carting && this.currentTab === 'tours' && Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
+                window.cancelToursLoad && window.cancelToursLoad();
+              }
+            }, { passive: false });
+            const release = (event) => {
               this._touching = false;
+              const t = event.changedTouches && event.changedTouches[0];
+              const dx = t ? t.clientX - sx : 0;
+              const dy = t ? t.clientY - sy : 0;
+              const horizontal = Math.abs(dx) > 64 && Math.abs(dx) > Math.abs(dy) * 1.2;
+              if (carting && horizontal && dx > 0) {
+                window.dispatchEvent(new CustomEvent('close-cart'));
+              } else if (!carting && this.currentTab === 'tours' && horizontal && Math.abs(trackEl.scrollLeft - left0) < 8) {
+                window.cancelToursLoad && window.cancelToursLoad();
+                const index = this.tabs.indexOf('tours');
+                const dir = dx < 0 ? 1 : -1;
+                const next = this.tabs[index + dir];
+                if (next) this.setTab(next);
+                else if (dir > 0) this.wrapTo(this.tabs[0], 1);
+              }
+              carting = false;
               setTimeout(() => {
                 this.correctSnap();
                 if (!this._scrolling && this.currentTab === 'tours') {
@@ -368,11 +406,6 @@
           animateNav(v, prev);
           window.hausMeliStoreTab(v);
           if (location.hash !== '#' + v) location.hash = v;
-          if (v === 'events') {
-            requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('cal-remeasure')));
-            setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
-            setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 600);
-          }
           if (v !== 'tours' && window.cancelToursLoad) window.cancelToursLoad();
         });
         window.addEventListener('hashchange', () => {
