@@ -84,10 +84,9 @@ html:has(body.is-cal-tab) {
 }
 
 body.page-content.is-cal-tab {
-    height: 100dvh;
-    height: -webkit-fill-available;
+    height: auto;
     max-height: none;
-    min-height: 100dvh;
+    min-height: 0;
     overflow: hidden !important;
     overscroll-behavior: none;
 }
