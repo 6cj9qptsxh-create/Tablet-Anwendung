@@ -5318,8 +5318,8 @@ body.trip-detail-open {
     top: 50%;
     z-index: 3;
     transform: translate(calc(-50% - 2px), -50%);
-    width: 22px;
-    height: 22px;
+    width: calc(1.9rem + 8px);
+    height: calc(1.9rem + 8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5331,7 +5331,7 @@ body.trip-detail-open {
 }
 
 .wx-night .material-symbols-rounded {
-    font-size: 14px;
+    font-size: 1.9rem;
     line-height: 1;
 }
 
@@ -5410,13 +5410,6 @@ body.trip-detail-open {
     min-height: 2px;
     border-radius: 2px 2px 0 0;
     background: #4c9be8;
-}
-
-.wx-rain-note {
-    margin: 8px 4px 0;
-    color: var(--muted);
-    font-size: 0.75rem;
-    line-height: 1.35;
 }
 
 .wx-detail {

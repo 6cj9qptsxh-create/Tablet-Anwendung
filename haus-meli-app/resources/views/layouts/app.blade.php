@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=71">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=72">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=81">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,26 +25,30 @@
 
     <style> [x-cloak] { display: none !important; } </style>
     <script>
-        // iPhone-Home-Bildschirm-App: Das Fenster wird ohne die Statusleiste gemeldet,
-        // aber darunter gezeichnet. Dann fehlt unten genau diese Höhe. Wir nehmen
-        // die echte Bildschirmhöhe, solange der Unterschied klein bleibt.
+        // In der iPhone-Home-Bildschirm-App ist 100dvh um die Statusleiste zu kurz,
+        // obwohl die App darunter zeichnet. Die Seitenhöhe kommt deshalb aus JS:
+        // dort die volle Bildschirmhöhe, sonst die gemessene Fensterhöhe.
         (function () {
             const root = document.documentElement;
+            const standalone = function () {
+                if (navigator.standalone === true) return true;
+                try {
+                    return window.matchMedia('(display-mode: standalone)').matches
+                        || window.matchMedia('(display-mode: fullscreen)').matches;
+                } catch (e) {
+                    return false;
+                }
+            };
             const apply = function () {
-                if (navigator.standalone !== true || !window.screen) {
-                    root.style.removeProperty('--app-h');
-                    return;
+                let h = window.innerHeight;
+                if (standalone() && window.screen) {
+                    const portrait = window.innerHeight >= window.innerWidth;
+                    const full = portrait
+                        ? Math.max(screen.width, screen.height)
+                        : Math.min(screen.width, screen.height);
+                    if (full >= h && full - h <= 100) h = full;
                 }
-                const portrait = window.innerHeight >= window.innerWidth;
-                const full = portrait
-                    ? Math.max(screen.width, screen.height)
-                    : Math.min(screen.width, screen.height);
-                const diff = full - window.innerHeight;
-                if (diff > 0 && diff <= 80) {
-                    root.style.setProperty('--app-h', full + 'px');
-                } else {
-                    root.style.removeProperty('--app-h');
-                }
+                if (h > 0) root.style.setProperty('--app-h', h + 'px');
             };
             apply();
             window.addEventListener('resize', apply);
