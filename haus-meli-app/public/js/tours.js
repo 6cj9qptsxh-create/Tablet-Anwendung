@@ -2224,11 +2224,19 @@ window.bootToursGuestApp = function () {
     const container = document.getElementById('tours-app-container');
     if (!container) return false;
     if (window._toursGuestBooted) {
-        if (window._toursWanted === false) return true;
-        if (typeof window.invalidateToursOverviewMap === 'function') {
-            window.invalidateToursOverviewMap();
-        }
+        clearTimeout(window._toursMapTimer);
+        window._toursMapTimer = setTimeout(function () {
+            if (window._toursWanted === false) return;
+            if (typeof window.invalidateToursOverviewMap === 'function') {
+                window.invalidateToursOverviewMap();
+            }
+        }, 40);
         return true;
+    }
+    if (window._toursPrepared) {
+        clearTimeout(window._toursMapTimer);
+        window._toursMapTimer = setTimeout(window._toursFinishBoot, 0);
+        return false;
     }
     window._toursBooting = true;
 
@@ -2350,23 +2358,26 @@ window.bootToursGuestApp = function () {
         setupHikeSliders();
     }
     if (typeof window.initPlannerUi === 'function') window.initPlannerUi();
-    if (window._toursWanted === false) {
-        window._toursBooting = false;
-        return false;
-    }
-    window.applyTourGraphFilters(true);
-
-    window._toursGuestBooted = true;
+    window._toursPrepared = true;
     window._toursBooting = false;
-    if (window._toursObs) {
-        try { window._toursObs.disconnect(); } catch (e) {}
-        window._toursObs = null;
-    }
-    console.info('[Haus Meli] Tours-UI gebootet', {
-        nodes: (window.TOUR_NODES || []).length,
-        segments: (window.ALL_SEGMENTS || []).length,
-    });
-    return true;
+    window._toursFinishBoot = function () {
+        if (window._toursWanted === false || window._toursGuestBooted) return;
+        window._toursBooting = true;
+        window.applyTourGraphFilters(true);
+        window._toursGuestBooted = true;
+        window._toursBooting = false;
+        if (window._toursObs) {
+            try { window._toursObs.disconnect(); } catch (e) {}
+            window._toursObs = null;
+        }
+        console.info('[Haus Meli] Tours-UI gebootet', {
+            nodes: (window.TOUR_NODES || []).length,
+            segments: (window.ALL_SEGMENTS || []).length,
+        });
+    };
+    clearTimeout(window._toursMapTimer);
+    window._toursMapTimer = setTimeout(window._toursFinishBoot, 0);
+    return false;
 };
 
 // Nicht synchron booten: ein Wisch weg soll das Laden noch abbrechen können.
