@@ -20,7 +20,7 @@ class MeteoblueForecast
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v3.%s.%s',
+            'weather.meteoblue.v4.%s.%s',
             config('weather.lat'),
             config('weather.lon')
         );
@@ -209,7 +209,6 @@ class MeteoblueForecast
             $start = (int) ($days['indexto1hvalues_start'][$i] ?? 0);
             $end = (int) ($days['indexto1hvalues_end'][$i] ?? $start);
             $dayCode = (int) ($days['pictocode'][$i] ?? 1);
-            $look = $this->look($dayCode);
             $rain = round((float) ($days['precipitation'][$i] ?? 0), 1);
             $pop = (int) round((float) ($days['precipitation_probability'][$i] ?? 0));
             $meanWind = (float) ($days['windspeed_mean'][$i] ?? $days['windspeed_max'][$i] ?? 0);
@@ -230,10 +229,12 @@ class MeteoblueForecast
                     'icon' => $hourLook['icon'],
                     'label' => $hourLook['label'],
                     'terminal' => $hourLook['terminal'],
+                    'daylight' => isset($hours['isdaylight'][$h]) ? ((int) $hours['isdaylight'][$h] === 1) : null,
                     'is_now' => substr($stamp, 0, 13) === $nowKey,
                 ];
             }
 
+            $look = $this->dayLook($hourRows, $rain, $days['sunshine_time'][$i] ?? null, $dayCode);
             $when = new \DateTimeImmutable($date, $tz);
             $outDays[] = [
                 'date' => $date,
@@ -458,6 +459,87 @@ class MeteoblueForecast
         }
 
         return 12;
+    }
+
+    /**
+     * Symbol für den ganzen Tag. Der Tagescode von meteoblue ist zu grob und
+     * hat eine andere Skala als der Stundencode, deshalb zählen die echten
+     * Werte: erst Niederschlag am Tag, dann Nebel, sonst der Anteil der
+     * möglichen Sonnenzeit, der wirklich scheint.
+     */
+    private function dayLook(array $rows, float $rain, mixed $sunMinutes, int $dayCode): array
+    {
+        $day = [];
+        foreach ($rows as $row) {
+            if (($row['daylight'] ?? null) === true) {
+                $day[] = $row;
+            }
+        }
+        if ($day === []) {
+            foreach ($rows as $row) {
+                $clock = (int) substr((string) ($row['time'] ?? ''), 0, 2);
+                if ($clock >= 7 && $clock <= 20) {
+                    $day[] = $row;
+                }
+            }
+        }
+        if ($day === []) {
+            return $this->look($dayCode);
+        }
+
+        $wet = ['thunderstorm' => 0, 'weather_snowy' => 0, 'rainy' => 0];
+        $wetHours = 0;
+        $fog = 0;
+        $cloudScore = 0.0;
+        foreach ($day as $row) {
+            $icon = (string) ($row['icon'] ?? 'sunny');
+            if (($row['rain'] ?? 0) >= 0.2) {
+                $wetHours++;
+                if (isset($wet[$icon])) {
+                    $wet[$icon]++;
+                } else {
+                    $wet['rainy']++;
+                }
+            }
+            if ($icon === 'foggy') {
+                $fog++;
+            }
+            $cloudScore += match ($icon) {
+                'sunny' => 1.0,
+                'partly_cloudy_day' => 0.5,
+                'cloud', 'foggy' => 0.1,
+                default => 0.0,
+            };
+        }
+        $daylight = count($day);
+
+        if ($rain >= 1.0 || $wetHours >= 3) {
+            if ($wet['thunderstorm'] > 0) {
+                return $this->look(27);
+            }
+            if ($wet['weather_snowy'] > $wet['rainy']) {
+                return $this->look(24);
+            }
+
+            return $this->look(23);
+        }
+
+        if ($fog * 2 >= $daylight) {
+            return $this->look(16);
+        }
+
+        $sun = $sunMinutes === null || $sunMinutes === ''
+            ? $cloudScore / $daylight
+            : min(1.0, ((float) $sunMinutes) / ($daylight * 60));
+
+        if ($sun >= 0.7) {
+            return $this->look(1);
+        }
+        if ($sun >= 0.35) {
+            return $this->look(7);
+        }
+
+        return $this->look(19);
     }
 
     private function look(int $code): array
