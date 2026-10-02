@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=70">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=80">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=71">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=81">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +25,31 @@
 
     <style> [x-cloak] { display: none !important; } </style>
     <script>
+        // iPhone-Home-Bildschirm-App: Das Fenster wird ohne die Statusleiste gemeldet,
+        // aber darunter gezeichnet. Dann fehlt unten genau diese Höhe. Wir nehmen
+        // die echte Bildschirmhöhe, solange der Unterschied klein bleibt.
+        (function () {
+            const root = document.documentElement;
+            const apply = function () {
+                if (navigator.standalone !== true || !window.screen) {
+                    root.style.removeProperty('--app-h');
+                    return;
+                }
+                const portrait = window.innerHeight >= window.innerWidth;
+                const full = portrait
+                    ? Math.max(screen.width, screen.height)
+                    : Math.min(screen.width, screen.height);
+                const diff = full - window.innerHeight;
+                if (diff > 0 && diff <= 80) {
+                    root.style.setProperty('--app-h', full + 'px');
+                } else {
+                    root.style.removeProperty('--app-h');
+                }
+            };
+            apply();
+            window.addEventListener('resize', apply);
+            window.addEventListener('orientationchange', function () { setTimeout(apply, 80); });
+        })();
         // Alpine-Ausdrücke dürfen kein try/catch — Helfer hier (echtes JS).
         window.HAUS_MELI_BUILD = {
             id: '2026-09-26-boot-fix',

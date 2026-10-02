@@ -78,13 +78,13 @@
 
 /* Kalender-Tab: Seite fest, nur das Raster scrollt */
 html:has(body.is-cal-tab) {
-    height: 100%;
+    height: var(--app-h, 100%);
     overflow: hidden;
     overscroll-behavior: none;
 }
 
 body.page-content.is-cal-tab {
-    height: auto;
+    height: var(--app-h, 100dvh);
     max-height: none;
     min-height: 0;
     overflow: hidden !important;

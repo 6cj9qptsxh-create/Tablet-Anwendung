@@ -2326,8 +2326,8 @@ body.is-cal-tab .shell-nav {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    color: var(--accent-contrast);
+    border: 1px solid var(--border);
+    color: var(--muted);
     font: inherit;
     font-size: 0.95rem;
     font-weight: 700;
@@ -2336,13 +2336,15 @@ body.is-cal-tab .shell-nav {
     padding: 0 12px;
     border-radius: 10px;
     cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
+    background: var(--surface);
+    box-shadow: none;
 }
 
 .info-switch-btn.is-on {
-    color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.85), 0 4px 12px color-mix(in srgb, var(--accent), transparent 45%);
+    border-color: transparent;
+    color: var(--accent-contrast);
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
 }
 
 .info-sos {
@@ -3542,24 +3544,24 @@ input[type="range"],
 
 /* --- TAB PAGER: Seiten liegen nebeneinander und folgen dem Finger --- */
 html:has(body.page-content) {
-    height: 100%;
+    height: var(--app-h, 100%);
     overflow: hidden;
 }
 
 body.page-content {
-    /* Fest am sichtbaren Fenster. 100dvh plus der sichtbare Header schneidet
-       unten ab, weil die Mindesthöhe den Header nicht abzieht. */
+    /* --app-h setzt das Skript im Kopf, wenn die Home-Bildschirm-App auf dem
+       iPhone ein Fenster ohne die Statusleiste meldet, aber darunter zeichnet.
+       Sonst gilt die Fensterhöhe. */
     position: fixed;
     top: 0;
-    bottom: 0;
     left: max(0px, calc((100% - 1400px) / 2));
     width: min(100%, 1400px);
     max-width: 1400px;
-    height: auto;
+    height: var(--app-h, 100dvh);
     max-height: none;
     min-height: 0;
     margin: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: 0;
     overflow: hidden !important;
 }
 
