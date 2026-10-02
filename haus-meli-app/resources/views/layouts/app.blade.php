@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=86">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=87">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=89">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,12 +235,25 @@
           requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('cal-remeasure')));
           setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
         },
+        correctSnap() {
+          if (this._touching || this._prog || this._wrapping) return;
+          const track = this.$refs.track;
+          if (!track) return;
+          const width = track.clientWidth;
+          if (width < 2) return;
+          const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(track.scrollLeft / width)));
+          const nearest = index * width;
+          if (Math.abs(track.scrollLeft - nearest) < 2) return;
+          this.scrollToTab(this.tabs[index], true);
+          clearTimeout(this._scrollEnd);
+          this._scrollEnd = setTimeout(() => this.finishChrome(), 560);
+        },
         onPagerScroll() {
           if (this._prog) return;
           const tab = this.tabFromScroll();
           if (tab && tab !== this.currentTab) this.setTab(tab, true);
           clearTimeout(this._scrollEnd);
-          this._scrollEnd = setTimeout(() => this.finishChrome(), 140);
+          this._scrollEnd = setTimeout(() => { this.finishChrome(); this.correctSnap(); }, 280);
         },
         setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
@@ -269,6 +282,12 @@
             }).observe(pagerEl);
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
+          if (trackEl) {
+            trackEl.addEventListener('touchstart', () => { this._touching = true; }, { passive: true });
+            const release = () => { this._touching = false; setTimeout(() => this.correctSnap(), 340); };
+            trackEl.addEventListener('touchend', release, { passive: true });
+            trackEl.addEventListener('touchcancel', release, { passive: true });
+          }
           if (trackEl) wireWrapSwipe(trackEl);
         }));
         window.hausMeliStoreTab(currentTab);
@@ -392,7 +411,14 @@
                 root.setProperty('--nav-shift', (shift * visible) + 'px');
             }
             shop.addEventListener('scroll', update, { passive: true });
-            track.addEventListener('scroll', update, { passive: true });
+            /* Nicht bei jedem Pixel des Seitwärtsschiebens: das verschiebt die
+               Leiste (transform + clip-path) und reißt auf dem Handy das
+               Einrasten zwischen Shop und Wohnung ab. Erst wenn die Bewegung steht. */
+            var navTimer;
+            track.addEventListener('scroll', function () {
+                clearTimeout(navTimer);
+                navTimer = setTimeout(update, 240);
+            }, { passive: true });
             window.addEventListener('resize', update);
             update();
         });

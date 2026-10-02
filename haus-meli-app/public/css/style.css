@@ -5754,16 +5754,6 @@ body.trip-detail-open {
 }
 
 
-/* --- BUTTON-CONTAINER IN INFOS: gleiches Grau wie die Filter-Einstellungen --- */
-.info-toolbar.card {
-    background: var(--surface);
-}
-
-.info-toolbar .info-switch-btn:not(.add-btn) {
-    background: transparent;
-    border-color: transparent;
-}
-
 /* --- TOUREN: Ladeanzeige, solange die Karte lädt --- */
 .tours-map-loading {
     position: absolute;
