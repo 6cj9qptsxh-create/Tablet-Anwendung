@@ -47,10 +47,10 @@
 
     <div class="info-toolbar">
         <div class="info-switch" role="tablist" aria-label="Infobereiche">
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'now' }" :aria-selected="section === 'now'" @click="setSection('now')">Jetzt</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'out' }" :aria-selected="section === 'out'" @click="setSection('out')">Umgebung</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on': section === 'wetter' }" :aria-selected="section === 'wetter'" @click="setSection('wetter')">Wetter</button>
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'now' }" :aria-selected="section === 'now'" @click="setSection('now')">Jetzt</button>
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'out' }" :aria-selected="section === 'out'" @click="setSection('out')">Umgebung</button>
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'wetter' }" :aria-selected="section === 'wetter'" @click="setSection('wetter')">Wetter</button>
         </div>
     </div>
 
