@@ -664,7 +664,7 @@
             }
         });
 
-        container._pendingSegments.forEach((seg) => {
+        const drawOverviewSeg = (seg) => {
             const coords = (seg.geojson && seg.geojson.coordinates) || [];
             if (coords.length < 2) return;
             let latlngs = coords
@@ -834,7 +834,9 @@
             layer.addLayer(line);
             container._lineRefs.push(line);
             latlngs.forEach((ll) => bounds.push(ll));
-        });
+        };
+
+        const finishOverview = () => {
 
         // Anschließbare Segmente nach vorn; offene Rad-Retouren zuerst darunter,
         // damit Abstecher (Wandern) zwischen E-Bike-Hin und -Retour klickbar bleiben
@@ -1071,6 +1073,46 @@
             applyView();
             if (fitBounds) setTimeout(applyView, 80);
         });
+        };
+
+        const segList = container._pendingSegments || [];
+        const markBooted = () => {
+            if (!window._toursChunkMap || window._toursWanted === false) return;
+            window._toursChunkMap = false;
+            window._toursGuestBooted = true;
+            window._toursBooting = false;
+            if (window._toursObs) {
+                try { window._toursObs.disconnect(); } catch (e) {}
+                window._toursObs = null;
+            }
+        };
+        if (!window._toursChunkMap) {
+            segList.forEach(drawOverviewSeg);
+            finishOverview();
+            return;
+        }
+        let segAt = 0;
+        const drawSome = () => {
+            if (window._toursWanted === false) {
+                window._toursMapDrawTimer = null;
+                window._toursChunkMap = false;
+                window._toursBooting = false;
+                return;
+            }
+            const t0 = performance.now();
+            while (segAt < segList.length && performance.now() - t0 < 12) {
+                drawOverviewSeg(segList[segAt]);
+                segAt += 1;
+            }
+            if (segAt < segList.length) {
+                window._toursMapDrawTimer = setTimeout(drawSome, 0);
+                return;
+            }
+            window._toursMapDrawTimer = null;
+            finishOverview();
+            markBooted();
+        };
+        window._toursMapDrawTimer = setTimeout(drawSome, 0);
     };
 
     /**

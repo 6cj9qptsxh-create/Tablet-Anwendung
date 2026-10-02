@@ -58,9 +58,9 @@
         window.HAUS_MELI_BUILD = {
             id: '2026-09-26-boot-fix',
             path: @json(base_path()),
-            toursMap: 70,
+            toursMap: 71,
             toursPlanner: 31,
-            toursJs: 77,
+            toursJs: 78,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -82,9 +82,16 @@
             window._toursBundle = false;
             window._toursBooting = false;
             window._toursBootQueued = false;
+            window._toursBootToken = (window._toursBootToken || 0) + 1;
+            window._toursPendingGen = null;
+            window._toursSliceBudget = 0;
+            window._toursBootFiltered = null;
+            window._toursChunkMap = false;
             clearTimeout(window._toursBootTimer);
             clearTimeout(window._toursBootSoon);
             clearTimeout(window._toursMapTimer);
+            clearTimeout(window._toursMapDrawTimer);
+            window._toursMapDrawTimer = null;
             if (window._toursObs) {
                 try { window._toursObs.disconnect(); } catch (e) {}
             }
@@ -354,7 +361,7 @@
               if (!carting && this.currentTab === 'tours' && Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
                 window.cancelToursLoad && window.cancelToursLoad();
               }
-            }, { passive: false });
+            }, { passive: false, capture: true });
             const release = (event) => {
               this._touching = false;
               const t = event.changedTouches && event.changedTouches[0];

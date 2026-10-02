@@ -855,6 +855,10 @@ window.getOpenWheeledReturns = function (excludeStepIndex) {
  * - Im Planungsmodus: Filter immer ab Starts (nicht Restbudget am Tip)
  */
 window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, minHm, maxHm, budgets) {
+    if (window._toursPendingGen && window._toursSliceBudget && window._toursContinueSearch) {
+        return window._toursContinueSearch();
+    }
+    window._toursPendingGen = null;
     window._minTourKmBySegId = new Map();
     window._minTourHmBySegId = new Map();
 
@@ -976,7 +980,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
         });
     }
 
-    function dfs(node, acc, edgeIds, usedSegs, startId) {
+    function* dfs(node, acc, edgeIds, usedSegs, startId) {
         if (edgeIds.length
             && isValidEnd(node, startId)
             && pathInRange(acc)
@@ -986,6 +990,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
 
         const edges = adj.get(Number(node)) || [];
         for (let i = 0; i < edges.length; i++) {
+            yield;
             const e = edges[i];
             const eid = Number(e.id);
             if (usedSegs.has(eid)) continue;
@@ -1011,7 +1016,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
                 edgeIds.push(eid);
                 const prevForced = modeBySegId.get(eid);
                 modeBySegId.set(eid, mode);
-                dfs(e.other, nextAcc, edgeIds, usedSegs, startId);
+                yield* dfs(e.other, nextAcc, edgeIds, usedSegs, startId);
                 if (prevForced == null) modeBySegId.delete(eid);
                 else modeBySegId.set(eid, prevForced);
                 edgeIds.pop();
@@ -1020,6 +1025,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
         }
     }
 
+    function* runSearch() {
     // Planer: immer ab Starts filtern (sonst Restbudget am Tip blendet Vias wie Lichtsee aus)
     if (routeActive && !usingPlanner) {
         const tip = window.getRouteTipNodeId();
@@ -1040,7 +1046,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
                 const fallbackMode = modes[0] || 'hike';
                 startAcc[fallbackMode] = { km: tot.km, hm: tot.hm };
             }
-            dfs(tip, startAcc, prefixIds.slice(), new Set(prefixIds), routeStart);
+            yield* dfs(tip, startAcc, prefixIds.slice(), new Set(prefixIds), routeStart);
 
             const openRevs = typeof window.getOpenWheeledReturns === 'function'
                 ? window.getOpenWheeledReturns()
@@ -1048,7 +1054,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
             if (openRevs.size) {
                 const revIds = new Set();
                 openRevs.forEach((_mode, revId) => revIds.add(Number(revId)));
-                function dfsDetour(node, acc, edgeIds, usedSegs) {
+                function* dfsDetour(node, acc, edgeIds, usedSegs) {
                     if (edgeIds.length && Number(node) === Number(tip)) {
                         const t = accTotals(acc);
                         if (t.km > 1e-9) mark(edgeIds, acc);
@@ -1063,6 +1069,7 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
                         if (!seg) continue;
                         const modeKeys = window.segmentMatchingModes(seg, modes);
                         for (let mi = 0; mi < modeKeys.length; mi++) {
+                            yield;
                             const mode = modeKeys[mi];
                             const nextAcc = cloneAcc(acc);
                             if (!nextAcc[mode]) nextAcc[mode] = { km: 0, hm: 0 };
@@ -1071,22 +1078,44 @@ window.segmentsOnValidStartPaths = function (segments, startIds, minKm, maxKm, m
                             if (!fitsBudgets(nextAcc)) continue;
                             usedSegs.add(eid);
                             edgeIds.push(eid);
-                            dfsDetour(e.other, nextAcc, edgeIds, usedSegs);
+                            yield* dfsDetour(e.other, nextAcc, edgeIds, usedSegs);
                             edgeIds.pop();
                             usedSegs.delete(eid);
                         }
                     }
                 }
-                dfsDetour(tip, emptyAcc(), [], new Set(prefixIds));
+                yield* dfsDetour(tip, emptyAcc(), [], new Set(prefixIds));
             }
         }
     } else if (startSet.size) {
-        startSet.forEach(start => {
-            dfs(start, emptyAcc(), [], new Set(), start);
-        });
+        for (const start of startSet) {
+            yield* dfs(start, emptyAcc(), [], new Set(), start);
+        }
     }
+}
 
-    return pool.filter(s => keep.has(Number(s.id)));
+    const finish = () => pool.filter(s => keep.has(Number(s.id)));
+    const drive = (job) => {
+        const budget = window._toursSliceBudget || 0;
+        const t0 = performance.now();
+        let step;
+        do {
+            if (budget && window._toursWanted === false) {
+                window._toursPendingGen = null;
+                return null;
+            }
+            step = job.gen.next();
+        } while (!step.done && (!budget || performance.now() - t0 < budget));
+        if (!step.done) {
+            window._toursPendingGen = job;
+            return null;
+        }
+        window._toursPendingGen = null;
+        return job.finish();
+    };
+
+    window._toursContinueSearch = () => drive(window._toursPendingGen);
+    return drive({ gen: runSearch(), finish: finish });
 };
 
 // =========================================================
@@ -1867,6 +1896,7 @@ window.onGuestRouteSegmentClick = function (seg) {
  * 4) Pfad Start→Ende mit km/Hm je Sportart; Ende = Start außer Checkbox
  */
 window.getFilteredSegments = function () {
+    if (Array.isArray(window._toursBootFiltered)) return window._toursBootFiltered;
     const modes = window.getActiveModes();
     const budgets = typeof window.getModeBudgets === 'function' ? window.getModeBudgets() : {};
     const pool = window.ALL_SEGMENTS || [];
@@ -1920,6 +1950,7 @@ window.getFilteredSegments = function () {
     const ranged = typeof window.segmentsOnValidStartPaths === 'function'
         ? window.segmentsOnValidStartPaths(hard, startIds, minDist, maxDist, minAlt, maxAlt, budgets)
         : hard;
+    if (ranged == null) return null;
 
     ranged.sort((a, b) => Number(b.is_highlight) - Number(a.is_highlight));
     return ranged;
@@ -1938,7 +1969,8 @@ window.renderHikes = function (options) {
     const counterEl = document.getElementById('hike-counter');
     if (!container) return;
 
-    const filtered = window.getFilteredSegments();
+    const filtered = opts.filtered || window.getFilteredSegments();
+    if (filtered == null) return;
     const modes = window.getActiveModes();
     const startId = window.getSelectedStartNodeId();
 
@@ -2375,18 +2407,69 @@ window.bootToursGuestApp = function () {
     window._toursBooting = false;
     window._toursFinishBoot = function () {
         if (window._toursWanted === false || window._toursGuestBooted) return;
+        const token = (window._toursBootToken = (window._toursBootToken || 0) + 1);
         window._toursBooting = true;
-        window.applyTourGraphFilters(true);
-        window._toursGuestBooted = true;
-        window._toursBooting = false;
-        if (window._toursObs) {
-            try { window._toursObs.disconnect(); } catch (e) {}
-            window._toursObs = null;
-        }
-        console.info('[Haus Meli] Tours-UI gebootet', {
-            nodes: (window.TOUR_NODES || []).length,
-            segments: (window.ALL_SEGMENTS || []).length,
-        });
+        window._toursSliceBudget = 12;
+        const tick = function () {
+            if (window._toursWanted === false || token !== window._toursBootToken) {
+                window._toursSliceBudget = 0;
+                window._toursPendingGen = null;
+                window._toursBooting = false;
+                return;
+            }
+            let filtered = null;
+            try {
+                filtered = window.getFilteredSegments();
+            } catch (e) {
+                console.warn('Tour-Filter', e);
+                window._toursSliceBudget = 0;
+                window._toursBooting = false;
+                return;
+            }
+            if (filtered == null) {
+                window._toursMapTimer = setTimeout(tick, 0);
+                return;
+            }
+            // Eine Lücke, damit ein Wisch noch vor dem Kartenzeichnen ankommt.
+            window._toursBootFiltered = filtered;
+            window._toursSliceBudget = 0;
+            window._toursMapTimer = setTimeout(function () {
+                if (window._toursWanted === false || token !== window._toursBootToken) {
+                    window._toursBootFiltered = null;
+                    window._toursSliceBudget = 0;
+                    window._toursPendingGen = null;
+                    window._toursBooting = false;
+                    return;
+                }
+                window._toursChunkMap = true;
+                try {
+                    window.applyTourGraphFilters(true);
+                } catch (e) {
+                    console.warn('Tour-Boot', e);
+                }
+                window._toursBootFiltered = null;
+                if (window._toursWanted === false || token !== window._toursBootToken) {
+                    window._toursChunkMap = false;
+                    window._toursBooting = false;
+                    return;
+                }
+                if (window._toursMapDrawTimer) return;
+                window._toursChunkMap = false;
+                window._toursGuestBooted = true;
+                window._toursBooting = false;
+                if (window._toursObs) {
+                    try { window._toursObs.disconnect(); } catch (e) {}
+                    window._toursObs = null;
+                }
+                console.info('[Haus Meli] Tours-UI gebootet', {
+                    nodes: (window.TOUR_NODES || []).length,
+                    segments: (window.ALL_SEGMENTS || []).length,
+                });
+            }, 0);
+            return;
+        };
+        clearTimeout(window._toursMapTimer);
+        window._toursMapTimer = setTimeout(tick, 0);
     };
     clearTimeout(window._toursMapTimer);
     window._toursMapTimer = setTimeout(window._toursFinishBoot, 0);
