@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=79">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=85">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=80">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=86">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -137,6 +137,21 @@
           if (!tab) return;
           if (Math.abs(this.tabs.indexOf(tab) - this.tabs.indexOf(this.currentTab)) > 1) this.wrapTo(tab, step);
           else this.setTab(tab);
+        },
+        animateNav(next, prev) {
+          const nav = document.querySelector('.shell-nav');
+          if (!nav || !prev || next === prev) return;
+          const last = this.tabs.length - 1;
+          const from = this.tabs.indexOf(prev);
+          const to = this.tabs.indexOf(next);
+          const wrapped = Math.abs(to - from) > 1 && ((from === 0 && to === last) || (from === last && to === 0));
+          const forward = wrapped ? from === last : to > from;
+          nav.dataset.dir = forward ? 'next' : 'prev';
+          nav.classList.remove('is-animating');
+          void nav.offsetWidth;
+          nav.classList.add('is-animating');
+          clearTimeout(this._navTimer);
+          this._navTimer = setTimeout(() => nav.classList.remove('is-animating'), 560);
         },
         wrapTo(tab, step) {
           const track = this.$refs.track;
@@ -265,7 +280,8 @@
         if (currentTab === 'tours') {
           window.loadToursBundle && window.loadToursBundle();
         }
-        $watch('currentTab', v => {
+        $watch('currentTab', (v, prev) => {
+          animateNav(v, prev);
           window.hausMeliStoreTab(v);
           if (location.hash !== '#' + v) location.hash = v;
           if (v === 'events') {
