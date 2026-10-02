@@ -2221,6 +2221,19 @@ window.closeTripDetail = function () {
 // Deshalb nicht nur DOMContentLoaded — bootToursGuestApp() ist wiederholbar bis es greift.
 window.bootToursGuestApp = function () {
     if (window._toursWanted === false || window._toursBooting) return false;
+    if (!window._toursRunHeavy && !window._toursPrepared && !window._toursGuestBooted) {
+        if (window._toursBootQueued) return false;
+        window._toursBootQueued = true;
+        clearTimeout(window._toursMapTimer);
+        window._toursMapTimer = setTimeout(function () {
+            window._toursBootQueued = false;
+            if (window._toursWanted === false) return;
+            window._toursRunHeavy = true;
+            try { window.bootToursGuestApp(); }
+            finally { window._toursRunHeavy = false; }
+        }, 0);
+        return false;
+    }
     const container = document.getElementById('tours-app-container');
     if (!container) return false;
     if (window._toursGuestBooted) {

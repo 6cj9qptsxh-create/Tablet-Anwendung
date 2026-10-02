@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=88">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=89">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=89">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,7 +60,7 @@
             path: @json(base_path()),
             toursMap: 70,
             toursPlanner: 31,
-            toursJs: 76,
+            toursJs: 77,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -81,6 +81,7 @@
             window._toursGen += 1;
             window._toursBundle = false;
             window._toursBooting = false;
+            window._toursBootQueued = false;
             clearTimeout(window._toursBootTimer);
             clearTimeout(window._toursBootSoon);
             clearTimeout(window._toursMapTimer);
@@ -203,24 +204,9 @@
         },
         wrapTo(tab, step) {
           if (document.querySelector('#tab-order.cart-is-open')) return;
-          const track = this.$refs.track;
-          if (!track || this._wrapping || !track.animate) { this.setTab(tab); return; }
-          this._wrapping = true;
-          const away = step > 0 ? -22 : 22;
-          const out = track.animate(
-            [{ transform: 'translateX(0)', opacity: 1 }, { transform: 'translateX(' + away + '%)', opacity: 0 }],
-            { duration: 140, easing: 'ease-in', fill: 'forwards' }
-          );
-          out.onfinish = () => {
-            this.setTab(tab, true);
-            this.scrollToTab(tab, false);
-            out.cancel();
-            const back = track.animate(
-              [{ transform: 'translateX(' + (-away) + '%)', opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
-              { duration: 200, easing: 'ease-out' }
-            );
-            back.onfinish = () => { this._wrapping = false; this.finishChrome(); };
-          };
+          if (Date.now() - (this._edgeAt || 0) < 700) return;
+          this._edgeAt = Date.now();
+          this.setTab(tab);
         },
         wireWrapSwipe(track) {
           let startX = 0, startY = 0, armed = false;
@@ -316,12 +302,17 @@
         setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
           const changed = tab !== this.currentTab;
+          const from = this.tabs.indexOf(this.currentTab);
+          const to = this.tabs.indexOf(tab);
+          const wrap = from >= 0 && Math.abs(to - from) > 1;
           this.currentTab = tab;
+          this.chromeTab = tab;
           this.menuOpen = false;
           window.hausMeliStoreTab(tab);
-          if (location.hash !== '#' + tab) location.hash = tab;
-          if (!fromScroll) this.scrollToTab(tab, changed);
-          if (!changed) this.chromeTab = tab;
+          if (location.hash !== '#' + tab) {
+            history.replaceState({ hausMeli: 1 }, '', '#' + tab);
+          }
+          if (!fromScroll) this.scrollToTab(tab, changed && !wrap);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
@@ -336,8 +327,6 @@
           if (pagerEl && window.ResizeObserver) {
             new ResizeObserver(() => {
               syncPaneBox();
-              if (this._touching || this._scrolling) return;
-              scrollToTab(currentTab, false);
             }).observe(pagerEl);
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
@@ -412,12 +401,47 @@
           if (location.hash !== '#' + v) location.hash = v;
           if (v !== 'tours' && window.cancelToursLoad) window.cancelToursLoad();
         });
+        if (!history.state || !history.state.hausMeli) {
+          history.pushState({ hausMeli: 1 }, '', location.href);
+        }
+        window.addEventListener('popstate', () => {
+          history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
+          const prev = neighbor(-1);
+          if (prev) wrapTo(prev, -1);
+        });
+        const edge = document.querySelector('.edge-back-catch');
+        if (edge) {
+          let ex = 0, ey = 0, edgeOn = false;
+          edge.addEventListener('touchstart', (event) => {
+            const t = event.touches[0];
+            ex = t ? t.clientX : 0;
+            ey = t ? t.clientY : 0;
+            edgeOn = false;
+          }, { passive: true });
+          edge.addEventListener('touchmove', (event) => {
+            const t = event.touches[0];
+            if (!t) return;
+            const dx = t.clientX - ex;
+            const dy = t.clientY - ey;
+            if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
+              edgeOn = true;
+              event.preventDefault();
+            }
+          }, { passive: false });
+          edge.addEventListener('touchend', () => {
+            if (!edgeOn) return;
+            const prev = neighbor(-1);
+            if (prev) wrapTo(prev, -1);
+          }, { passive: true });
+        }
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
           if (tabs.includes(h) && h !== currentTab) setTab(h);
         });
       "
       x-cloak>
+
+    <div class="edge-back-catch" aria-hidden="true"></div>
 
     @include('livewire.general-partials.header')
 
