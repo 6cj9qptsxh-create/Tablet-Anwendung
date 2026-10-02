@@ -10,6 +10,8 @@ use Throwable;
 
 class MeteoblueForecast
 {
+    /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. Anzeige in L/m². */
+    private const RAIN_FULL_MM = 10.0;
     public function forecast(): array
     {
         $key = (string) config('weather.api_key');
@@ -298,15 +300,12 @@ class MeteoblueForecast
             $index = count($days);
             $day['name'] = $index === 0 ? 'Heute' : ($index === 1 ? 'Morgen' : $names[(int) $when->format('w')]);
             $day['short'] = $index === 0 ? 'Heute' : $week[(int) $when->format('w')];
+            $day['rain_text'] = $this->rainText((float) ($day['rain'] ?? 0));
 
             $hours = $day['hours'] ?? [];
-            $max = 0.0;
-            foreach ($hours as $hour) {
-                $max = max($max, (float) ($hour['rain'] ?? 0));
-            }
             foreach ($hours as $h => $hour) {
                 $mm = (float) ($hour['rain'] ?? 0);
-                $hours[$h]['rain_height'] = ($mm > 0 && $max > 0) ? max(18, (int) round($mm / $max * 100)) : 0;
+                $hours[$h]['rain_height'] = $this->rainHeight($mm);
                 $hours[$h]['rain_text'] = $this->rainText($mm);
                 $stamp = $date.' '.substr((string) ($hour['time'] ?? ''), 0, 2);
                 $hours[$h]['is_now'] = $stamp === $nowKey;
@@ -389,7 +388,6 @@ class MeteoblueForecast
             $clock = (int) substr((string) ($hour['time'] ?? ''), 0, 2);
             $blocks[min(7, intdiv($clock, 3))] += (float) ($hour['rain'] ?? 0);
         }
-        $max = max($blocks) ?: 0.0;
         $labels = ['0–3 Uhr', '3–6 Uhr', '6–9 Uhr', '9–12 Uhr', '12–15 Uhr', '15–18 Uhr', '18–21 Uhr', '21–24 Uhr'];
         $slots = [];
         foreach ($blocks as $i => $mm) {
@@ -397,7 +395,8 @@ class MeteoblueForecast
             $slots[] = [
                 'label' => $labels[$i],
                 'mm' => $mm,
-                'height' => ($mm > 0 && $max > 0) ? max(22, (int) round($mm / $max * 100)) : 0,
+                'text' => $this->rainText($mm),
+                'height' => $this->rainHeight($mm),
             ];
         }
 
@@ -416,16 +415,25 @@ class MeteoblueForecast
         return number_format($mm, 1, ',', '').'mm';
     }
 
+    private function rainHeight(float $mm): int
+    {
+        if ($mm <= 0) {
+            return 0;
+        }
+
+        return (int) min(100, max(1, round($mm / self::RAIN_FULL_MM * 100)));
+    }
+
     private function rainText(float $mm): string
     {
         if ($mm <= 0) {
             return '–';
         }
         if (abs($mm - round($mm)) < 0.05) {
-            return ((int) round($mm)).' mm';
+            return ((int) round($mm)).' L/m²';
         }
 
-        return number_format($mm, 1, ',', '').' mm';
+        return number_format($mm, 1, ',', '').' L/m²';
     }
 
     private function sunText(mixed $value): ?string

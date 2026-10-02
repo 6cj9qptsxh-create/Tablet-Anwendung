@@ -147,7 +147,7 @@
                             <span class="wx-pop-pct">{{ $day['pop'] > 0 ? $day['pop'].'%' : '' }}</span>
                             <span class="wx-rain" aria-hidden="true">
                                 @foreach($day['rain_slots'] as $slot)
-                                    <span class="wx-rain-slot" title="{{ $slot['label'] }}{{ $slot['mm'] > 0 ? ' · '.$slot['mm'].' mm' : '' }}">
+                                    <span class="wx-rain-slot" title="{{ $slot['label'] }}{{ $slot['mm'] > 0 ? ' · '.$slot['text'] : '' }}">
                                         @if($slot['height'] > 0)
                                             <span class="wx-rain-bar" style="height: {{ $slot['height'] }}%"></span>
                                         @endif
@@ -160,7 +160,7 @@
                         </button>
                     @endforeach
                 </div>
-                <p class="wx-rain-note">Blaue Balken sind der Regen im Tagesverlauf. Links ist die Nacht, rechts der Abend.</p>
+                <p class="wx-rain-note">Blaue Balken sind der Regen im Tagesverlauf, links die Nacht und rechts der Abend. Gleiche Höhe ist gleich viel Regen, volle Höhe sind 10 L/m².</p>
                 @foreach($forecast['days'] as $index => $day)
                     <div class="wx-detail" x-show="day === {{ $index }}" x-cloak>
                         <div class="wx-detail-head">

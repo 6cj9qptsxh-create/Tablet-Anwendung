@@ -5398,6 +5398,7 @@ body.trip-detail-open {
 .wx-rain-bar {
     display: block;
     width: 100%;
+    min-height: 2px;
     border-radius: 2px 2px 0 0;
     background: #4c9be8;
 }
@@ -5440,7 +5441,7 @@ body.trip-detail-open {
 }
 
 .wx-hour {
-    flex: 0 0 54px;
+    flex: 0 0 64px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -5496,6 +5497,7 @@ body.trip-detail-open {
 .wx-hour-bar {
     display: block;
     width: 100%;
+    min-height: 2px;
     border-radius: 2px 2px 0 0;
     background: #4c9be8;
 }
@@ -5504,6 +5506,8 @@ body.trip-detail-open {
     color: var(--muted);
     font-size: 0.62rem;
     font-weight: 650;
+    line-height: 1.15;
+    text-align: center;
 }
 
 .wx-col-rain,
