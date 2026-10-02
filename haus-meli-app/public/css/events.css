@@ -133,14 +133,32 @@ body.is-cal-tab .cal-tab-pane {
     padding: 8px 12px 10px;
     background: var(--card);
     border: 1px solid var(--border);
+    border-bottom: var(--border-th) solid var(--accent-soft);
     border-radius: 16px;
     overflow: visible;
+}
+
+.cal-toolbar::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: -3px;
+    height: var(--border-th);
+    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    z-index: 2;
+    pointer-events: none;
 }
 
 .cal-toolbar.is-filter-open {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    border-bottom: 1px solid var(--border);
     z-index: 20001;
+}
+
+.cal-toolbar.is-filter-open::after {
+    content: none;
 }
 
 .cal-toolbar-top {
