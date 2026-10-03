@@ -1124,6 +1124,12 @@ body {
     initial-value: 0;
 }
 
+@property --lens {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 108px;
+}
+
 .shell-nav {
     display: flex;
     align-items: center;
@@ -1198,10 +1204,12 @@ body {
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     cursor: grab;
+    transition: --lens 0.34s cubic-bezier(0.22, 1.12, 0.36, 1);
 }
 
 .shell-nav.is-dragging .shell-nav-wheel {
     cursor: grabbing;
+    transition: none;
 }
 
 .shell-nav-lens {
@@ -1228,7 +1236,7 @@ body {
         inset 0 0 14px rgba(255, 255, 255, 0.06),
         0 8px 20px color-mix(in srgb, var(--accent), transparent 62%);
     transform: translate(-50%, -50%) scale(calc(1 + var(--press) * 0.07)) scaleX(calc(1 + var(--stretch) * 0.08));
-    transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), width 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
+    transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
 }
 
 .shell-nav.is-dragging .shell-nav-lens {

@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=102">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -261,22 +261,29 @@
           else if (index > max) index = max + (index - max) * 0.35;
           return index;
         },
+        lensFor(index, bar) {
+          const max = this.tabs.length - 1;
+          const i = Math.max(0, Math.min(max, index));
+          const label = this.tabName(this.tabs[i] || this.currentTab);
+          const text = 24 + label.length * 13;
+          return Math.max(64, Math.min(text, bar.width * 0.42));
+        },
         wheelStyle() {
           const bar = this.wheelBar();
           const max = this.tabs.length - 1;
           const at = Math.max(0, Math.min(max, this.wheelIndex));
           const x = this.wheelX(at);
           const left = x / bar.width * 100;
-          const i = Math.max(0, Math.min(max, Math.round(at)));
-          const label = this.tabName(this.tabs[i] || this.currentTab);
-          const text = 24 + label.length * 13;
-          let lens = Math.max(64, Math.min(text, bar.width * 0.42));
+          const lo = Math.floor(at);
+          const hi = Math.min(max, lo + 1);
+          const span = hi === lo ? 0 : (at - lo);
+          let lens = this.lensFor(lo, bar) + (this.lensFor(hi, bar) - this.lensFor(lo, bar)) * span;
           const edge = 4;
           const room = Math.max(48, Math.min(x - edge, bar.width - edge - x) * 2);
           if (lens > room) lens = room;
           const frac = this.wheelIndex - Math.round(this.wheelIndex);
           const shine = Math.max(-1, Math.min(1, frac * 2));
-          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + Math.round(lens) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
+          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + lens.toFixed(1) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
         },
         wheelItemStyle(i) {
           const bar = this.wheelBar();
@@ -630,108 +637,6 @@
           this.finishChrome();
           const self = this;
           setTimeout(() => { self._prog = false; }, 80);
-        },
-        timeBegin() {
-          const track = this.$refs.track;
-          if (!track) return;
-          cancelAnimationFrame(this._timeRaf);
-          clearTimeout(this._timeFallback);
-          this._timeGen = (this._timeGen || 0) + 1;
-          this._prog = true;
-          this._touching = true;
-          this._fingerSnap = true;
-          this._scrolling = true;
-          cancelAnimationFrame(this._wheelRaf);
-          track.style.scrollSnapType = 'none';
-          this._timeFrom = track.scrollLeft;
-          this._snapFrom = Math.max(0, this.tabs.indexOf(this.currentTab));
-        },
-        timeMove(dx) {
-          const track = this.$refs.track;
-          if (!track) return;
-          const width = track.clientWidth || 1;
-          const max = Math.max(0, track.scrollWidth - width);
-          let next = this._timeFrom - dx;
-          if (next < 0) next = 0;
-          if (next > max) next = max;
-          track.style.scrollSnapType = 'none';
-          track.scrollLeft = next;
-          const shown = track.scrollLeft;
-          let shifted = (shown - this._timeFrom) / width;
-          if (shifted > 1) shifted = 1;
-          if (shifted < -1) shifted = -1;
-          let idx = this._snapFrom + shifted / 0.42;
-          const maxIdx = this.tabs.length - 1;
-          const lo = Math.max(0, this._snapFrom - 1);
-          const hi = Math.min(maxIdx, this._snapFrom + 1);
-          if (idx < lo) idx = lo;
-          if (idx > hi) idx = hi;
-          this.wheelIndex = idx;
-        },
-        timeEnd(dx, velocity) {
-          const track = this.$refs.track;
-          if (!track) return;
-          const width = track.clientWidth || 1;
-          const threshold = Math.max(48, width * 0.22);
-          const projected = dx + velocity * 160;
-          let step = 0;
-          if (projected >= threshold) step = -1;
-          else if (projected <= -threshold) step = 1;
-          let target = (this._snapFrom || 0) + step;
-          if (target < 0) target = 0;
-          if (target >= this.tabs.length) target = this.tabs.length - 1;
-          const tab = this.tabs[target];
-          const pane = tab ? this.trackPane(tab) : null;
-          const self = this;
-          const gen = this._timeGen || 0;
-          const destWheel = Math.max(0, this.tabs.indexOf(tab));
-          this.wheelIndex = destWheel;
-          let settled = false;
-          const finish = () => {
-            if (settled || self._timeGen !== gen) return;
-            settled = true;
-            clearTimeout(self._timeFallback);
-            cancelAnimationFrame(self._timeRaf);
-            if (pane) {
-              const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
-              if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
-            }
-            track.style.scrollSnapType = '';
-            if (tab && tab !== self.currentTab) self.setTab(tab, true);
-            else self.wheelIndex = destWheel;
-            self.finishChrome();
-            self._touching = false;
-            self._fingerSnap = false;
-            self._scrolling = false;
-            clearTimeout(self._progTimer);
-            self._progTimer = setTimeout(() => { self._prog = false; }, 90);
-            self.scheduleHash();
-          };
-          if (!pane) {
-            finish();
-            return;
-          }
-          const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
-          const dest = track.scrollLeft + delta;
-          const fromLeft = track.scrollLeft;
-          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          if (reduce || Math.abs(dest - fromLeft) < 2) {
-            finish();
-            return;
-          }
-          const ms = Math.max(160, Math.min(320, Math.abs(dest - fromLeft) / width * 360));
-          const start = performance.now();
-          const frame = (now) => {
-            if (self._timeGen !== gen) return;
-            const t = Math.min(1, (now - start) / ms);
-            const e = 1 - Math.pow(1 - t, 3);
-            track.style.scrollSnapType = 'none';
-            track.scrollLeft = fromLeft + (dest - fromLeft) * e;
-            if (t < 1) self._timeRaf = requestAnimationFrame(frame);
-            else finish();
-          };
-          this._timeFallback = setTimeout(finish, ms + 140);
-          this._timeRaf = requestAnimationFrame(frame);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
@@ -891,20 +796,9 @@
           const y = t.clientY;
           let horizontal = false;
           let vertical = false;
-          let lastX = x;
-          let lastT = performance.now();
-          let velocity = 0;
           const move = (ev) => {
             const p = ev.touches[0];
             if (!p || vertical) return;
-            const now = performance.now();
-            const dt = now - lastT;
-            if (dt > 0) {
-              const sample = (p.clientX - lastX) / dt;
-              velocity = sample < -2.5 ? -2.5 : (sample > 2.5 ? 2.5 : sample);
-            }
-            lastX = p.clientX;
-            lastT = now;
             const dx = p.clientX - x;
             const dy = p.clientY - y;
             if (!horizontal) {
@@ -914,23 +808,18 @@
                 return;
               }
               horizontal = true;
-              this.timeBegin();
             }
             if (ev.cancelable) ev.preventDefault();
-            this.timeMove(dx);
           };
           const end = (ev) => {
             document.removeEventListener('touchmove', move, true);
             document.removeEventListener('touchend', end, true);
             document.removeEventListener('touchcancel', end, true);
-            if (!horizontal) return;
-            if (ev.type === 'touchcancel') {
-              this.timeEnd(0, 0);
-              return;
-            }
+            if (!horizontal || ev.type === 'touchcancel') return;
             const p = ev.changedTouches && ev.changedTouches[0];
             const dx = p ? p.clientX - x : 0;
-            this.timeEnd(dx, velocity);
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
           };
           document.addEventListener('touchmove', move, { passive: false, capture: true });
           document.addEventListener('touchend', end, { passive: true, capture: true });
