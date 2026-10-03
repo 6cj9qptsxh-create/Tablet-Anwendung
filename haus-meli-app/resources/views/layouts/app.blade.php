@@ -212,14 +212,13 @@
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
         neighbor(step) {
-          const count = this.tabs.length;
-          return this.tabs[(this.tabs.indexOf(this.currentTab) + step + count) % count] || null;
+          const index = this.tabs.indexOf(this.currentTab) + step;
+          if (index < 0 || index >= this.tabs.length) return null;
+          return this.tabs[index];
         },
         goNeighbor(step) {
           const tab = this.neighbor(step);
-          if (!tab) return;
-          if (Math.abs(this.tabs.indexOf(tab) - this.tabs.indexOf(this.currentTab)) > 1) this.wrapTo(tab, step);
-          else this.setTab(tab);
+          if (tab) this.setTab(tab);
         },
         animateNav(next, prev) {
           const nav = document.querySelector('.shell-nav');
@@ -240,17 +239,6 @@
               { opacity: 1 }
             ], 200, 'ease-out');
           });
-        },
-        wrapTo(tab, step) {
-          if (document.querySelector('#tab-order.cart-is-open')) return;
-          if (Date.now() - (this._edgeAt || 0) < 700) return;
-          this._edgeAt = Date.now();
-          this.setTab(tab);
-        },
-        loopOrder() {
-          if (this._loop === 'tours-first') return ['tours', 'order', 'knx', 'events', 'info'];
-          if (this._loop === 'shop-last') return ['knx', 'events', 'info', 'tours', 'order'];
-          return this.tabs;
         },
         trackPane(name) {
           const track = this.$refs.track;
@@ -278,53 +266,6 @@
           const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
           if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
         },
-        placeLoop(kind) {
-          const track = this.$refs.track;
-          if (!track) return;
-          const names = kind === 'tours-first'
-            ? ['tours', 'order', 'knx', 'events', 'info']
-            : kind === 'shop-last'
-              ? ['knx', 'events', 'info', 'tours', 'order']
-              : this.tabs;
-          names.forEach((name) => {
-            const el = this.trackPane(name);
-            if (el) track.appendChild(el);
-          });
-          this._loop = kind || null;
-        },
-        // Shop und Touren liegen am Rand direkt nebeneinander, damit der Wisch
-        // dort genauso einrastet wie zwischen den anderen Seiten.
-        prepareEdge(force) {
-          if (!force && (this._touching || this._scrolling)) return;
-          if (document.querySelector('#tab-order.cart-is-open')) return;
-          const tab = this.currentTab;
-          const kind = tab === 'order' ? 'tours-first' : (tab === 'tours' ? 'shop-last' : null);
-          if ((this._loop || null) === kind) return;
-          const track = this.$refs.track;
-          const keep = this.trackPane(tab);
-          if (!track || !keep || track.clientWidth < 2) return;
-          if (force) {
-            const delta = keep.getBoundingClientRect().left - track.getBoundingClientRect().left;
-            if (Math.abs(delta) > 4) return;
-          }
-          this._prog = true;
-          track.style.scrollSnapType = 'none';
-          this.placeLoop(kind);
-          void track.offsetWidth;
-          this.alignPane(keep);
-          track.style.scrollSnapType = '';
-          this.alignPane(keep);
-          const loopNow = this._loop || null;
-          const locked = track.scrollLeft;
-          requestAnimationFrame(() => {
-            if ((this._loop || null) !== loopNow) return;
-            if (Math.abs(track.scrollLeft - locked) > 3) return;
-            this._prog = true;
-            this.alignPane(keep);
-            this._prog = false;
-          });
-          this._prog = false;
-        },
         syncPaneBox() {
           const el = this.$refs.pager;
           if (!el) return;
@@ -350,7 +291,7 @@
           clearTimeout(this._progTimer);
           this._progTimer = setTimeout(() => {
             this._prog = false;
-            if (!this._touching) this.scheduleEdge();
+            if (!this._touching) this.scheduleHash();
           }, smooth ? 520 : 80);
         },
         tabFromScroll() {
@@ -358,7 +299,7 @@
           if (!track) return null;
           const width = track.clientWidth || 1;
           const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(track.scrollLeft / width)));
-          return this.loopOrder()[index] || null;
+          return this.tabs[index] || null;
         },
         finishChrome() {
           this.chromeTab = this.currentTab;
@@ -388,7 +329,7 @@
             this._scrolling = false;
             this.finishChrome();
             this.correctSnap();
-            if (!this._touching) this.scheduleEdge();
+            if (!this._touching) this.scheduleHash();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
             }
@@ -400,11 +341,10 @@
           if (!tab || location.hash === '#' + tab) return;
           history.replaceState({ hausMeli: 1 }, '', '#' + tab);
         },
-        scheduleEdge() {
+        scheduleHash() {
           clearTimeout(this._edgeTimer);
           this._edgeTimer = setTimeout(() => {
             if (this._touching || this._scrolling) return;
-            this.prepareEdge();
             this.syncHash();
           }, 480);
         },
@@ -429,7 +369,6 @@
         $nextTick(() => requestAnimationFrame(() => {
           syncPaneBox();
           scrollToTab(currentTab, false);
-          prepareEdge();
           const pagerEl = $refs.pager;
           const trackEl = $refs.track;
           if (pagerEl && window.ResizeObserver) {
@@ -482,7 +421,7 @@
               if (this.currentTab === before && fromNav && fromNav !== this.currentTab) {
                 this.animateNav(this.currentTab, fromNav);
               }
-              if (!this._scrolling) this.scheduleEdge();
+              if (!this._scrolling) this.scheduleHash();
               carting = false;
               setTimeout(() => {
                 if (!this._scrolling && this.currentTab === 'tours' && !this._touching) {
@@ -518,7 +457,7 @@
         window.addEventListener('popstate', () => {
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
           const prev = neighbor(-1);
-          if (prev) wrapTo(prev, -1);
+          if (prev) setTab(prev);
         });
         const edge = document.querySelector('.edge-back-catch');
         if (edge) {
@@ -542,7 +481,7 @@
           edge.addEventListener('touchend', () => {
             if (!edgeOn) return;
             const prev = neighbor(-1);
-            if (prev) wrapTo(prev, -1);
+            if (prev) setTab(prev);
           }, { passive: true });
         }
         window.addEventListener('hashchange', () => {
