@@ -3,7 +3,7 @@
 
     <div class="thumb" style="cursor: pointer;"
         @click="$dispatch('open-product-modal', { title: '{{ addslashes($item['name']) }}', img: '{{ asset('img/products/' . $item['image_path']) }}', desc: '{{ addslashes($item['desc']) }}', allergens: '{{ addslashes($item['allergens']) }}' })">
-        <img src="{{ asset('img/products/' . $item['image_path']) }}" alt="{{ $item['name'] }}">
+        <img src="{{ asset('img/products/' . $item['image_path']) }}" alt="{{ $item['name'] }}" width="96" height="96" loading="lazy" decoding="async">
     </div>
 
     <div style="display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; min-width: 0;">

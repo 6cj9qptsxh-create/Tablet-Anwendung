@@ -9,19 +9,24 @@
     <style>
         :root {
             --bg: #2e343a;
-            --card: #3a4148;
-            --text: #f2f4f6;
-            --muted: #a8b0b8;
-            --accent: #3d9b6a;
-            --line: rgba(255, 255, 255, 0.08);
+            --surface: #343a40;
+            --card: #222229;
+            --text: #f8f9fa;
+            --muted: #adb5bd;
+            --accent: #6c25b3;
+            --accent-contrast: #ffffff;
+            --accent-soft: color-mix(in srgb, var(--accent), white 30%);
+            --radius: 10px;
+            --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            --line: rgba(255, 255, 255, 0.1);
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             min-height: 100dvh;
-            font-family: "Segoe UI", system-ui, sans-serif;
+            font-family: var(--font);
             background:
-                radial-gradient(ellipse 80% 50% at 20% 0%, rgba(61, 155, 106, 0.18), transparent),
+                radial-gradient(ellipse 80% 50% at 20% 0%, color-mix(in srgb, var(--accent), transparent 82%), transparent),
                 var(--bg);
             color: var(--text);
             padding: 24px 18px 40px;
@@ -48,7 +53,7 @@
         }
         .stat {
             background: var(--card);
-            border-radius: 12px;
+            border-radius: var(--radius);
             padding: 12px 10px;
             text-align: center;
         }
@@ -65,7 +70,7 @@
         }
         #share-map {
             height: 280px;
-            border-radius: 14px;
+            border-radius: var(--radius);
             overflow: hidden;
             margin-bottom: 12px;
             background: #1a1e22;
@@ -80,7 +85,7 @@
             min-height: 48px;
             padding: 12px 16px;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius);
             font-size: 1rem;
             font-weight: 650;
             text-decoration: none;
@@ -88,7 +93,11 @@
             color: #fff;
             font-family: inherit;
         }
-        .btn-primary { background: var(--accent); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+            color: var(--accent-contrast);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px color-mix(in srgb, var(--accent), transparent 60%);
+        }
         .btn-secondary {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.22);
@@ -228,7 +237,7 @@
             maxZoom: 18,
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
-        var line = L.polyline(track, { color: '#3d9b6a', weight: 5, opacity: 0.95 }).addTo(map);
+        var line = L.polyline(track, { color: '#6c25b3', weight: 5, opacity: 0.95 }).addTo(map);
         map.fitBounds(line.getBounds(), { padding: [28, 28] });
         setTimeout(function () { map.invalidateSize(true); }, 80);
     }

@@ -270,7 +270,7 @@
         <div class="card outlook-calendar cal-view-{{ $viewMode }}">
 
             @if($viewMode === 'agenda')
-                <div class="agenda-split" wire:poll.60s>
+                <div class="agenda-split" wire:poll.60s.visible>
                     @if($isFamily)
                         <div class="agenda-family">
                             @foreach ([

@@ -17,7 +17,7 @@
                 
                 <h2 id="info-modal-title" x-text="title" style="margin-bottom: 20px;"></h2>
                 
-                <img id="info-modal-img" :src="img" x-show="img">
+                <img id="info-modal-img" :src="img" x-show="img" width="640" height="480" alt="">
                 
                 <p id="info-modal-text" x-text="desc" x-show="desc" style="line-height: 1.6; white-space: pre-wrap; margin-bottom: 10px; margin-top: 15px; color: var(--text);"></p>
 

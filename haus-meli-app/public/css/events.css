@@ -1653,15 +1653,15 @@ body.cal-creating {
     gap: 4px;
     margin-top: 4px;
     padding: 4px 8px;
-    border-radius: 6px;
-    background: #f3f4f6;
-    color: #111;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--accent), transparent 78%);
+    color: var(--text);
     font-size: 0.78rem;
     font-weight: 700;
     line-height: 1;
     text-decoration: underline;
     text-underline-offset: 2px;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 0 0 1px var(--border);
     pointer-events: auto;
     cursor: pointer;
 }
