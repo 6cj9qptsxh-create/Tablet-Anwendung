@@ -680,7 +680,12 @@
 
                 bandStyle() {
                     const dx = this.bandX;
-                    if (!(this.bandW > 0) && !this.dragging && !this.settling && !this.moved) {
+                    /* In Ruhe bleibt die CSS-Verschiebung (100cqb). Eine zu früh
+                       gemessene Pixelhöhe würde den Monat aus dem Sichtfeld schieben. */
+                    if (!this.dragging && !this.settling && !this.moved) {
+                        return '';
+                    }
+                    if (!(this.bandW > 0)) {
                         return '';
                     }
                     const step = this.bandStep();
