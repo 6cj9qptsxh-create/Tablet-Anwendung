@@ -3592,9 +3592,9 @@ body.page-content {
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     touch-action: pan-x pan-y;
+    background: var(--bg);
 }
 
 .tab-track::-webkit-scrollbar {
@@ -3612,7 +3612,6 @@ body.page-content {
     scroll-snap-align: start;
     scroll-snap-stop: always;
     overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     background: var(--bg);
     padding: 0 var(--spacing) max(var(--spacing), env(safe-area-inset-bottom, 0px));
@@ -5724,7 +5723,6 @@ body.trip-detail-open {
         background: rgb(32, 33, 38);
         transform: translateY(calc(-1 * var(--nav-shift)));
         clip-path: inset(var(--nav-shift) 0 0 0);
-        will-change: transform;
     }
 
     body.page-content .tab-pane,
