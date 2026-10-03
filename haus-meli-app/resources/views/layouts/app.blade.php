@@ -254,7 +254,7 @@
         trackPane(name) {
           const track = this.$refs.track;
           if (!track) return null;
-          return track.querySelector(':scope > [data-tab="' + name + '"]');
+          return track.querySelector(':scope > [data-tab=' + name + ']');
         },
         visiblePane() {
           const track = this.$refs.track;
