@@ -1,4 +1,10 @@
-<nav class="shell-nav" aria-label="Seiten" :class="{ 'is-wheeling': wheelOn, 'is-dragging': wheelDrag }">
+<nav class="shell-nav" aria-label="Seiten"
+     :class="{ 'is-wheeling': wheelOn, 'is-dragging': wheelDrag }"
+     x-on:pointerdown="wheelDown($event)"
+     x-on:pointermove="wheelMove($event)"
+     x-on:pointerup="wheelUp($event)"
+     x-on:pointercancel="wheelUp($event)"
+     x-on:click.capture="wheelClick($event)">
     <button type="button"
             class="shell-nav-side"
             @click="goNeighbor(-1)"
@@ -16,10 +22,6 @@
          :aria-valuenow="Math.min(tabs.length - 1, Math.max(0, Math.round(wheelIndex)))"
          :aria-valuetext="tabName(tabs[Math.min(tabs.length - 1, Math.max(0, Math.round(wheelIndex)))] || currentTab)"
          :style="wheelStyle()"
-         x-on:pointerdown="wheelDown($event)"
-         x-on:pointermove="wheelMove($event)"
-         x-on:pointerup="wheelUp($event)"
-         x-on:pointercancel="wheelUp($event)"
          x-on:keydown.left.prevent="goNeighbor(-1)"
          x-on:keydown.right.prevent="goNeighbor(1)">
         <div class="shell-nav-lens shell-nav-current" aria-hidden="true"></div>
