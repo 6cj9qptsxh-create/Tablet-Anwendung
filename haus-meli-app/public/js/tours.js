@@ -43,12 +43,10 @@ const FILTER_TITLES = {
 };
 
 // 2. Deine Logik-Funktionen (1:1 von dir übernommen, nur HIKES zu window.HIKES geändert)
-function checkHikeLayout(total) {
+function checkHikeLayout() {
     const container = document.getElementById('hike-results');
     if (!container) return;
-    const cardCount = typeof total === 'number'
-        ? total
-        : container.querySelectorAll('.hike-card').length;
+    const cardCount = container.querySelectorAll('.hike-card').length;
     if (cardCount > 0 && cardCount < 5) {
         container.classList.add('one-column-mode');
     } else {
@@ -308,7 +306,7 @@ window.openImageLightbox = function (images, startIndex = 0) {
         const fullSrc = window.tourImageUrl(src);
         return `
             <div style="flex: 0 0 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 0 15px;">
-                <img src="${fullSrc}" alt="" width="1200" height="800" draggable="false" style="max-width:100%; max-height:80vh; border-radius:var(--radius, 10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); user-select: none;">
+                <img src="${fullSrc}" draggable="false" style="max-width:100%; max-height:80vh; border-radius:8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); user-select: none;">
             </div>
         `;
     }).join('');
@@ -1962,185 +1960,6 @@ window.getFilteredTours = function () {
     return window.getFilteredSegments();
 };
 
-function escapeHikeHtml(value) {
-    return String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-function hikeCardHtml(seg, modes) {
-    const profile = window.segmentDisplayProfile(seg, modes);
-    const displayMode = profile ? profile.mode : 'hike';
-    const modeLabel = (window.TOUR_MODE_LABELS || { hike: 'Wandern', bike: 'Rad', ebike: 'E-Bike' })[displayMode] || displayMode;
-    const currentLang = (typeof APP !== 'undefined' && APP.lang === 'en') ? 'en' : 'de';
-    const eff = window.segmentEffectiveStats(seg);
-    const desc = profile && profile.description
-        ? (profile.description[currentLang] || profile.description.de || '')
-        : '';
-
-    const imgList = seg.images || [];
-    let headerImagesHTML = '';
-    if (imgList.length > 0) {
-        const imgFitMode = imgList.length <= 1 ? 'contain' : 'cover';
-        const imgStyle = `height: 100%; width: auto; max-width: 100%; object-fit: ${imgFitMode}; flex-shrink: 0; border-radius: var(--radius, 10px); border: 1px solid rgba(255,255,255,0.1);`;
-        headerImagesHTML = imgList.slice(0, 4).map(src => {
-            return `<img src="${escapeHikeHtml(window.tourImageUrl(src))}" alt="" width="320" height="200" loading="lazy" decoding="async" style="${imgStyle}">`;
-        }).join('');
-    } else {
-        headerImagesHTML = `<div style="font-size:30px;">⛰️</div>`;
-    }
-
-    let diffText = '—';
-    if (profile) {
-        const d = Math.max(1, Math.min(5, Number(profile.difficulty) || 1));
-        diffText = 'Schwierigkeit ' + d;
-    }
-
-    let tagsHTML = '';
-    const tags = (profile && profile.tags) || [];
-    if (tags.length) {
-        tagsHTML = `<div class="hike-tags">${tags.map(tag => {
-            const i18nKey = 'tag_' + String(tag).toLowerCase();
-            const label = (typeof t === 'function' && t(i18nKey) !== i18nKey) ? t(i18nKey) : capitalize(tag);
-            return `<span class="tag-badge">${escapeHikeHtml(label)}</span>`;
-        }).join('')}</div>`;
-    }
-
-    const badgeStyle = `
-        background: rgba(0,0,0,0.75); color: #fff; padding: 4px 12px; border-radius: 20px;
-        font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);
-        backdrop-filter: blur(4px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: right;`;
-
-    const flags = [];
-    flags.push(`<div style="${badgeStyle} background: rgba(45,106,79,0.95);">${escapeHikeHtml(modeLabel)}</div>`);
-    if (seg.is_highlight) flags.push(`<div style="${badgeStyle} background: rgba(233,196,106,0.95); color:#222;">Highlight</div>`);
-    if (seg.out_and_back) flags.push(`<div style="${badgeStyle} background: rgba(69,123,157,0.95);">Hin+Retour</div>`);
-
-    const hasImages = imgList.length > 0;
-    const imgClick = hasImages ? `onclick="openHikeGallery('${escapeHikeHtml(seg.id)}', 0)"` : '';
-    const kmLabel = seg.out_and_back
-        ? `${eff.km.toFixed(1)} km <span style="opacity:.7;font-weight:500;">(2× ${eff.oneWayKm.toFixed(1)})</span>`
-        : `${eff.oneWayKm.toFixed(1)} km`;
-    const durMin = typeof window.estimateSegmentDurationMin === 'function'
-        ? window.estimateSegmentDurationMin(seg, displayMode)
-        : 0;
-    const durLabel = durMin && typeof window.formatDurationMin === 'function'
-        ? window.formatDurationMin(durMin)
-        : '';
-    const minTourKm = window._minTourKmBySegId && window._minTourKmBySegId.get(seg.id);
-    const tourHint = (minTourKm != null)
-        ? `<span style="opacity:.8;font-weight:500;">Tour ab ${Number(minTourKm).toFixed(1)} km</span>`
-        : '';
-
-    return `
-    <div class="card hike-card">
-        <div class="image-container" ${imgClick} style="
-            height: 200px; position: relative; cursor: ${hasImages ? 'zoom-in' : 'default'}; overflow: hidden;
-            display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px;
-            background: var(--card); border-bottom: 1px solid var(--border);">
-            ${headerImagesHTML}
-            <div style="position: absolute; top: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none;">
-                <div style="${badgeStyle}">${escapeHikeHtml(diffText)}</div>
-                ${flags.join('')}
-            </div>
-        </div>
-        <div style="padding: var(--spacing); gap: 10px; flex-grow: 1; display: flex; flex-direction: column; width: 100%; min-width: 0;">
-            <h3 style="font-size: 1.15rem; margin:0;">${escapeHikeHtml(seg.name || 'Segment')}</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; color: var(--accent-soft); font-weight: bold; font-size: 0.9rem;">
-                <span>📏 Segment ${kmLabel}</span>
-                <span>⛰️ ${eff.hm} m</span>
-                ${durLabel ? `<span>⏱ ≈ ${escapeHikeHtml(durLabel)}</span>` : ''}
-                ${tourHint}
-            </div>
-            ${tagsHTML}
-            <p style="font-size: 0.9rem; color: var(--muted); line-height: 1.5; flex-grow: 1; margin:0;">${escapeHikeHtml(desc)}</p>
-        </div>
-    </div>`;
-}
-
-function hikeColumnCount(container) {
-    const width = container.clientWidth || 300;
-    const gap = 12;
-    return Math.max(1, Math.floor((width + gap) / (300 + gap)));
-}
-
-window.paintHikeWindow = function (force) {
-    const container = document.getElementById('hike-results');
-    const filtered = window._hikeFiltered || [];
-    const modes = window._hikeModes || [];
-    if (!container) return;
-
-    const virtual = filtered.length > 18;
-    window._hikeVirtualOn = virtual;
-    if (!virtual) {
-        window._hikeRangeKey = '';
-        container.innerHTML = filtered.map(seg => hikeCardHtml(seg, modes)).join('');
-        if (typeof checkHikeLayout === 'function') checkHikeLayout(filtered.length);
-        return;
-    }
-
-    const scroller = container.closest('.tab-pane') || container.parentElement;
-    const cols = hikeColumnCount(container);
-    const rowH = window._hikeRowH || 360;
-    const rows = Math.ceil(filtered.length / cols);
-    const viewH = (scroller && scroller.clientHeight) || 800;
-    const rel = scroller
-        ? Math.max(0, scroller.getBoundingClientRect().top - container.getBoundingClientRect().top)
-        : 0;
-    const startRow = Math.max(0, Math.floor(rel / rowH) - 1);
-    const endRow = Math.min(rows, Math.ceil((rel + viewH) / rowH) + 2);
-    const start = startRow * cols;
-    const end = Math.min(filtered.length, endRow * cols);
-    const key = start + ':' + end + ':' + cols + ':' + rowH;
-    if (!force && key === window._hikeRangeKey) return;
-    window._hikeRangeKey = key;
-    const top = startRow * rowH;
-    const bottom = Math.max(0, (rows - endRow) * rowH);
-    container.innerHTML =
-        `<div class="hike-virt-spacer" style="grid-column:1 / -1;height:${top}px"></div>` +
-        filtered.slice(start, end).map(seg => hikeCardHtml(seg, modes)).join('') +
-        `<div class="hike-virt-spacer" style="grid-column:1 / -1;height:${bottom}px"></div>`;
-    if (typeof checkHikeLayout === 'function') checkHikeLayout(filtered.length);
-
-    if (!window._hikeMeasuring) {
-        window._hikeMeasuring = true;
-        requestAnimationFrame(function () {
-            window._hikeMeasuring = false;
-            const card = container.querySelector('.hike-card');
-            if (!card) return;
-            const measured = Math.round(card.getBoundingClientRect().height + 12);
-            if (!window._hikeRowLocked && measured > 80 && Math.abs(measured - (window._hikeRowH || 360)) > 24) {
-                window._hikeRowH = measured;
-                window._hikeRowLocked = true;
-                window.paintHikeWindow(true);
-            }
-        });
-    }
-};
-
-window.bindHikeVirtualScroll = function () {
-    if (window._hikeVirtScroll) return;
-    window._hikeVirtScroll = true;
-    let raf = 0;
-    document.addEventListener('scroll', function (event) {
-        if (!window._hikeVirtualOn) return;
-        const container = document.getElementById('hike-results');
-        if (!container) return;
-        const scroller = container.closest('.tab-pane');
-        if (scroller && event.target !== scroller) return;
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(function () { window.paintHikeWindow(false); });
-    }, true);
-    window.addEventListener('resize', function () {
-        if (!window._hikeFiltered) return;
-        window._hikeRowH = 0;
-        window._hikeRowLocked = false;
-        window.paintHikeWindow(true);
-    });
-};
-
 window.renderHikes = function (options) {
     const opts = options || {};
     const updateMap = opts.updateMap !== false;
@@ -2175,20 +1994,105 @@ window.renderHikes = function (options) {
     }
 
     if (filtered.length === 0) {
-        window._hikeFiltered = [];
-        window._hikeVirtualOn = false;
-        window._hikeRangeKey = '';
         container.innerHTML = '';
         container.classList.remove('one-column-mode');
         return;
     }
 
-    window._hikeFiltered = filtered;
-    window._hikeModes = modes;
-    window._hikeRangeKey = '';
-    window._hikeRowLocked = false;
-    window.bindHikeVirtualScroll();
-    window.paintHikeWindow(true);
+    const currentLang = (typeof APP !== 'undefined' && APP.lang === 'en') ? 'en' : 'de';
+
+    const MODE_LABELS_UI = window.TOUR_MODE_LABELS || { hike: 'Wandern', bike: 'Rad', ebike: 'E-Bike' };
+
+    container.innerHTML = filtered.map(seg => {
+        const profile = window.segmentDisplayProfile(seg, modes);
+        const displayMode = profile ? profile.mode : 'hike';
+        const modeLabel = MODE_LABELS_UI[displayMode] || displayMode;
+        const eff = window.segmentEffectiveStats(seg);
+        const desc = profile && profile.description
+            ? (profile.description[currentLang] || profile.description.de || '')
+            : '';
+
+        let imgList = seg.images || [];
+        let headerImagesHTML = '';
+        if (imgList.length > 0) {
+            const imgFitMode = imgList.length <= 1 ? 'contain' : 'cover';
+            const imgStyle = `height: 100%; width: auto; max-width: 100%; object-fit: ${imgFitMode}; flex-shrink: 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);`;
+            headerImagesHTML = imgList.slice(0, 4).map(src => {
+                return `<img src="${window.tourImageUrl(src)}" style="${imgStyle}">`;
+            }).join('');
+        } else {
+            headerImagesHTML = `<div style="font-size:30px;">⛰️</div>`;
+        }
+
+        let diffText = '—';
+        if (profile) {
+            const d = Math.max(1, Math.min(5, Number(profile.difficulty) || 1));
+            diffText = 'Schwierigkeit ' + d;
+        }
+
+        let tagsHTML = '';
+        const tags = (profile && profile.tags) || [];
+        if (tags.length) {
+            tagsHTML = `<div class="hike-tags">${tags.map(tag => {
+                const i18nKey = 'tag_' + String(tag).toLowerCase();
+                const label = (typeof t === 'function' && t(i18nKey) !== i18nKey) ? t(i18nKey) : capitalize(tag);
+                return `<span class="tag-badge">${label}</span>`;
+            }).join('')}</div>`;
+        }
+
+        const badgeStyle = `
+            background: rgba(0,0,0,0.75); color: #fff; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); text-align: right;`;
+
+        const flags = [];
+        flags.push(`<div style="${badgeStyle} background: rgba(45,106,79,0.95);">${modeLabel}</div>`);
+        if (seg.is_highlight) flags.push(`<div style="${badgeStyle} background: rgba(233,196,106,0.95); color:#222;">Highlight</div>`);
+        if (seg.out_and_back) flags.push(`<div style="${badgeStyle} background: rgba(69,123,157,0.95);">Hin+Retour</div>`);
+
+        const hasImages = imgList.length > 0;
+        const imgClick = hasImages ? `onclick="openHikeGallery('${seg.id}', 0)"` : '';
+        const kmLabel = seg.out_and_back
+            ? `${eff.km.toFixed(1)} km <span style="opacity:.7;font-weight:500;">(2× ${eff.oneWayKm.toFixed(1)})</span>`
+            : `${eff.oneWayKm.toFixed(1)} km`;
+        const durMin = typeof window.estimateSegmentDurationMin === 'function'
+            ? window.estimateSegmentDurationMin(seg, displayMode)
+            : 0;
+        const durLabel = durMin && typeof window.formatDurationMin === 'function'
+            ? window.formatDurationMin(durMin)
+            : '';
+        const minTourKm = window._minTourKmBySegId && window._minTourKmBySegId.get(seg.id);
+        const tourHint = (minTourKm != null)
+            ? `<span style="opacity:.8;font-weight:500;">Tour ab ${Number(minTourKm).toFixed(1)} km</span>`
+            : '';
+
+        return `
+        <div class="card hike-card">
+            <div class="image-container" ${imgClick} style="
+                height: 200px; position: relative; cursor: ${hasImages ? 'zoom-in' : 'default'}; overflow: hidden;
+                display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px;
+                background: var(--card); border-bottom: 1px solid var(--border);">
+                ${headerImagesHTML}
+                <div style="position: absolute; top: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none;">
+                    <div style="${badgeStyle}">${diffText}</div>
+                    ${flags.join('')}
+                </div>
+            </div>
+            <div style="padding: var(--spacing); gap: 10px; flex-grow: 1; display: flex; flex-direction: column; width: 100%; min-width: 0;">
+                <h3 style="font-size: 1.15rem; margin:0;">${seg.name || 'Segment'}</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; color: var(--accent-soft); font-weight: bold; font-size: 0.9rem;">
+                    <span>📏 Segment ${kmLabel}</span>
+                    <span>⛰️ ${eff.hm} m</span>
+                    ${durLabel ? `<span>⏱ ≈ ${durLabel}</span>` : ''}
+                    ${tourHint}
+                </div>
+                ${tagsHTML}
+                <p style="font-size: 0.9rem; color: var(--muted); line-height: 1.5; flex-grow: 1; margin:0;">${desc}</p>
+            </div>
+        </div>`;
+    }).join('');
+
+    if (typeof checkHikeLayout === 'function') checkHikeLayout();
 };
 
 // =========================================================
@@ -2344,62 +2248,6 @@ window.closeTripDetail = function () {
     if (segInfo) segInfo.hidden = true;
 };
 
-window.applyTourGeometry = function (data) {
-    const byId = new Map();
-    ((data && data.segments) || []).forEach(function (row) {
-        byId.set(Number(row.id), row.coordinates || []);
-    });
-    const lists = [
-        window.ALL_SEGMENTS,
-        window._toursGraphData && window._toursGraphData.segments,
-    ];
-    const seen = new Set();
-    lists.forEach(function (list) {
-        (list || []).forEach(function (seg) {
-            if (!seg || seen.has(seg)) return;
-            seen.add(seg);
-            const coords = byId.get(Number(seg.id));
-            if (!coords || coords.length < 2) return;
-            if (!seg.geojson) seg.geojson = { type: 'LineString' };
-            seg.geojson.coordinates = coords;
-        });
-    });
-    window._toursGeometryReady = true;
-    if (window._toursGuestBooted && typeof window.applyTourGraphFilters === 'function') {
-        window.applyTourGraphFilters(false);
-    }
-};
-
-window.loadTourGeometry = function (gen) {
-    const graph = window._toursGraphData;
-    if (!graph || graph.geometry !== 'separate' || window._toursGeometryReady) return;
-    if (window._toursGeomLoading) return;
-    window._toursGeomLoading = true;
-    if (window._toursGeomAbort) {
-        try { window._toursGeomAbort.abort(); } catch (e) {}
-    }
-    const ctrl = new AbortController();
-    window._toursGeomAbort = ctrl;
-    fetch('/tours/graph/geometry', {
-        headers: { Accept: 'application/json' },
-        credentials: 'same-origin',
-        signal: ctrl.signal,
-    })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (window._toursGeomAbort !== ctrl) return;
-            window._toursGeomLoading = false;
-            if (window._toursWanted === false || gen !== window._toursGen) return;
-            window.applyTourGeometry(data);
-        })
-        .catch(function (e) {
-            if (window._toursGeomAbort !== ctrl) return;
-            window._toursGeomLoading = false;
-            if (e && e.name === 'AbortError') return;
-            console.warn('Tour-Geometrie konnte nicht geladen werden', e);
-        });
-};
-
 // 4. INITIALISIERUNG — Segment-Graph (Modi + Startpunkt)
 // Tours-HTML kommt oft erst per Livewire-defer; das JS-Bundle erst beim Tab-Öffnen.
 // Deshalb nicht nur DOMContentLoaded — bootToursGuestApp() ist wiederholbar bis es greift.
@@ -2448,37 +2296,21 @@ window.bootToursGuestApp = function () {
         if (window._toursGraphLoading) return false;
         window._toursGraphLoading = true;
         const gen = window._toursGen;
-        if (window._toursGraphAbort) {
-            try { window._toursGraphAbort.abort(); } catch (e) {}
-        }
-        const ctrl = new AbortController();
-        window._toursGraphAbort = ctrl;
-        fetch('/tours/graph', {
-            headers: { Accept: 'application/json' },
-            credentials: 'same-origin',
-            signal: ctrl.signal,
-        })
+        fetch('/tours/graph', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
             .then(function (response) { return response.json(); })
             .then(function (graph) {
-                if (window._toursGraphAbort !== ctrl) return;
                 window._toursGraphLoading = false;
                 window._toursBooting = false;
                 if (window._toursWanted === false || gen !== window._toursGen) return;
                 window._toursGraphData = graph;
-                window.loadTourGeometry(gen);
                 window.bootToursGuestApp();
             })
             .catch(function (e) {
-                if (window._toursGraphAbort !== ctrl) return;
                 window._toursGraphLoading = false;
                 window._toursBooting = false;
-                if (e && e.name === 'AbortError') return;
                 console.warn('Tour-Graph konnte nicht geladen werden', e);
             });
         return false;
-    }
-    if (window._toursGraphData.geometry === 'separate' && !window._toursGeometryReady && !window._toursGeomLoading) {
-        window.loadTourGeometry(window._toursGen);
     }
     const graph = window._toursGraphData;
 

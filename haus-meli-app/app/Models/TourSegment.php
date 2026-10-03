@@ -78,7 +78,7 @@ class TourSegment extends Model
         return $reversed ? array_reverse($coords) : $coords;
     }
 
-    public function toGuestArray(bool $withGeometry = true): array
+    public function toGuestArray(): array
     {
         $modes = $this->relationLoaded('modeProfiles')
             ? $this->modeProfiles
@@ -115,7 +115,7 @@ class TourSegment extends Model
             'is_cable_car' => in_array('seilbahn', $tags, true) || in_array('cable_car', $tags, true),
             'geojson' => [
                 'type' => 'LineString',
-                'coordinates' => $withGeometry ? $this->coordinates(false) : [],
+                'coordinates' => $this->coordinates(false),
             ],
             'images' => $images->pluck('path')->values()->all(),
             'modes' => $modes->map(fn (TourSegmentMode $m) => [

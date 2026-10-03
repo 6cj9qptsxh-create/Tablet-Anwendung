@@ -270,7 +270,7 @@
         <div class="card outlook-calendar cal-view-{{ $viewMode }}">
 
             @if($viewMode === 'agenda')
-                <div class="agenda-split" wire:poll.60s.visible>
+                <div class="agenda-split" wire:poll.60s>
                     @if($isFamily)
                         <div class="agenda-family">
                             @foreach ([
@@ -680,12 +680,7 @@
 
                 bandStyle() {
                     const dx = this.bandX;
-                    /* In Ruhe bleibt die CSS-Verschiebung (100cqb). Eine zu früh
-                       gemessene Pixelhöhe würde den Monat aus dem Sichtfeld schieben. */
-                    if (!this.dragging && !this.settling && !this.moved) {
-                        return '';
-                    }
-                    if (!(this.bandW > 0)) {
+                    if (!(this.bandW > 0) && !this.dragging && !this.settling && !this.moved) {
                         return '';
                     }
                     const step = this.bandStep();

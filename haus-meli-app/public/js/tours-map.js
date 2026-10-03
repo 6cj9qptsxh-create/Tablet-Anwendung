@@ -170,7 +170,7 @@
             return;
         }
         photosEl.innerHTML = list.map((src, i) =>
-            `<img src="${tourMediaUrl(src)}" alt="" width="200" height="150" loading="lazy" decoding="async" data-lb-index="${i}" class="tours-sel-photo">`
+            `<img src="${tourMediaUrl(src)}" alt="" loading="lazy" data-lb-index="${i}" class="tours-sel-photo">`
         ).join('');
         photosEl.hidden = false;
         photosEl.querySelectorAll('img.tours-sel-photo').forEach((img) => {
