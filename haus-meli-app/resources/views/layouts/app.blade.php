@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=104">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=93">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=103">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,12 +56,14 @@
         })();
         // Alpine-Ausdrücke dürfen kein try/catch — Helfer hier (echtes JS).
         window.HAUS_MELI_BUILD = {
-            id: '2026-10-03-perf',
-            toursMap: 73,
-            toursPlanner: 32,
-            toursJs: 81,
+            id: '2026-09-26-boot-fix',
+            path: @json(base_path()),
+            toursMap: 72,
+            toursPlanner: 31,
+            toursJs: 80,
             alpineFix: true,
         };
+        console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
         window.hausMeliStoreTab = function (tab) {
             try { localStorage.setItem('hausMeliTab', tab); } catch (e) {}
         };
@@ -86,15 +88,6 @@
             window._toursBootFiltered = null;
             window._toursChunkMap = false;
             window._toursGraphLoading = false;
-            window._toursGeomLoading = false;
-            if (window._toursGraphAbort) {
-                try { window._toursGraphAbort.abort(); } catch (e) {}
-                window._toursGraphAbort = null;
-            }
-            if (window._toursGeomAbort) {
-                try { window._toursGeomAbort.abort(); } catch (e) {}
-                window._toursGeomAbort = null;
-            }
             clearTimeout(window._toursBootTimer);
             clearTimeout(window._toursBootSoon);
             clearTimeout(window._toursMapTimer);
@@ -204,9 +197,9 @@
 
 <body class="page-content"
       x-data="{
-        tabs: ['order', 'events', 'info', 'tours'],
+        tabs: ['order', 'knx', 'events', 'info', 'tours'],
         currentTab: (function () {
-          const allowed = ['order', 'events', 'info', 'tours'];
+          const allowed = ['order', 'knx', 'events', 'info', 'tours'];
           const fromHash = (location.hash || '').replace(/^#/, '');
           if (allowed.includes(fromHash)) return fromHash;
           const saved = window.hausMeliReadTab(allowed);
@@ -216,7 +209,7 @@
         menuOpen: false,
         chromeTab: 'order',
         wheelIndex: (function () {
-          const allowed = ['order', 'events', 'info', 'tours'];
+          const allowed = ['order', 'knx', 'events', 'info', 'tours'];
           const fromHash = (location.hash || '').replace(/^#/, '');
           const name = allowed.includes(fromHash) ? fromHash : (window.hausMeliReadTab(allowed) || 'order');
           const idx = allowed.indexOf(name);
@@ -227,7 +220,7 @@
         wheelStretch: 0,
         wheelW: 0,
         tabName(tab) {
-          return ({ order: 'Shop', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
+          return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
         neighbor(step) {
           const index = this.tabs.indexOf(this.currentTab) + step;
@@ -684,8 +677,6 @@
               sx = t ? t.clientX : 0;
               sy = t ? t.clientY : 0;
               carting = !!document.querySelector('#tab-order.cart-is-open');
-              const fromCal = t && t.target && t.target.closest && t.target.closest('.cal-week-h-body, .cal-week-h-head, .day-col-body, .day-col-header');
-              this._calH = !!fromCal;
               this._touching = true;
               this._fingerSnap = true;
               this._swipeDx = 0;
@@ -697,12 +688,6 @@
               if (!t) return;
               const dx = t.clientX - sx;
               const dy = t.clientY - sy;
-              if (this._calH) {
-                if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) && event.cancelable) {
-                  event.preventDefault();
-                }
-                return;
-              }
               if (carting && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
                 event.preventDefault();
               }
@@ -725,13 +710,6 @@
               const dx = t ? t.clientX - sx : 0;
               const dy = t ? t.clientY - sy : 0;
               const horizontal = Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy);
-              const calH = this._calH;
-              this._calH = false;
-              if (calH) {
-                this._swipeDx = 0;
-                if (!this._scrolling) this.scheduleHash();
-                return;
-              }
               if (horizontal) this._swipeDx = dx;
               if (!carting && horizontal && dx > 0) this.followRetour(dx);
               if (carting && horizontal && dx > 0) {
@@ -775,7 +753,6 @@
             animateNav(v, prev);
           }
           window.hausMeliStoreTab(v);
-          if (v === 'order') window.dispatchEvent(new CustomEvent('shop-tab-visible'));
           if (v !== 'tours' && window.cancelToursLoad) window.cancelToursLoad();
         });
         if (!history.state || !history.state.hausMeli) {
@@ -866,6 +843,8 @@
             <section class="tab-pane" data-tab="order">
                 @livewire('shop')
             </section>
+
+            <section class="tab-pane" data-tab="knx"></section>
 
             <section class="tab-pane tab-pane-events cal-tab-pane" data-tab="events">
                 @livewire('events')

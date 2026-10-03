@@ -93,7 +93,7 @@
                 -15%
             </div>
         @endif
-        <img class="product-img" loading="lazy" width="96" height="96" src="{{ asset('img/products/' . $product->image_path) }}" alt="{{ $name }}">
+        <img class="product-img" loading="lazy" src="{{ asset('img/products/' . $product->image_path) }}" alt="{{ $name }}">
     </div>
 
     <div class="content-wrapper">

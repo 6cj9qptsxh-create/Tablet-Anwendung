@@ -1,5 +1,5 @@
 <div id="tab-order" class="world active {{ ($orderMode === 'delivery' && !$this->selectedDayOrderable) ? 'shop-day-locked' : '' }}"
-    wire:poll.60s.visible="syncCart"
+    wire:poll.15s.visible="syncCart"
     :class="{'cart-is-open': cartOpen, 'cart-animating': cartAnimating}" 
     x-data="{ 
         cartOpen: false, 
@@ -14,13 +14,6 @@
 
             /* Die Wrap-Unterkante (inkl. grauem Feld) ist exakt die Dock-Position des Warenkorbs */
             document.documentElement.style.setProperty('--cart-dock-top', wrap.offsetHeight + 'px');
-        },
-        syncIfShopVisible() {
-            if (document.visibilityState === 'hidden') return;
-            const pane = this.$root.closest('.tab-pane');
-            if (!pane) return;
-            const rect = pane.getBoundingClientRect();
-            if (rect.right > 48 && rect.left < window.innerWidth - 48) this.$wire.syncCart();
         }
     }"
     x-init="
@@ -43,9 +36,7 @@
         if (typeof Livewire !== 'undefined') {
             Livewire.hook('morph.updated', onLivewireMorph);
         }
-        document.addEventListener('visibilitychange', () => syncIfShopVisible());
     "
-    @shop-tab-visible.window="syncIfShopVisible()"
     @open-cart.window="if (!($event.detail && $event.detail.skipOnPhone && window.matchMedia('(max-width: 767px)').matches)) cartOpen = true"
     @close-cart.window="cartOpen = false"
     @close-history.window="historyOpen = false"

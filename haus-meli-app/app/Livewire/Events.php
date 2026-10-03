@@ -762,13 +762,6 @@ class Events extends Component
         }
     }
 
-    public function placeholder(array $params = [])
-    {
-        return <<<'HTML'
-        <div class="card cal-placeholder" aria-live="polite">Kalender wird geladen …</div>
-        HTML;
-    }
-
     public function render()
     {
         $today = Carbon::today()->format('Y-m-d');

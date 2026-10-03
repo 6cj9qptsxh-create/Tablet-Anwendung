@@ -27,8 +27,6 @@ Route::get('/tours/share/{token}/gpx', [PlannedRouteShareController::class, 'gpx
 
 Route::get('/tours/graph', TourGraphController::class)
     ->name('tours.graph');
-Route::get('/tours/graph/geometry', [TourGraphController::class, 'geometry'])
-    ->name('tours.graph.geometry');
 
 Route::get('/tours/saved', [SavedToursController::class, 'index'])
     ->name('tours.saved.index');
