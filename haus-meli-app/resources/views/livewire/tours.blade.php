@@ -1,4 +1,4 @@
-<div id="tours-app-container" data-graph="{{ json_encode($graph) }}">
+<div id="tours-app-container">
 
     <h2 class="super-heading tour-main-heading">
         <span class="material-symbols-rounded">explore</span>

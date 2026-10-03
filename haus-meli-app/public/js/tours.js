@@ -2285,13 +2285,34 @@ window.bootToursGuestApp = function () {
     }
     window._toursBooting = true;
 
-    let graph = { nodes: [], segments: [] };
-    try {
+    if (!window._toursGraphData) {
         const raw = container.getAttribute('data-graph');
-        if (raw) graph = JSON.parse(raw);
-    } catch (e) {
-        console.warn('Tour-Graph konnte nicht gelesen werden', e);
+        if (raw) {
+            try { window._toursGraphData = JSON.parse(raw); }
+            catch (e) { console.warn('Tour-Graph konnte nicht gelesen werden', e); }
+        }
     }
+    if (!window._toursGraphData) {
+        if (window._toursGraphLoading) return false;
+        window._toursGraphLoading = true;
+        const gen = window._toursGen;
+        fetch('/tours/graph', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(function (response) { return response.json(); })
+            .then(function (graph) {
+                window._toursGraphLoading = false;
+                window._toursBooting = false;
+                if (window._toursWanted === false || gen !== window._toursGen) return;
+                window._toursGraphData = graph;
+                window.bootToursGuestApp();
+            })
+            .catch(function (e) {
+                window._toursGraphLoading = false;
+                window._toursBooting = false;
+                console.warn('Tour-Graph konnte nicht geladen werden', e);
+            });
+        return false;
+    }
+    const graph = window._toursGraphData;
 
     window.TOUR_NODES = graph.nodes || [];
     window.ALL_SEGMENTS = graph.segments || [];
