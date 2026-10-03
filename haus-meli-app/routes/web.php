@@ -5,6 +5,7 @@ use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\ElevationController;
 use App\Http\Controllers\PlannedRouteShareController;
 use App\Http\Controllers\SavedToursController;
+use App\Http\Controllers\TourGraphController;
 use App\Http\Controllers\TripGpxController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,9 @@ Route::get('/tours/share/{token}', [PlannedRouteShareController::class, 'show'])
     ->name('tours.share.show');
 Route::get('/tours/share/{token}/gpx', [PlannedRouteShareController::class, 'gpx'])
     ->name('tours.share.gpx');
+
+Route::get('/tours/graph', TourGraphController::class)
+    ->name('tours.graph');
 
 Route::get('/tours/saved', [SavedToursController::class, 'index'])
     ->name('tours.saved.index');

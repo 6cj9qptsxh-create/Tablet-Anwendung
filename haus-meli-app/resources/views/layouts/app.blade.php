@@ -60,7 +60,7 @@
             path: @json(base_path()),
             toursMap: 72,
             toursPlanner: 31,
-            toursJs: 79,
+            toursJs: 80,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -87,6 +87,7 @@
             window._toursSliceBudget = 0;
             window._toursBootFiltered = null;
             window._toursChunkMap = false;
+            window._toursGraphLoading = false;
             clearTimeout(window._toursBootTimer);
             clearTimeout(window._toursBootSoon);
             clearTimeout(window._toursMapTimer);
@@ -349,7 +350,7 @@
           clearTimeout(this._progTimer);
           this._progTimer = setTimeout(() => {
             this._prog = false;
-            if (!this._touching) this.prepareEdge();
+            if (!this._touching) this.scheduleEdge();
           }, smooth ? 520 : 80);
         },
         tabFromScroll() {
@@ -385,20 +386,27 @@
           clearTimeout(this._scrollEnd);
           this._scrollEnd = setTimeout(() => {
             this._scrolling = false;
-            if (!this._touching) this.prepareEdge();
             this.finishChrome();
             this.correctSnap();
-            this.syncHash();
+            if (!this._touching) this.scheduleEdge();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
             }
           }, 160);
         },
         syncHash() {
-          if (this._touching) return;
+          if (this._touching || this._scrolling) return;
           const tab = this.currentTab;
           if (!tab || location.hash === '#' + tab) return;
           history.replaceState({ hausMeli: 1 }, '', '#' + tab);
+        },
+        scheduleEdge() {
+          clearTimeout(this._edgeTimer);
+          this._edgeTimer = setTimeout(() => {
+            if (this._touching || this._scrolling) return;
+            this.prepareEdge();
+            this.syncHash();
+          }, 480);
         },
         setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
@@ -437,11 +445,11 @@
               this._prog = false;
               clearTimeout(this._progTimer);
               clearTimeout(this._scrollEnd);
+              clearTimeout(this._edgeTimer);
               const t = event.touches[0];
               sx = t ? t.clientX : 0;
               sy = t ? t.clientY : 0;
               carting = !!document.querySelector('#tab-order.cart-is-open');
-              if (!carting) this.prepareEdge(true);
               this._touching = true;
             }, { passive: true });
             trackEl.addEventListener('touchmove', (event) => {
@@ -474,10 +482,7 @@
               if (this.currentTab === before && fromNav && fromNav !== this.currentTab) {
                 this.animateNav(this.currentTab, fromNav);
               }
-              if (!this._scrolling) {
-                this.prepareEdge();
-                this.syncHash();
-              }
+              if (!this._scrolling) this.scheduleEdge();
               carting = false;
               setTimeout(() => {
                 if (!this._scrolling && this.currentTab === 'tours' && !this._touching) {
