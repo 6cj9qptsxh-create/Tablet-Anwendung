@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=91">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=92">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,9 +58,9 @@
         window.HAUS_MELI_BUILD = {
             id: '2026-09-26-boot-fix',
             path: @json(base_path()),
-            toursMap: 71,
+            toursMap: 72,
             toursPlanner: 31,
-            toursJs: 78,
+            toursJs: 79,
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
@@ -95,7 +95,44 @@
             if (window._toursObs) {
                 try { window._toursObs.disconnect(); } catch (e) {}
             }
+            window.syncToursLoadButton && window.syncToursLoadButton();
         };
+        window.toursIsPhone = function () {
+            return window.matchMedia('(max-width: 767px)').matches;
+        };
+        window.syncToursLoadButton = function () {
+            const phone = window.toursIsPhone();
+            const ready = !!window._toursGuestBooted;
+            const busy = !!window._toursWanted && !ready;
+            document.body.classList.toggle('tours-map-busy', phone && busy);
+            document.body.classList.toggle('tours-map-ready', ready);
+            const loading = document.getElementById('tours-map-loading');
+            if (loading && !ready) loading.hidden = !busy;
+        };
+        window.maybeLoadTours = function () {
+            if (window.toursIsPhone()) {
+                window.syncToursLoadButton();
+                return;
+            }
+            window._toursWanted = true;
+            window.syncToursLoadButton();
+            window.loadToursBundle && window.loadToursBundle();
+        };
+        window.startToursMapLoad = function () {
+            if (window._toursGuestBooted) {
+                window.syncToursLoadButton();
+                return;
+            }
+            window._toursWanted = true;
+            window.syncToursLoadButton();
+            window.loadToursBundle && window.loadToursBundle();
+        };
+        document.addEventListener('click', function (event) {
+            const btn = event.target && event.target.closest && event.target.closest('#tours-map-load');
+            if (!btn) return;
+            event.preventDefault();
+            window.startToursMapLoad();
+        });
         window.loadToursBundle = function () {
             window._toursWanted = true;
             if (window._toursReady) {
@@ -301,8 +338,7 @@
             this.finishChrome();
             this.correctSnap();
             if (this.currentTab === 'tours' && !this._touching) {
-              window._toursWanted = true;
-              window.loadToursBundle && window.loadToursBundle();
+              window.maybeLoadTours && window.maybeLoadTours();
             }
           }, 160);
         },
@@ -382,8 +418,7 @@
               setTimeout(() => {
                 this.correctSnap();
                 if (!this._scrolling && this.currentTab === 'tours') {
-                  window._toursWanted = true;
-                  window.loadToursBundle && window.loadToursBundle();
+                  window.maybeLoadTours && window.maybeLoadTours();
                 }
               }, 200);
             };
@@ -399,8 +434,7 @@
           setTimeout(() => window.dispatchEvent(new CustomEvent('cal-remeasure')), 80);
         }
         if (currentTab === 'tours') {
-          window._toursWanted = true;
-          window.loadToursBundle && window.loadToursBundle();
+          window.maybeLoadTours && window.maybeLoadTours();
         }
         $watch('currentTab', (v, prev) => {
           animateNav(v, prev);
