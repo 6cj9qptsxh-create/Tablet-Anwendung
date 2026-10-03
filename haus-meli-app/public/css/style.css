@@ -5985,13 +5985,3 @@ body.trip-detail-open {
 }
 
 
-/* Linker Rand: iPhone-Zurück-Wisch fängt die Seite ab und scrollt zum vorigen Tab. */
-.edge-back-catch {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 22px;
-    z-index: 4500;
-    touch-action: pan-y;
-}
