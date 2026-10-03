@@ -1208,7 +1208,7 @@ body {
     position: absolute;
     left: var(--lens-x, 50%);
     top: 50%;
-    z-index: 1;
+    z-index: 2;
     width: var(--lens);
     max-width: 46%;
     height: 32px;
@@ -1216,17 +1216,8 @@ body {
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 999px;
-    background:
-        radial-gradient(120% 80% at calc(50% + var(--shine) * 30%) -20%, rgba(255, 255, 255, 0.55), transparent 52%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04) 46%, rgba(255, 255, 255, 0.07)),
-        color-mix(in srgb, var(--accent), transparent 80%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
-    backdrop-filter: blur(18px) saturate(180%);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 0 14px rgba(255, 255, 255, 0.06),
-        0 8px 20px color-mix(in srgb, var(--accent), transparent 62%);
+    background: color-mix(in srgb, #2a2e34 84%, var(--accent));
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
     transform: translate(-50%, -50%) scale(calc(1 + var(--press) * 0.07)) scaleX(calc(1 + var(--stretch) * 0.08));
     transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), width 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
 }
@@ -1235,36 +1226,9 @@ body {
     transition: transform 0.08s linear;
 }
 
-.shell-nav-lens::before {
-    content: "";
-    position: absolute;
-    top: 1px;
-    height: 46%;
-    width: 40%;
-    left: calc(50% + var(--shine) * 22% - 20%);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
-    opacity: calc(0.5 + var(--press) * 0.28);
-    pointer-events: none;
-}
-
-.shell-nav-lens::after {
-    content: "";
-    position: absolute;
-    left: 12%;
-    right: 12%;
-    bottom: 1px;
-    height: 42%;
-    border-radius: 999px;
-    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent-soft), transparent 20%));
-    opacity: 0.5;
-    transform: translateX(calc(var(--shine) * -10px));
-    pointer-events: none;
-}
-
 .shell-nav-wheel-clip {
     position: relative;
-    z-index: 2;
+    z-index: 1;
     height: 100%;
     width: 100%;
     overflow: visible;
@@ -1294,6 +1258,27 @@ body {
 }
 
 .shell-nav.is-dragging .shell-nav-wheel-item {
+    transition: none;
+}
+
+.shell-nav-focus {
+    position: absolute;
+    left: var(--lens-x, 50%);
+    top: 50%;
+    z-index: 3;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+    transform: translate(-50%, -50%);
+    transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1);
+}
+
+.shell-nav.is-dragging .shell-nav-focus {
     transition: none;
 }
 
@@ -3529,7 +3514,8 @@ body.is-cal-tab .shell-nav {
         height: 30px;
     }
 
-    .shell-nav-wheel-item {
+    .shell-nav-wheel-item,
+    .shell-nav-focus {
         font-size: 1.05rem;
     }
 
@@ -5806,6 +5792,7 @@ body.trip-detail-open {
 
     .shell-nav-wheel,
     .shell-nav-lens,
+    .shell-nav-focus,
     .shell-nav-wheel-clip,
     .shell-nav.is-wheeling .shell-nav-side {
         transition: none;
