@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=97">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=98">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -218,7 +218,7 @@
         wheelOn: false,
         wheelDrag: false,
         wheelStretch: 0,
-        wheelSlot: 116,
+        wheelW: 0,
         tabName(tab) {
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
@@ -231,40 +231,62 @@
           const tab = this.neighbor(step);
           if (tab) this.setTab(tab);
         },
-        // Horizontales Rad: der Finger zieht die Namen, die Mitte ist die Zielseite.
-        wheelSlotNow() {
-          if (this._wheel) return this.wheelSlot;
-          const phone = window.matchMedia('(max-width: 767px)').matches;
-          const slot = phone ? 96 : 116;
-          if (slot !== this.wheelSlot) this.wheelSlot = slot;
-          return slot;
+        // Alle Namen stehen immer in der Leiste. Unter der Pille volle Groesse, daneben kleiner.
+        wheelInset(width) {
+          return Math.min(56, Math.max(40, width * 0.12));
         },
-        // Schmale Leiste: ein Zug ueber drei Viertel der Breite reicht von der ersten bis zur letzten Seite.
-        wheelFitStep(slot) {
+        wheelBar() {
           const nav = document.querySelector('.shell-nav');
-          const width = nav && nav.clientWidth ? nav.clientWidth : 0;
-          const span = Math.max(1, this.tabs.length - 1);
-          if (width < 80) return slot;
-          const fit = width * 0.75 / span;
-          return fit < slot ? fit : slot;
+          const measured = nav && nav.clientWidth ? nav.clientWidth : 0;
+          const width = this.wheelW || measured || 320;
+          const max = Math.max(1, this.tabs.length - 1);
+          return { width: width, max: max, inset: this.wheelInset(width) };
+        },
+        wheelX(index) {
+          const bar = this.wheelBar();
+          const clamped = Math.max(0, Math.min(bar.max, index));
+          const span = Math.max(1, bar.width - bar.inset * 2);
+          return bar.inset + (clamped / bar.max) * span;
+        },
+        wheelIndexFromX(clientX) {
+          const nav = document.querySelector('.shell-nav');
+          const rect = nav ? nav.getBoundingClientRect() : null;
+          const width = rect && rect.width ? rect.width : (this.wheelW || 320);
+          const max = Math.max(1, this.tabs.length - 1);
+          const inset = this.wheelInset(width);
+          const span = Math.max(1, width - inset * 2);
+          const local = rect ? clientX - rect.left : 0;
+          let index = (local - inset) / span * max;
+          if (index < 0) index = index * 0.35;
+          else if (index > max) index = max + (index - max) * 0.35;
+          return index;
         },
         wheelStyle() {
-          const slot = this.wheelSlotNow();
+          const bar = this.wheelBar();
           const max = this.tabs.length - 1;
-          const i = Math.max(0, Math.min(max, Math.round(this.wheelIndex)));
+          const at = Math.max(0, Math.min(max, this.wheelIndex));
+          const x = this.wheelX(at);
+          const left = x / bar.width * 100;
+          const i = Math.max(0, Math.min(max, Math.round(at)));
           const label = this.tabName(this.tabs[i] || this.currentTab);
-          const rest = Math.min(slot, Math.max(88, 28 + label.length * 16));
-          const lens = this.wheelOn ? slot : rest;
+          const text = 24 + label.length * 13;
+          let lens = Math.max(64, Math.min(text, bar.width * 0.42));
+          const edge = 4;
+          const room = Math.max(48, Math.min(x - edge, bar.width - edge - x) * 2);
+          if (lens > room) lens = room;
           const frac = this.wheelIndex - Math.round(this.wheelIndex);
           const shine = Math.max(-1, Math.min(1, frac * 2));
-          return '--wheel-slot:' + slot + 'px;--wheel-x:' + ((-this.wheelIndex) * slot) + 'px;--lens:' + lens + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
+          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + Math.round(lens) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
         },
         wheelItemStyle(i) {
+          const bar = this.wheelBar();
+          const left = this.wheelX(i) / bar.width * 100;
           const d = Math.abs(i - this.wheelIndex);
           const zoom = Math.exp(-d * d * 2.2);
-          const scale = 0.58 + 0.42 * zoom;
-          const opacity = 0.4 + 0.6 * zoom;
-          return 'opacity:' + opacity.toFixed(3) + ';transform:scale(' + scale.toFixed(3) + ')';
+          const scale = 0.5 + 0.5 * zoom;
+          const opacity = 0.72 + 0.28 * zoom;
+          const z = Math.round(2 + zoom * 8);
+          return 'left:' + left.toFixed(2) + '%;opacity:' + opacity.toFixed(3) + ';z-index:' + z + ';transform:translate(-50%, -50%) scale(' + scale.toFixed(3) + ')';
         },
         wheelSettle(index, dur, soft) {
           cancelAnimationFrame(this._wheelRaf);
@@ -291,19 +313,15 @@
           if (event.pointerType === 'mouse' && event.button !== 0) return;
           cancelAnimationFrame(this._wheelRaf);
           clearTimeout(this._wheelOff);
-          this.wheelSlotNow();
           this._wheel = {
             id: event.pointerId,
             x: event.clientX,
             y: event.clientY,
             start: this.wheelIndex,
-            step: this.wheelFitStep(this.wheelSlot),
             moved: false,
             ignore: false
           };
           this.wheelStretch = 0;
-          const sideEl = event.target && event.target.closest ? event.target.closest('.shell-nav-side') : null;
-          this._wheel.sideStep = sideEl && !sideEl.disabled ? (sideEl.classList.contains('is-next') ? 1 : -1) : 0;
           try { event.currentTarget.setPointerCapture(event.pointerId); } catch (err) {}
         },
         wheelClick(event) {
@@ -329,19 +347,10 @@
           }
           if (g.ignore) return;
           if (event.cancelable) event.preventDefault();
-          const step = g.step > 8 ? g.step : (this.wheelSlot || 96);
+          const index = this.wheelIndexFromX(event.clientX);
           const max = this.tabs.length - 1;
-          const raw = g.start - dx / step;
-          let index = raw;
-          let over = 0;
-          if (raw < 0) {
-            over = -raw;
-            index = raw * 0.35;
-          } else if (raw > max) {
-            over = raw - max;
-            index = max + over * 0.35;
-          }
           this.wheelIndex = index;
+          const over = index < 0 ? -index : (index > max ? index - max : 0);
           this.wheelStretch = Math.min(1, over);
         },
         wheelUp(event) {
@@ -361,9 +370,19 @@
           if (g.ignore || !g.moved) {
             clearTimeout(this._wheelOff);
             this.wheelOn = false;
-            const back = this.tabs.indexOf(this.currentTab);
-            if (back >= 0) this.wheelIndex = back;
-            if (!g.ignore && g.sideStep) this.goNeighbor(g.sideStep);
+            if (g.ignore) {
+              const back = this.tabs.indexOf(this.currentTab);
+              if (back >= 0) this.wheelIndex = back;
+              return;
+            }
+            let index = Math.round(this.wheelIndexFromX(g.x));
+            if (index < 0) index = 0;
+            if (index > max) index = max;
+            this._wheelHold = true;
+            this.wheelIndex = index;
+            const picked = this.tabs[index];
+            if (picked && picked !== this.currentTab) this.setTab(picked);
+            this._wheelHold = false;
             return;
           }
           let index = Math.round(this.wheelIndex);
@@ -533,7 +552,6 @@
       x-on:set-app-tab.window="setTab(($event.detail && $event.detail.tab) ? $event.detail.tab : $event.detail)"
       x-init="
         wheelIndex = Math.max(0, tabs.indexOf(currentTab));
-        wheelSlotNow();
         chromeTab = currentTab;
         $nextTick(() => requestAnimationFrame(() => {
           syncPaneBox();
@@ -544,6 +562,16 @@
             new ResizeObserver(() => {
               syncPaneBox();
             }).observe(pagerEl);
+          }
+          const navEl = document.querySelector('.shell-nav');
+          if (navEl) {
+            this.wheelW = navEl.clientWidth || 0;
+            if (window.ResizeObserver) {
+              new ResizeObserver(() => {
+                const w = navEl.clientWidth || 0;
+                if (w && w !== this.wheelW) this.wheelW = w;
+              }).observe(navEl);
+            }
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
           if (trackEl) {

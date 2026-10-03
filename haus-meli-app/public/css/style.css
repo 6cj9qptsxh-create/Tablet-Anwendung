@@ -1125,10 +1125,8 @@ body {
 }
 
 .shell-nav {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 4px;
     width: 100%;
     min-height: 42px;
     padding: 2px 6px;
@@ -1184,26 +1182,15 @@ body {
     white-space: nowrap;
 }
 
-.shell-nav.is-wheeling {
-    grid-template-columns: minmax(0, 0px) minmax(0, 1fr) minmax(0, 0px);
-}
-
-.shell-nav.is-wheeling .shell-nav-side {
-    opacity: 0;
-    pointer-events: none;
-}
-
 .shell-nav-wheel {
-    --wheel-slot: 116px;
-    --wheel-x: 0px;
     --lens: 108px;
+    --lens-x: 50%;
     --shine: 0;
     --stretch: 0;
     --press: 0;
-    --wheel-open: 0;
     position: relative;
-    justify-self: center;
-    width: calc(var(--lens) * (1 - var(--wheel-open)) + min(520px, 100%) * var(--wheel-open));
+    flex: 1 1 auto;
+    width: 100%;
     height: 36px;
     min-width: 0;
     touch-action: none;
@@ -1211,11 +1198,6 @@ body {
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     cursor: grab;
-    transition: --wheel-open 0.42s cubic-bezier(0.22, 1.12, 0.36, 1);
-}
-
-.shell-nav.is-wheeling .shell-nav-wheel {
-    --wheel-open: 1;
 }
 
 .shell-nav.is-dragging .shell-nav-wheel {
@@ -1224,11 +1206,11 @@ body {
 
 .shell-nav-lens {
     position: absolute;
-    left: 50%;
+    left: var(--lens-x, 50%);
     top: 50%;
     z-index: 1;
     width: var(--lens);
-    max-width: var(--wheel-slot);
+    max-width: 46%;
     height: 32px;
     pointer-events: none;
     overflow: hidden;
@@ -1246,11 +1228,11 @@ body {
         inset 0 0 14px rgba(255, 255, 255, 0.06),
         0 8px 20px color-mix(in srgb, var(--accent), transparent 62%);
     transform: translate(-50%, -50%) scale(calc(1 + var(--press) * 0.07)) scaleX(calc(1 + var(--stretch) * 0.08));
-    transition: width 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
+    transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), width 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
 }
 
 .shell-nav.is-dragging .shell-nav-lens {
-    transition: width 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.08s linear;
+    transition: transform 0.08s linear;
 }
 
 .shell-nav-lens::before {
@@ -1281,43 +1263,38 @@ body {
 }
 
 .shell-nav-wheel-clip {
-    --wheel-fade: 0px;
     position: relative;
     z-index: 2;
     height: 100%;
     width: 100%;
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--wheel-fade), #000 calc(100% - var(--wheel-fade)), transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 var(--wheel-fade), #000 calc(100% - var(--wheel-fade)), transparent 100%);
-    transition: --wheel-fade 0.42s cubic-bezier(0.22, 1.12, 0.36, 1);
-}
-
-.shell-nav.is-wheeling .shell-nav-wheel-clip {
-    --wheel-fade: 32px;
+    overflow: visible;
 }
 
 .shell-nav-wheel-track {
-    position: absolute;
-    top: 0;
-    left: 50%;
+    position: relative;
+    width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    transform: translateX(calc(var(--wheel-x) - var(--wheel-slot) / 2));
 }
 
 .shell-nav-wheel-item {
-    flex: 0 0 var(--wheel-slot);
-    width: var(--wheel-slot);
+    position: absolute;
+    top: 50%;
+    width: auto;
     text-align: center;
     color: #fff;
     font-size: 1.2rem;
     font-weight: 800;
+    line-height: 1;
     letter-spacing: 0.01em;
     white-space: nowrap;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
     -webkit-font-smoothing: antialiased;
     transform-origin: center center;
+    transition: left 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.34s cubic-bezier(0.22, 1.12, 0.36, 1), opacity 0.34s ease;
+}
+
+.shell-nav.is-dragging .shell-nav-wheel-item {
+    transition: none;
 }
 
 .shell-nav-wheel:focus-visible {
