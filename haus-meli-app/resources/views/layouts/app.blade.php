@@ -239,6 +239,15 @@
           if (slot !== this.wheelSlot) this.wheelSlot = slot;
           return slot;
         },
+        // Schmale Leiste: ein Zug ueber drei Viertel der Breite reicht von der ersten bis zur letzten Seite.
+        wheelFitStep(slot) {
+          const nav = document.querySelector('.shell-nav');
+          const width = nav && nav.clientWidth ? nav.clientWidth : 0;
+          const span = Math.max(1, this.tabs.length - 1);
+          if (width < 80) return slot;
+          const fit = width * 0.75 / span;
+          return fit < slot ? fit : slot;
+        },
         wheelStyle() {
           const slot = this.wheelSlotNow();
           const max = this.tabs.length - 1;
@@ -287,6 +296,7 @@
             x: event.clientX,
             y: event.clientY,
             start: this.wheelIndex,
+            step: this.wheelFitStep(this.wheelSlot),
             moved: false,
             ignore: false
           };
@@ -318,9 +328,9 @@
           }
           if (g.ignore) return;
           if (event.cancelable) event.preventDefault();
-          const slot = this.wheelSlot || 96;
+          const step = g.step > 8 ? g.step : (this.wheelSlot || 96);
           const max = this.tabs.length - 1;
-          const raw = g.start - dx / slot;
+          const raw = g.start - dx / step;
           let index = raw;
           let over = 0;
           if (raw < 0) {
