@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=92">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=93">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -224,26 +224,20 @@
           const nav = document.querySelector('.shell-nav');
           if (!nav || !prev || next === prev) return;
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-          const last = this.tabs.length - 1;
-          const from = this.tabs.indexOf(prev);
-          const to = this.tabs.indexOf(next);
-          const wrapped = Math.abs(to - from) > 1 && ((from === 0 && to === last) || (from === last && to === 0));
-          const forward = wrapped ? from === last : to > from;
-          const shift = forward ? '22px' : '-22px';
           const play = (el, frames, duration, easing) => {
             if (!el || !el.animate) return;
             el.getAnimations().forEach((anim) => anim.cancel());
             el.animate(frames, { duration: duration, easing: easing });
           };
           play(nav.querySelector('.shell-nav-current'), [
-            { opacity: 0.15, transform: 'translateX(' + shift + ') scale(0.88)' },
-            { opacity: 1, transform: 'none' }
-          ], 420, 'cubic-bezier(0.34, 1.45, 0.64, 1)');
+            { opacity: 0.35 },
+            { opacity: 1 }
+          ], 220, 'ease-out');
           nav.querySelectorAll('.shell-nav-label').forEach((el) => {
             play(el, [
-              { opacity: 0, transform: 'translateX(' + shift + ')' },
-              { opacity: 1, transform: 'none' }
-            ], 320, 'ease-out');
+              { opacity: 0.2 },
+              { opacity: 1 }
+            ], 200, 'ease-out');
           });
         },
         wrapTo(tab, step) {
@@ -279,7 +273,7 @@
             const touch = event.changedTouches[0];
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
-            if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+            if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
             const index = this.tabs.indexOf(this.currentTab);
             if (dx < 0 && index === lastIndex) this.wrapTo(this.tabs[0], 1);
             else if (dx > 0 && index === 0) this.wrapTo(this.tabs[lastIndex], -1);
@@ -295,11 +289,17 @@
           const index = this.tabs.indexOf(tab);
           if (!track || index < 0) return;
           const left = index * track.clientWidth;
+          clearTimeout(this._scrollEnd);
           if (Math.abs(track.scrollLeft - left) < 2) return;
           this._prog = true;
-          track.scrollTo({ left: left, behavior: smooth ? 'smooth' : 'auto' });
+          if (smooth) {
+            track.scrollTo({ left: left, behavior: 'smooth' });
+          } else {
+            track.scrollLeft = left;
+            requestAnimationFrame(() => { track.scrollLeft = left; });
+          }
           clearTimeout(this._progTimer);
-          this._progTimer = setTimeout(() => { this._prog = false; }, smooth ? 520 : 80);
+          this._progTimer = setTimeout(() => { this._prog = false; }, smooth ? 520 : 420);
         },
         tabFromScroll() {
           const track = this.$refs.track;
@@ -337,10 +337,17 @@
             this._scrolling = false;
             this.finishChrome();
             this.correctSnap();
+            this.syncHash();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
             }
           }, 160);
+        },
+        syncHash() {
+          if (this._touching) return;
+          const tab = this.currentTab;
+          if (!tab || location.hash === '#' + tab) return;
+          history.replaceState({ hausMeli: 1 }, '', '#' + tab);
         },
         setTab(tab, fromScroll) {
           if (!this.tabs.includes(tab)) return;
@@ -352,9 +359,7 @@
           this.chromeTab = tab;
           this.menuOpen = false;
           window.hausMeliStoreTab(tab);
-          if (location.hash !== '#' + tab) {
-            history.replaceState({ hausMeli: 1 }, '', '#' + tab);
-          }
+          this.syncHash();
           if (!fromScroll) this.scrollToTab(tab, changed && !wrap);
         }
       }"
@@ -399,25 +404,39 @@
               }
             }, { passive: false, capture: true });
             const release = (event) => {
+              const fromNav = this._navFrom;
+              this._navFrom = null;
+              const before = this.currentTab;
               this._touching = false;
               const t = event.changedTouches && event.changedTouches[0];
               const dx = t ? t.clientX - sx : 0;
               const dy = t ? t.clientY - sy : 0;
-              const horizontal = Math.abs(dx) > 64 && Math.abs(dx) > Math.abs(dy) * 1.2;
+              const horizontal = Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.2;
+              const index = this.tabs.indexOf(this.currentTab);
+              const last = this.tabs.length - 1;
+              const jump = (tab, step) => {
+                trackEl.style.scrollSnapType = 'none';
+                this.wrapTo(tab, step);
+                requestAnimationFrame(() => { trackEl.style.scrollSnapType = ''; });
+              };
               if (carting && horizontal && dx > 0) {
                 window.dispatchEvent(new CustomEvent('close-cart'));
-              } else if (!carting && this.currentTab === 'tours' && horizontal && Math.abs(trackEl.scrollLeft - left0) < 8) {
+              } else if (!carting && horizontal && index === last && dx < 0) {
                 window.cancelToursLoad && window.cancelToursLoad();
-                const index = this.tabs.indexOf('tours');
-                const dir = dx < 0 ? 1 : -1;
-                const next = this.tabs[index + dir];
-                if (next) this.setTab(next);
-                else if (dir > 0) this.wrapTo(this.tabs[0], 1);
+                jump(this.tabs[0], 1);
+              } else if (!carting && horizontal && index === 0 && dx > 0) {
+                jump(this.tabs[last], -1);
+              } else if (!carting && this.currentTab === 'tours' && horizontal && dx > 0 && Math.abs(trackEl.scrollLeft - left0) < 8) {
+                window.cancelToursLoad && window.cancelToursLoad();
+                this.setTab('info');
               }
+              if (this.currentTab === before && fromNav && fromNav !== this.currentTab) {
+                this.animateNav(this.currentTab, fromNav);
+              }
+              if (!this._scrolling) this.syncHash();
               carting = false;
               setTimeout(() => {
-                this.correctSnap();
-                if (!this._scrolling && this.currentTab === 'tours') {
+                if (!this._scrolling && this.currentTab === 'tours' && !this._touching) {
                   window.maybeLoadTours && window.maybeLoadTours();
                 }
               }, 200);
@@ -437,9 +456,12 @@
           window.maybeLoadTours && window.maybeLoadTours();
         }
         $watch('currentTab', (v, prev) => {
-          animateNav(v, prev);
+          if (this._touching) {
+            if (!this._navFrom) this._navFrom = prev;
+          } else {
+            animateNav(v, prev);
+          }
           window.hausMeliStoreTab(v);
-          if (location.hash !== '#' + v) location.hash = v;
           if (v !== 'tours' && window.cancelToursLoad) window.cancelToursLoad();
         });
         if (!history.state || !history.state.hausMeli) {
