@@ -3592,6 +3592,7 @@ body.page-content {
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
+    overflow-anchor: none;
     scrollbar-width: none;
     touch-action: pan-x pan-y;
     background: var(--bg);
