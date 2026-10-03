@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=94">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=95">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -208,6 +208,17 @@
         })(),
         menuOpen: false,
         chromeTab: 'order',
+        wheelIndex: (function () {
+          const allowed = ['order', 'knx', 'events', 'info', 'tours'];
+          const fromHash = (location.hash || '').replace(/^#/, '');
+          const name = allowed.includes(fromHash) ? fromHash : (window.hausMeliReadTab(allowed) || 'order');
+          const idx = allowed.indexOf(name);
+          return idx < 0 ? 0 : idx;
+        })(),
+        wheelOn: false,
+        wheelDrag: false,
+        wheelStretch: 0,
+        wheelSlot: 116,
         tabName(tab) {
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
@@ -220,6 +231,128 @@
           const tab = this.neighbor(step);
           if (tab) this.setTab(tab);
         },
+        // Horizontales Rad: der Finger zieht die Namen, die Mitte ist die Zielseite.
+        wheelSlotNow() {
+          if (this._wheel) return this.wheelSlot;
+          const phone = window.matchMedia('(max-width: 767px)').matches;
+          const slot = phone ? 96 : 116;
+          if (slot !== this.wheelSlot) this.wheelSlot = slot;
+          return slot;
+        },
+        wheelStyle() {
+          const slot = this.wheelSlotNow();
+          const max = this.tabs.length - 1;
+          const i = Math.max(0, Math.min(max, Math.round(this.wheelIndex)));
+          const label = this.tabName(this.tabs[i] || this.currentTab);
+          const rest = Math.min(slot, Math.max(88, 28 + label.length * 16));
+          const lens = this.wheelOn ? slot : rest;
+          const frac = this.wheelIndex - Math.round(this.wheelIndex);
+          const shine = Math.max(-1, Math.min(1, frac * 2));
+          return '--wheel-slot:' + slot + 'px;--wheel-x:' + ((-this.wheelIndex) * slot) + 'px;--lens:' + lens + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
+        },
+        wheelItemStyle(i) {
+          const d = Math.abs(i - this.wheelIndex);
+          const scale = Math.max(0.84, 1 - d * 0.1);
+          const opacity = Math.max(0.3, 1 - d * 0.5);
+          return 'opacity:' + opacity.toFixed(3) + ';transform:scale(' + scale.toFixed(3) + ')';
+        },
+        wheelSettle(index, dur, soft) {
+          cancelAnimationFrame(this._wheelRaf);
+          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (reduce || dur === 0 || Math.abs(index - this.wheelIndex) < 0.001) {
+            this.wheelIndex = index;
+            return;
+          }
+          const from = this.wheelIndex;
+          const ms = dur || 360;
+          const start = performance.now();
+          const step = (now) => {
+            if (this._wheel) return;
+            const t = Math.min(1, (now - start) / ms);
+            const c = 1.35;
+            const e = soft ? (1 - Math.pow(1 - t, 3)) : (1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2));
+            this.wheelIndex = from + (index - from) * e;
+            if (t < 1) this._wheelRaf = requestAnimationFrame(step);
+            else this.wheelIndex = index;
+          };
+          this._wheelRaf = requestAnimationFrame(step);
+        },
+        wheelDown(event) {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          cancelAnimationFrame(this._wheelRaf);
+          clearTimeout(this._wheelOff);
+          this.wheelSlotNow();
+          this._wheel = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            start: this.wheelIndex,
+            moved: false,
+            ignore: false
+          };
+          this.wheelStretch = 0;
+          try { event.currentTarget.setPointerCapture(event.pointerId); } catch (err) {}
+        },
+        wheelMove(event) {
+          const g = this._wheel;
+          if (!g || event.pointerId !== g.id) return;
+          const dx = event.clientX - g.x;
+          const dy = event.clientY - g.y;
+          if (!g.moved) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            g.moved = true;
+            if (Math.abs(dy) > Math.abs(dx)) {
+              g.ignore = true;
+              return;
+            }
+            this.wheelDrag = true;
+            this.wheelOn = true;
+          }
+          if (g.ignore) return;
+          if (event.cancelable) event.preventDefault();
+          const slot = this.wheelSlot || 96;
+          const max = this.tabs.length - 1;
+          const raw = g.start - dx / slot;
+          let index = raw;
+          let over = 0;
+          if (raw < 0) {
+            over = -raw;
+            index = raw * 0.35;
+          } else if (raw > max) {
+            over = raw - max;
+            index = max + over * 0.35;
+          }
+          this.wheelIndex = index;
+          this.wheelStretch = Math.min(1, over);
+        },
+        wheelUp(event) {
+          const g = this._wheel;
+          if (!g || event.pointerId !== g.id) return;
+          this._wheel = null;
+          this.wheelDrag = false;
+          this.wheelStretch = 0;
+          const max = this.tabs.length - 1;
+          if (g.ignore || !g.moved) {
+            clearTimeout(this._wheelOff);
+            this.wheelOn = false;
+            const back = this.tabs.indexOf(this.currentTab);
+            if (back >= 0) this.wheelIndex = back;
+            return;
+          }
+          let index = Math.round(this.wheelIndex);
+          if (index < 0) index = 0;
+          if (index > max) index = max;
+          this._wheelHold = true;
+          this.wheelSettle(index, 520, false);
+          const tab = this.tabs[index];
+          if (tab && tab !== this.currentTab) this.setTab(tab);
+          this._wheelHold = false;
+          clearTimeout(this._wheelOff);
+          const self = this;
+          this._wheelOff = setTimeout(() => {
+            if (!self._wheel) self.wheelOn = false;
+          }, 640);
+        },
         animateNav(next, prev) {
           const nav = document.querySelector('.shell-nav');
           if (!nav || !prev || next === prev) return;
@@ -229,10 +362,6 @@
             el.getAnimations().forEach((anim) => anim.cancel());
             el.animate(frames, { duration: duration, easing: easing });
           };
-          play(nav.querySelector('.shell-nav-current'), [
-            { opacity: 0.35 },
-            { opacity: 1 }
-          ], 220, 'ease-out');
           nav.querySelectorAll('.shell-nav-label').forEach((el) => {
             play(el, [
               { opacity: 0.2 },
@@ -353,18 +482,22 @@
           const changed = tab !== this.currentTab;
           const from = this.tabs.indexOf(this.currentTab);
           const to = this.tabs.indexOf(tab);
-          const wrap = from >= 0 && Math.abs(to - from) > 1;
+          const far = from >= 0 && Math.abs(to - from) > 1;
+          this._fromScroll = !!fromScroll;
           this.currentTab = tab;
+          this._fromScroll = false;
           this.chromeTab = tab;
           this.menuOpen = false;
           window.hausMeliStoreTab(tab);
           this.syncHash();
-          if (!fromScroll) this.scrollToTab(tab, changed && !wrap);
+          if (!fromScroll) this.scrollToTab(tab, changed && !far);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
       x-on:set-app-tab.window="setTab(($event.detail && $event.detail.tab) ? $event.detail.tab : $event.detail)"
       x-init="
+        wheelIndex = Math.max(0, tabs.indexOf(currentTab));
+        wheelSlotNow();
         chromeTab = currentTab;
         $nextTick(() => requestAnimationFrame(() => {
           syncPaneBox();
@@ -443,9 +576,13 @@
           window.maybeLoadTours && window.maybeLoadTours();
         }
         $watch('currentTab', (v, prev) => {
+          if (!this._wheel && !this._wheelHold) {
+            const to = this.tabs.indexOf(v);
+            if (to >= 0) this.wheelSettle(to, this._fromScroll ? 220 : 340, true);
+          }
           if (this._touching) {
             if (!this._navFrom) this._navFrom = prev;
-          } else {
+          } else if (!this.wheelOn && !this._wheelHold) {
             animateNav(v, prev);
           }
           window.hausMeliStoreTab(v);
