@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=100">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=101">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -738,42 +738,13 @@
         }
         window.addEventListener('popstate', () => {
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
-          const prev = neighbor(-1);
-          if (prev) setTab(prev);
         });
-        const edge = document.querySelector('.edge-back-catch');
-        if (edge) {
-          let ex = 0, ey = 0, edgeOn = false;
-          edge.addEventListener('touchstart', (event) => {
-            const t = event.touches[0];
-            ex = t ? t.clientX : 0;
-            ey = t ? t.clientY : 0;
-            edgeOn = false;
-          }, { passive: true });
-          edge.addEventListener('touchmove', (event) => {
-            const t = event.touches[0];
-            if (!t) return;
-            const dx = t.clientX - ex;
-            const dy = t.clientY - ey;
-            if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
-              edgeOn = true;
-              event.preventDefault();
-            }
-          }, { passive: false });
-          edge.addEventListener('touchend', () => {
-            if (!edgeOn) return;
-            const prev = neighbor(-1);
-            if (prev) setTab(prev);
-          }, { passive: true });
-        }
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
           if (tabs.includes(h) && h !== currentTab) setTab(h);
         });
       "
       x-cloak>
-
-    <div class="edge-back-catch" aria-hidden="true"></div>
 
     @include('livewire.general-partials.header')
 
