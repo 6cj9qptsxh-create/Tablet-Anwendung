@@ -17,7 +17,6 @@
          :style="wheelStyle()"
          x-on:keydown.left.prevent="goNeighbor(-1)"
          x-on:keydown.right.prevent="goNeighbor(1)">
-        <div class="shell-nav-lens shell-nav-current" aria-hidden="true"></div>
         <div class="shell-nav-wheel-clip" aria-hidden="true">
             <div class="shell-nav-wheel-track">
                 <template x-for="(tab, i) in tabs" :key="tab">
@@ -25,5 +24,7 @@
                 </template>
             </div>
         </div>
+        <div class="shell-nav-lens shell-nav-current" aria-hidden="true"></div>
+        <span class="shell-nav-focus" aria-hidden="true" x-text="wheelFocusName()"></span>
     </div>
 </nav>

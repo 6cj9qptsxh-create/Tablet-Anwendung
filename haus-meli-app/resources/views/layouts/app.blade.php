@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=98">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=99">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +29,7 @@
         // obwohl die App darunter zeichnet. Die Seitenhöhe kommt deshalb aus JS:
         // dort die volle Bildschirmhöhe, sonst die gemessene Fensterhöhe.
         (function () {
+            if (history.scrollRestoration) history.scrollRestoration = 'manual';
             const root = document.documentElement;
             const standalone = function () {
                 if (navigator.standalone === true) return true;
@@ -261,32 +262,47 @@
           else if (index > max) index = max + (index - max) * 0.35;
           return index;
         },
-        wheelStyle() {
+        wheelLens(at) {
           const bar = this.wheelBar();
           const max = this.tabs.length - 1;
-          const at = Math.max(0, Math.min(max, this.wheelIndex));
-          const x = this.wheelX(at);
-          const left = x / bar.width * 100;
+          const x = this.wheelX(Math.max(0, Math.min(max, at)));
           const i = Math.max(0, Math.min(max, Math.round(at)));
           const label = this.tabName(this.tabs[i] || this.currentTab);
-          const text = 24 + label.length * 13;
-          let lens = Math.max(64, Math.min(text, bar.width * 0.42));
+          const text = 18 + label.length * 10;
+          let lens = Math.max(58, Math.min(text, bar.width * 0.34));
           const edge = 4;
           const room = Math.max(48, Math.min(x - edge, bar.width - edge - x) * 2);
           if (lens > room) lens = room;
+          return { x: x, lens: lens, bar: bar };
+        },
+        wheelStyle() {
+          const box = this.wheelLens(this.wheelIndex);
+          const left = box.x / box.bar.width * 100;
           const frac = this.wheelIndex - Math.round(this.wheelIndex);
           const shine = Math.max(-1, Math.min(1, frac * 2));
-          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + Math.round(lens) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
+          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + Math.round(box.lens) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
         },
         wheelItemStyle(i) {
           const bar = this.wheelBar();
-          const left = this.wheelX(i) / bar.width * 100;
+          const leftPx = this.wheelX(i);
+          const left = leftPx / bar.width * 100;
           const d = Math.abs(i - this.wheelIndex);
           const zoom = Math.exp(-d * d * 2.2);
           const scale = 0.5 + 0.5 * zoom;
-          const opacity = 0.72 + 0.28 * zoom;
+          const focused = i === Math.max(0, Math.min(bar.max, Math.round(this.wheelIndex)));
+          const box = this.wheelLens(this.wheelIndex);
+          const label = this.tabName(this.tabs[i] || '');
+          const half = label.length * 4.8 * scale;
+          const overlap = Math.min(leftPx + half, box.x + box.lens / 2) - Math.max(leftPx - half, box.x - box.lens / 2);
+          const hits = overlap > 8;
+          const opacity = (focused || hits) ? 0 : (0.72 + 0.28 * zoom);
           const z = Math.round(2 + zoom * 8);
           return 'left:' + left.toFixed(2) + '%;opacity:' + opacity.toFixed(3) + ';z-index:' + z + ';transform:translate(-50%, -50%) scale(' + scale.toFixed(3) + ')';
+        },
+        wheelFocusName() {
+          const max = this.tabs.length - 1;
+          const i = Math.max(0, Math.min(max, Math.round(this.wheelIndex)));
+          return this.tabName(this.tabs[i] || this.currentTab);
         },
         wheelSettle(index, dur, soft) {
           cancelAnimationFrame(this._wheelRaf);
@@ -503,7 +519,6 @@
           this._scrollEnd = setTimeout(() => {
             this._scrolling = false;
             this.finishChrome();
-            this.correctSnap();
             if (!this._wheel && !this.wheelOn && !this.wheelDrag) {
               cancelAnimationFrame(this._wheelRaf);
               const shown = this.tabs.indexOf(this.currentTab);
@@ -546,11 +561,57 @@
           window.hausMeliStoreTab(tab);
           this.syncHash();
           if (!fromScroll) this.scrollToTab(tab, changed && !far);
+        },
+        // Nach dem Finger die Leiste an die Seite koppeln, ohne scrollLeft zu
+        // schreiben. Ein gesetztes scrollLeft reißt auf dem iPhone das
+        // Zurückwischen ab (weißer Bildschirm, Name bleibt stehen).
+        followPager() {
+          cancelAnimationFrame(this._followRaf);
+          const track = this.$refs.track;
+          if (!track) return;
+          let last = track.scrollLeft;
+          let stable = 0;
+          const step = () => {
+            const el = this.$refs.track;
+            if (!el) return;
+            const width = el.clientWidth || 1;
+            const left = el.scrollLeft;
+            if (Math.abs(left - last) < 0.5) stable++;
+            else { stable = 0; last = left; }
+            const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(left / width)));
+            const tab = this.tabs[index];
+            if (tab && tab !== this.currentTab && !this._prog && !this._wheel) this.setTab(tab, true);
+            if (this._touching || stable < 6) {
+              this._followRaf = requestAnimationFrame(step);
+              return;
+            }
+            const expect = this._swipeExpect;
+            this._swipeExpect = null;
+            const visual = this.tabFromScroll();
+            if (visual && visual !== this.currentTab && !this._prog && !this._wheel) this.setTab(visual, true);
+            else if (expect && expect !== this.currentTab && !this._wheel) {
+              const pane = this.trackPane(expect);
+              const delta = pane ? pane.getBoundingClientRect().left - el.getBoundingClientRect().left : 99;
+              if (Math.abs(delta) < 8) this.setTab(expect, true);
+              else {
+                const shown = this.tabs.indexOf(this.currentTab);
+                if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
+              }
+            } else {
+              const shown = this.tabs.indexOf(this.currentTab);
+              if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
+            }
+            this._scrolling = false;
+            this.finishChrome();
+            if (!this._touching) this.scheduleHash();
+          };
+          this._followRaf = requestAnimationFrame(step);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
       x-on:set-app-tab.window="setTab(($event.detail && $event.detail.tab) ? $event.detail.tab : $event.detail)"
       x-init="
+        if (history.scrollRestoration) history.scrollRestoration = 'manual';
         wheelIndex = Math.max(0, tabs.indexOf(currentTab));
         chromeTab = currentTab;
         $nextTick(() => requestAnimationFrame(() => {
@@ -574,6 +635,15 @@
             }
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
+          if (trackEl) trackEl.addEventListener('scrollend', () => {
+            if (this._wheel || this._prog) return;
+            const tab = this.tabFromScroll();
+            if (tab && tab !== this.currentTab) this.setTab(tab, true);
+            else {
+              const shown = this.tabs.indexOf(this.currentTab);
+              if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
+            }
+          }, { passive: true });
           if (trackEl) {
             let sx = 0, sy = 0, carting = false;
             trackEl.addEventListener('touchstart', (event) => {
@@ -587,6 +657,8 @@
               sy = t ? t.clientY : 0;
               carting = !!document.querySelector('#tab-order.cart-is-open');
               this._touching = true;
+              this._swipeExpect = null;
+              this.followPager();
             }, { passive: true });
             trackEl.addEventListener('touchmove', (event) => {
               const t = event.touches[0];
@@ -614,6 +686,10 @@
               }
               if (!carting && before === 'tours' && horizontal) {
                 window.cancelToursLoad && window.cancelToursLoad();
+              }
+              if (!carting && horizontal && Math.abs(dx) > 40) {
+                const step = dx > 0 ? -1 : 1;
+                this._swipeExpect = this.neighbor(step);
               }
               if (this.currentTab === before && fromNav && fromNav !== this.currentTab) {
                 this.animateNav(this.currentTab, fromNav);
@@ -657,8 +733,6 @@
         }
         window.addEventListener('popstate', () => {
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
-          const prev = neighbor(-1);
-          if (prev) setTab(prev);
         });
         const edge = document.querySelector('.edge-back-catch');
         if (edge) {
@@ -809,13 +883,21 @@
                 finger = true;
                 clearTimeout(navTimer);
             }, { passive: true });
-            track.addEventListener('touchend', function () { finger = false; }, { passive: true });
+            track.addEventListener('touchend', function () {
+                finger = false;
+                clearTimeout(navTimer);
+                navTimer = setTimeout(syncNav, 450);
+            }, { passive: true });
             track.addEventListener('touchcancel', function () { finger = false; }, { passive: true });
-            track.addEventListener('scrollend', function () { if (!finger) syncNav(); }, { passive: true });
+            track.addEventListener('scrollend', function () {
+                if (finger) return;
+                clearTimeout(navTimer);
+                syncNav();
+            }, { passive: true });
             track.addEventListener('scroll', function () {
                 if (finger) return;
                 clearTimeout(navTimer);
-                navTimer = setTimeout(syncNav, 70);
+                navTimer = setTimeout(syncNav, 450);
             }, { passive: true });
             window.addEventListener('resize', syncNav);
             update();
