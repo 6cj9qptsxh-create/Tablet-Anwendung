@@ -5807,6 +5807,39 @@ body.trip-detail-open {
 
 .tours-map-loading[hidden] {
     display: none;
+    animation: none;
+}
+
+.tours-map-loading[hidden] .tours-map-spinner {
+    animation: none;
+}
+
+.tours-map-load {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .tours-map-load {
+        position: absolute;
+        inset: 0;
+        z-index: 820;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    body.tours-map-busy .tours-map-load,
+    body.tours-map-ready .tours-map-load {
+        display: none;
+    }
 }
 
 .tours-map-spinner {

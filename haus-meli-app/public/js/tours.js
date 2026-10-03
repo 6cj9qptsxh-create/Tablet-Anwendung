@@ -2465,6 +2465,7 @@ window.bootToursGuestApp = function () {
                     nodes: (window.TOUR_NODES || []).length,
                     segments: (window.ALL_SEGMENTS || []).length,
                 });
+                window.syncToursLoadButton && window.syncToursLoadButton();
             }, 0);
             return;
         };

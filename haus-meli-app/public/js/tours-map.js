@@ -1081,6 +1081,7 @@
             window._toursChunkMap = false;
             window._toursGuestBooted = true;
             window._toursBooting = false;
+            window.syncToursLoadButton && window.syncToursLoadButton();
             if (window._toursObs) {
                 try { window._toursObs.disconnect(); } catch (e) {}
                 window._toursObs = null;
