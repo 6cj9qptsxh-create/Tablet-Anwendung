@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=104">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=92">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=93">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -684,6 +684,8 @@
               sx = t ? t.clientX : 0;
               sy = t ? t.clientY : 0;
               carting = !!document.querySelector('#tab-order.cart-is-open');
+              const fromCal = t && t.target && t.target.closest && t.target.closest('.cal-week-h-body, .cal-week-h-head, .day-col-body, .day-col-header');
+              this._calH = !!fromCal;
               this._touching = true;
               this._fingerSnap = true;
               this._swipeDx = 0;
@@ -695,6 +697,12 @@
               if (!t) return;
               const dx = t.clientX - sx;
               const dy = t.clientY - sy;
+              if (this._calH) {
+                if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) && event.cancelable) {
+                  event.preventDefault();
+                }
+                return;
+              }
               if (carting && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
                 event.preventDefault();
               }
@@ -717,6 +725,13 @@
               const dx = t ? t.clientX - sx : 0;
               const dy = t ? t.clientY - sy : 0;
               const horizontal = Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy);
+              const calH = this._calH;
+              this._calH = false;
+              if (calH) {
+                this._swipeDx = 0;
+                if (!this._scrolling) this.scheduleHash();
+                return;
+              }
               if (horizontal) this._swipeDx = dx;
               if (!carting && horizontal && dx > 0) this.followRetour(dx);
               if (carting && horizontal && dx > 0) {
@@ -853,7 +868,7 @@
             </section>
 
             <section class="tab-pane tab-pane-events cal-tab-pane" data-tab="events">
-                @livewire('events', ['defer' => true])
+                @livewire('events')
             </section>
 
             <section class="tab-pane" data-tab="info">
