@@ -544,43 +544,77 @@
           this.syncHash();
           if (!fromScroll) this.scrollToTab(tab, changed && !far);
         },
-        syncPill() {
+        syncPill(hold) {
           if (this._wheel || this.wheelDrag) return;
           const pane = this.visiblePane();
           const name = pane ? pane.getAttribute('data-tab') : null;
           if (name && this.tabs.includes(name)) {
-            if (name !== this.currentTab && !this._prog) this.setTab(name, true);
-            const shown = this.tabs.indexOf(name);
-            if (shown >= 0) this.wheelIndex = shown;
+            if (hold && name === hold && this.currentTab !== hold) {
+              const kept = this.tabs.indexOf(this.currentTab);
+              if (kept >= 0) this.wheelIndex = kept;
+            } else {
+              if (name !== this.currentTab && !this._prog) this.setTab(name, true);
+              const shown = this.tabs.indexOf(name);
+              if (shown >= 0) this.wheelIndex = shown;
+            }
           }
           this.finishChrome();
         },
+        followRetour(dx) {
+          const track = this.$refs.track;
+          const width = track && track.clientWidth ? track.clientWidth : 390;
+          if (dx < Math.max(36, width * 0.12)) return;
+          const back = this.neighbor(-1);
+          if (!back) return;
+          const start = this.tabs[this._snapFrom] || this.currentTab;
+          const self = this;
+          const look = () => {
+            if (self._touching || self._wheel) return;
+            self.syncPill(start);
+            if (self.currentTab !== start) return;
+            self.setTab(back, true);
+            self.finishChrome();
+          };
+          setTimeout(look, 160);
+          setTimeout(look, 420);
+        },
         watchSnap() {
-          cancelAnimationFrame(this._snapRaf);
-          const el = this.$refs.track;
-          if (!el) return;
-          let last = el.scrollLeft;
+          clearTimeout(this._snapTimer);
+          let last = -1;
           let stable = 0;
-          const step = () => {
+          let released = false;
+          const check = () => {
             const track = this.$refs.track;
             if (!track) return;
+            if (this._touching) {
+              released = false;
+              stable = 0;
+              last = track.scrollLeft;
+              this._snapTimer = setTimeout(check, 70);
+              return;
+            }
+            if (!released) {
+              released = true;
+              stable = 0;
+              last = track.scrollLeft;
+            }
             const left = track.scrollLeft;
-            if (Math.abs(left - last) < 0.5) stable++;
-            else { stable = 0; last = left; }
-            if (this._touching || stable < 8) {
-              this._snapRaf = requestAnimationFrame(step);
+            if (Math.abs(left - last) > 0.5) { stable = 0; last = left; }
+            else stable++;
+            if (stable < 4) {
+              this._snapTimer = setTimeout(check, 70);
               return;
             }
             this._fingerSnap = false;
             this._scrolling = false;
             clearTimeout(this._scrollEnd);
-            this.syncPill();
+            if (!(this._swipeDx > 36)) this.syncPill();
             if (!this._touching) this.scheduleHash();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
             }
           };
-          this._snapRaf = requestAnimationFrame(step);
+          this._snapTimer = setTimeout(check, 70);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
@@ -623,6 +657,8 @@
               carting = !!document.querySelector('#tab-order.cart-is-open');
               this._touching = true;
               this._fingerSnap = true;
+              this._swipeDx = 0;
+              this._snapFrom = Math.max(0, this.tabs.indexOf(this.currentTab));
               this.watchSnap();
             }, { passive: true });
             trackEl.addEventListener('touchmove', (event) => {
@@ -632,6 +668,12 @@
               const dy = t.clientY - sy;
               if (carting && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
                 event.preventDefault();
+              }
+              if (!carting && dx > 16 && Math.abs(dx) > Math.abs(dy) && !this._wheel) {
+                this._swipeDx = dx;
+                const width = trackEl.clientWidth || 1;
+                const progress = Math.min(1, dx / (width * 0.42));
+                this.wheelIndex = Math.max(0, this._snapFrom - progress);
               }
               if (!carting && this.currentTab === 'tours' && Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
                 window.cancelToursLoad && window.cancelToursLoad();
@@ -646,6 +688,8 @@
               const dx = t ? t.clientX - sx : 0;
               const dy = t ? t.clientY - sy : 0;
               const horizontal = Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy);
+              if (horizontal) this._swipeDx = dx;
+              if (!carting && horizontal && dx > 0) this.followRetour(dx);
               if (carting && horizontal && dx > 0) {
                 window.dispatchEvent(new CustomEvent('close-cart'));
               }
