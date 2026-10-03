@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=95">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=96">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,7 +291,15 @@
             ignore: false
           };
           this.wheelStretch = 0;
+          const sideEl = event.target && event.target.closest ? event.target.closest('.shell-nav-side') : null;
+          this._wheel.sideStep = sideEl && !sideEl.disabled ? (sideEl.classList.contains('is-next') ? 1 : -1) : 0;
           try { event.currentTarget.setPointerCapture(event.pointerId); } catch (err) {}
+        },
+        wheelClick(event) {
+          if (!this._swallowClick) return;
+          this._swallowClick = 0;
+          event.preventDefault();
+          event.stopPropagation();
         },
         wheelMove(event) {
           const g = this._wheel;
@@ -331,12 +339,20 @@
           this._wheel = null;
           this.wheelDrag = false;
           this.wheelStretch = 0;
+          this._swallowN = (this._swallowN || 0) + 1;
+          this._swallowClick = this._swallowN;
+          const mark = this._swallowN;
+          const selfClick = this;
+          setTimeout(() => {
+            if (selfClick._swallowN === mark) selfClick._swallowClick = 0;
+          }, 400);
           const max = this.tabs.length - 1;
           if (g.ignore || !g.moved) {
             clearTimeout(this._wheelOff);
             this.wheelOn = false;
             const back = this.tabs.indexOf(this.currentTab);
             if (back >= 0) this.wheelIndex = back;
+            if (!g.ignore && g.sideStep) this.goNeighbor(g.sideStep);
             return;
           }
           let index = Math.round(this.wheelIndex);
@@ -458,6 +474,11 @@
             this._scrolling = false;
             this.finishChrome();
             this.correctSnap();
+            if (!this._wheel && !this.wheelOn && !this.wheelDrag) {
+              cancelAnimationFrame(this._wheelRaf);
+              const shown = this.tabs.indexOf(this.currentTab);
+              if (shown >= 0) this.wheelIndex = shown;
+            }
             if (!this._touching) this.scheduleHash();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
@@ -483,6 +504,10 @@
           const from = this.tabs.indexOf(this.currentTab);
           const to = this.tabs.indexOf(tab);
           const far = from >= 0 && Math.abs(to - from) > 1;
+          if (fromScroll && !this._wheel && !this._wheelHold && to >= 0) {
+            cancelAnimationFrame(this._wheelRaf);
+            this.wheelIndex = to;
+          }
           this._fromScroll = !!fromScroll;
           this.currentTab = tab;
           this._fromScroll = false;
@@ -576,9 +601,9 @@
           window.maybeLoadTours && window.maybeLoadTours();
         }
         $watch('currentTab', (v, prev) => {
-          if (!this._wheel && !this._wheelHold) {
+          if (!this._wheel && !this._wheelHold && !this._fromScroll) {
             const to = this.tabs.indexOf(v);
-            if (to >= 0) this.wheelSettle(to, this._fromScroll ? 220 : 340, true);
+            if (to >= 0) this.wheelSettle(to, 340, true);
           }
           if (this._touching) {
             if (!this._navFrom) this._navFrom = prev;
