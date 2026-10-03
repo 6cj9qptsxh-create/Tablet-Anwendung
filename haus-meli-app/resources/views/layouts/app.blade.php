@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=96">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=97">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -261,8 +261,9 @@
         },
         wheelItemStyle(i) {
           const d = Math.abs(i - this.wheelIndex);
-          const scale = Math.max(0.84, 1 - d * 0.1);
-          const opacity = Math.max(0.3, 1 - d * 0.5);
+          const zoom = Math.exp(-d * d * 2.2);
+          const scale = 0.58 + 0.42 * zoom;
+          const opacity = 0.4 + 0.6 * zoom;
           return 'opacity:' + opacity.toFixed(3) + ';transform:scale(' + scale.toFixed(3) + ')';
         },
         wheelSettle(index, dur, soft) {

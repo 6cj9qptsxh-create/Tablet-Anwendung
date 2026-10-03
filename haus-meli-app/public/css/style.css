@@ -1158,7 +1158,7 @@ body {
     background: transparent;
     color: rgba(255, 255, 255, 0.72);
     font: inherit;
-    font-size: 1.05rem;
+    font-size: 0.88rem;
     font-weight: 650;
     cursor: grab;
     touch-action: none;
@@ -1174,7 +1174,7 @@ body {
 
 .shell-nav-side .material-symbols-rounded {
     flex: 0 0 auto;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
 }
 
 .shell-nav-label {
@@ -1245,7 +1245,7 @@ body {
         inset 0 -1px 0 rgba(255, 255, 255, 0.08),
         inset 0 0 14px rgba(255, 255, 255, 0.06),
         0 8px 20px color-mix(in srgb, var(--accent), transparent 62%);
-    transform: translate(-50%, -50%) scale(calc(1 + var(--press) * 0.04)) scaleX(calc(1 + var(--stretch) * 0.08));
+    transform: translate(-50%, -50%) scale(calc(1 + var(--press) * 0.07)) scaleX(calc(1 + var(--stretch) * 0.08));
     transition: width 0.42s cubic-bezier(0.22, 1.12, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1.28, 0.36, 1);
 }
 
@@ -3536,8 +3536,12 @@ body.is-cal-tab .shell-nav {
     }
 
     .shell-nav-side {
-        font-size: 0.98rem;
+        font-size: 0.78rem;
         padding: 8px 2px;
+    }
+
+    .shell-nav-side .material-symbols-rounded {
+        font-size: 1.05rem;
     }
 
     .shell-nav-wheel {
