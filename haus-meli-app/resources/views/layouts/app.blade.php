@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=100">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=104">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=92">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +29,6 @@
         // obwohl die App darunter zeichnet. Die Seitenhöhe kommt deshalb aus JS:
         // dort die volle Bildschirmhöhe, sonst die gemessene Fensterhöhe.
         (function () {
-            if (history.scrollRestoration) history.scrollRestoration = 'manual';
             const root = document.documentElement;
             const standalone = function () {
                 if (navigator.standalone === true) return true;
@@ -269,47 +268,39 @@
           else if (index > max) index = max + (index - max) * 0.35;
           return index;
         },
-        wheelLens(at) {
+        lensFor(index, bar) {
+          const max = this.tabs.length - 1;
+          const i = Math.max(0, Math.min(max, index));
+          const label = this.tabName(this.tabs[i] || this.currentTab);
+          const text = 24 + label.length * 13;
+          return Math.max(64, Math.min(text, bar.width * 0.42));
+        },
+        wheelStyle() {
           const bar = this.wheelBar();
           const max = this.tabs.length - 1;
-          const x = this.wheelX(Math.max(0, Math.min(max, at)));
-          const i = Math.max(0, Math.min(max, Math.round(at)));
-          const label = this.tabName(this.tabs[i] || this.currentTab);
-          const text = 18 + label.length * 10;
-          let lens = Math.max(58, Math.min(text, bar.width * 0.34));
+          const at = Math.max(0, Math.min(max, this.wheelIndex));
+          const x = this.wheelX(at);
+          const left = x / bar.width * 100;
+          const lo = Math.floor(at);
+          const hi = Math.min(max, lo + 1);
+          const span = hi === lo ? 0 : (at - lo);
+          let lens = this.lensFor(lo, bar) + (this.lensFor(hi, bar) - this.lensFor(lo, bar)) * span;
           const edge = 4;
           const room = Math.max(48, Math.min(x - edge, bar.width - edge - x) * 2);
           if (lens > room) lens = room;
-          return { x: x, lens: lens, bar: bar };
-        },
-        wheelStyle() {
-          const box = this.wheelLens(this.wheelIndex);
-          const left = box.x / box.bar.width * 100;
           const frac = this.wheelIndex - Math.round(this.wheelIndex);
           const shine = Math.max(-1, Math.min(1, frac * 2));
-          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + Math.round(box.lens) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
+          return '--lens-x:' + left.toFixed(2) + '%;--lens:' + lens.toFixed(1) + 'px;--shine:' + shine.toFixed(3) + ';--stretch:' + Number(this.wheelStretch).toFixed(3) + ';--press:' + (this.wheelDrag ? 1 : 0) + ';';
         },
         wheelItemStyle(i) {
           const bar = this.wheelBar();
-          const leftPx = this.wheelX(i);
-          const left = leftPx / bar.width * 100;
+          const left = this.wheelX(i) / bar.width * 100;
           const d = Math.abs(i - this.wheelIndex);
           const zoom = Math.exp(-d * d * 2.2);
           const scale = 0.5 + 0.5 * zoom;
-          const focused = i === Math.max(0, Math.min(bar.max, Math.round(this.wheelIndex)));
-          const box = this.wheelLens(this.wheelIndex);
-          const label = this.tabName(this.tabs[i] || '');
-          const half = label.length * 4.8 * scale;
-          const overlap = Math.min(leftPx + half, box.x + box.lens / 2) - Math.max(leftPx - half, box.x - box.lens / 2);
-          const hits = overlap > 8;
-          const opacity = (focused || hits) ? 0 : (0.72 + 0.28 * zoom);
+          const opacity = 0.72 + 0.28 * zoom;
           const z = Math.round(2 + zoom * 8);
           return 'left:' + left.toFixed(2) + '%;opacity:' + opacity.toFixed(3) + ';z-index:' + z + ';transform:translate(-50%, -50%) scale(' + scale.toFixed(3) + ')';
-        },
-        wheelFocusName() {
-          const max = this.tabs.length - 1;
-          const i = Math.max(0, Math.min(max, Math.round(this.wheelIndex)));
-          return this.tabName(this.tabs[i] || this.currentTab);
         },
         wheelSettle(index, dur, soft) {
           cancelAnimationFrame(this._wheelRaf);
@@ -525,12 +516,10 @@
           clearTimeout(this._scrollEnd);
           this._scrollEnd = setTimeout(() => {
             this._scrolling = false;
+            if (this._fingerSnap) return;
             this.finishChrome();
-            if (!this._wheel && !this.wheelOn && !this.wheelDrag) {
-              cancelAnimationFrame(this._wheelRaf);
-              const shown = this.tabs.indexOf(this.currentTab);
-              if (shown >= 0) this.wheelIndex = shown;
-            }
+            this.correctSnap();
+            this.syncPill();
             if (!this._touching) this.scheduleHash();
             if (this.currentTab === 'tours' && !this._touching) {
               window.maybeLoadTours && window.maybeLoadTours();
@@ -563,62 +552,103 @@
           this._fromScroll = !!fromScroll;
           this.currentTab = tab;
           this._fromScroll = false;
-          this.chromeTab = tab;
+          if (!fromScroll) this.chromeTab = tab;
           this.menuOpen = false;
           window.hausMeliStoreTab(tab);
           this.syncHash();
           if (!fromScroll) this.scrollToTab(tab, changed && !far);
         },
-        // Nach dem Finger die Leiste an die Seite koppeln, ohne scrollLeft zu
-        // schreiben. Ein gesetztes scrollLeft reißt auf dem iPhone das
-        // Zurückwischen ab (weißer Bildschirm, Name bleibt stehen).
-        followPager() {
-          cancelAnimationFrame(this._followRaf);
+        syncPill(hold) {
+          if (this._wheel || this.wheelDrag) return;
+          const pane = this.visiblePane();
+          const name = pane ? pane.getAttribute('data-tab') : null;
+          if (name && this.tabs.includes(name)) {
+            if (hold && name === hold && this.currentTab !== hold) {
+              const kept = this.tabs.indexOf(this.currentTab);
+              if (kept >= 0) this.wheelIndex = kept;
+            } else {
+              if (name !== this.currentTab && !this._prog) this.setTab(name, true);
+              const shown = this.tabs.indexOf(name);
+              if (shown >= 0) this.wheelIndex = shown;
+            }
+          }
+          this.finishChrome();
+        },
+        followRetour(dx) {
           const track = this.$refs.track;
-          if (!track) return;
-          let last = track.scrollLeft;
+          const width = track && track.clientWidth ? track.clientWidth : 390;
+          if (dx < Math.max(36, width * 0.12)) return;
+          const back = this.neighbor(-1);
+          if (!back) return;
+          const start = this.tabs[this._snapFrom] || this.currentTab;
+          const self = this;
+          const look = () => {
+            if (self._touching || self._wheel) return;
+            self.syncPill(start);
+            if (self.currentTab !== start) return;
+            self.setTab(back, true);
+            self.finishChrome();
+          };
+          setTimeout(look, 160);
+          setTimeout(look, 420);
+        },
+        watchSnap() {
+          clearTimeout(this._snapTimer);
+          let last = -1;
           let stable = 0;
-          const step = () => {
-            const el = this.$refs.track;
-            if (!el) return;
-            const width = el.clientWidth || 1;
-            const left = el.scrollLeft;
-            if (Math.abs(left - last) < 0.5) stable++;
-            else { stable = 0; last = left; }
-            const index = Math.max(0, Math.min(this.tabs.length - 1, Math.round(left / width)));
-            const tab = this.tabs[index];
-            if (tab && tab !== this.currentTab && !this._prog && !this._wheel) this.setTab(tab, true);
-            if (this._touching || stable < 6) {
-              this._followRaf = requestAnimationFrame(step);
+          let released = false;
+          const check = () => {
+            const track = this.$refs.track;
+            if (!track) return;
+            if (this._touching) {
+              released = false;
+              stable = 0;
+              last = track.scrollLeft;
+              this._snapTimer = setTimeout(check, 70);
               return;
             }
-            const expect = this._swipeExpect;
-            this._swipeExpect = null;
-            const visual = this.tabFromScroll();
-            if (visual && visual !== this.currentTab && !this._prog && !this._wheel) this.setTab(visual, true);
-            else if (expect && expect !== this.currentTab && !this._wheel) {
-              const pane = this.trackPane(expect);
-              const delta = pane ? pane.getBoundingClientRect().left - el.getBoundingClientRect().left : 99;
-              if (Math.abs(delta) < 8) this.setTab(expect, true);
-              else {
-                const shown = this.tabs.indexOf(this.currentTab);
-                if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
-              }
-            } else {
-              const shown = this.tabs.indexOf(this.currentTab);
-              if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
+            if (!released) {
+              released = true;
+              stable = 0;
+              last = track.scrollLeft;
             }
+            const left = track.scrollLeft;
+            if (Math.abs(left - last) > 0.5) { stable = 0; last = left; }
+            else stable++;
+            if (stable < 4) {
+              this._snapTimer = setTimeout(check, 70);
+              return;
+            }
+            this._fingerSnap = false;
             this._scrolling = false;
-            this.finishChrome();
+            clearTimeout(this._scrollEnd);
+            if (!(this._swipeDx > 36)) this.syncPill();
             if (!this._touching) this.scheduleHash();
+            if (this.currentTab === 'tours' && !this._touching) {
+              window.maybeLoadTours && window.maybeLoadTours();
+            }
           };
-          this._followRaf = requestAnimationFrame(step);
+          this._snapTimer = setTimeout(check, 70);
+        },
+        edgeGo(step) {
+          const tab = this.neighbor(step);
+          const track = this.$refs.track;
+          const pane = tab ? this.trackPane(tab) : null;
+          if (!tab || !track || !pane) return;
+          const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
+          this._prog = true;
+          track.style.scrollSnapType = 'none';
+          if (Math.abs(delta) > 1) track.scrollLeft += delta;
+          track.style.scrollSnapType = '';
+          this.setTab(tab, true);
+          this.finishChrome();
+          const self = this;
+          setTimeout(() => { self._prog = false; }, 80);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
       x-on:set-app-tab.window="setTab(($event.detail && $event.detail.tab) ? $event.detail.tab : $event.detail)"
       x-init="
-        if (history.scrollRestoration) history.scrollRestoration = 'manual';
         wheelIndex = Math.max(0, tabs.indexOf(currentTab));
         chromeTab = currentTab;
         $nextTick(() => requestAnimationFrame(() => {
@@ -642,15 +672,6 @@
             }
           }
           if (trackEl) trackEl.addEventListener('scroll', () => onPagerScroll(), { passive: true });
-          if (trackEl) trackEl.addEventListener('scrollend', () => {
-            if (this._wheel || this._prog) return;
-            const tab = this.tabFromScroll();
-            if (tab && tab !== this.currentTab) this.setTab(tab, true);
-            else {
-              const shown = this.tabs.indexOf(this.currentTab);
-              if (shown >= 0 && !this.wheelDrag) this.wheelIndex = shown;
-            }
-          }, { passive: true });
           if (trackEl) {
             let sx = 0, sy = 0, carting = false;
             trackEl.addEventListener('touchstart', (event) => {
@@ -664,8 +685,10 @@
               sy = t ? t.clientY : 0;
               carting = !!document.querySelector('#tab-order.cart-is-open');
               this._touching = true;
-              this._swipeExpect = null;
-              this.followPager();
+              this._fingerSnap = true;
+              this._swipeDx = 0;
+              this._snapFrom = Math.max(0, this.tabs.indexOf(this.currentTab));
+              this.watchSnap();
             }, { passive: true });
             trackEl.addEventListener('touchmove', (event) => {
               const t = event.touches[0];
@@ -674,6 +697,12 @@
               const dy = t.clientY - sy;
               if (carting && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
                 event.preventDefault();
+              }
+              if (!carting && dx > 16 && Math.abs(dx) > Math.abs(dy) && !this._wheel) {
+                this._swipeDx = dx;
+                const width = trackEl.clientWidth || 1;
+                const progress = Math.min(1, dx / (width * 0.42));
+                this.wheelIndex = Math.max(0, this._snapFrom - progress);
               }
               if (!carting && this.currentTab === 'tours' && Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
                 window.cancelToursLoad && window.cancelToursLoad();
@@ -688,15 +717,13 @@
               const dx = t ? t.clientX - sx : 0;
               const dy = t ? t.clientY - sy : 0;
               const horizontal = Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy);
+              if (horizontal) this._swipeDx = dx;
+              if (!carting && horizontal && dx > 0) this.followRetour(dx);
               if (carting && horizontal && dx > 0) {
                 window.dispatchEvent(new CustomEvent('close-cart'));
               }
               if (!carting && before === 'tours' && horizontal) {
                 window.cancelToursLoad && window.cancelToursLoad();
-              }
-              if (!carting && horizontal && Math.abs(dx) > 40) {
-                const step = dx > 0 ? -1 : 1;
-                this._swipeExpect = this.neighbor(step);
               }
               if (this.currentTab === before && fromNav && fromNav !== this.currentTab) {
                 this.animateNav(this.currentTab, fromNav);
@@ -742,31 +769,70 @@
         window.addEventListener('popstate', () => {
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
         });
-        const edge = document.querySelector('.edge-back-catch');
-        if (edge) {
-          let ex = 0, ey = 0, edgeOn = false;
-          edge.addEventListener('touchstart', (event) => {
+        document.querySelectorAll('.edge-swipe-left').forEach((el) => {
+          let ex = 0, ey = 0, horizontal = false;
+          el.addEventListener('touchstart', (event) => {
             const t = event.touches[0];
             ex = t ? t.clientX : 0;
             ey = t ? t.clientY : 0;
-            edgeOn = false;
-          }, { passive: true });
-          edge.addEventListener('touchmove', (event) => {
+            horizontal = false;
+            if (event.cancelable) event.preventDefault();
+          }, { passive: false });
+          el.addEventListener('touchmove', (event) => {
             const t = event.touches[0];
             if (!t) return;
             const dx = t.clientX - ex;
             const dy = t.clientY - ey;
-            if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
-              edgeOn = true;
-              event.preventDefault();
-            }
+            if (!horizontal && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            if (!horizontal && Math.abs(dy) > Math.abs(dx)) return;
+            horizontal = true;
+            if (event.cancelable) event.preventDefault();
           }, { passive: false });
-          edge.addEventListener('touchend', () => {
-            if (!edgeOn) return;
-            const prev = neighbor(-1);
-            if (prev) setTab(prev);
+          el.addEventListener('touchend', (event) => {
+            if (!horizontal) return;
+            const t = event.changedTouches && event.changedTouches[0];
+            const dx = t ? t.clientX - ex : 0;
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
           }, { passive: true });
-        }
+        });
+        document.addEventListener('touchstart', (event) => {
+          const t = event.touches[0];
+          const hit = t && t.target && t.target.closest && t.target.closest('.cal-week-times, .time-col-header');
+          if (!hit) return;
+          const x = t.clientX;
+          const y = t.clientY;
+          let horizontal = false;
+          let vertical = false;
+          const move = (ev) => {
+            const p = ev.touches[0];
+            if (!p || vertical) return;
+            const dx = p.clientX - x;
+            const dy = p.clientY - y;
+            if (!horizontal) {
+              if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+              if (Math.abs(dy) > Math.abs(dx)) {
+                vertical = true;
+                return;
+              }
+              horizontal = true;
+            }
+            if (ev.cancelable) ev.preventDefault();
+          };
+          const end = (ev) => {
+            document.removeEventListener('touchmove', move, true);
+            document.removeEventListener('touchend', end, true);
+            document.removeEventListener('touchcancel', end, true);
+            if (!horizontal || ev.type === 'touchcancel') return;
+            const p = ev.changedTouches && ev.changedTouches[0];
+            const dx = p ? p.clientX - x : 0;
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
+          };
+          document.addEventListener('touchmove', move, { passive: false, capture: true });
+          document.addEventListener('touchend', end, { passive: true, capture: true });
+          document.addEventListener('touchcancel', end, { passive: true, capture: true });
+        }, { passive: true, capture: true });
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
           if (tabs.includes(h) && h !== currentTab) setTab(h);
@@ -774,7 +840,7 @@
       "
       x-cloak>
 
-    <div class="edge-back-catch" aria-hidden="true"></div>
+    <div class="edge-swipe-left" aria-hidden="true"></div>
 
     @include('livewire.general-partials.header')
 
@@ -889,21 +955,13 @@
                 finger = true;
                 clearTimeout(navTimer);
             }, { passive: true });
-            track.addEventListener('touchend', function () {
-                finger = false;
-                clearTimeout(navTimer);
-                navTimer = setTimeout(syncNav, 450);
-            }, { passive: true });
+            track.addEventListener('touchend', function () { finger = false; }, { passive: true });
             track.addEventListener('touchcancel', function () { finger = false; }, { passive: true });
-            track.addEventListener('scrollend', function () {
-                if (finger) return;
-                clearTimeout(navTimer);
-                syncNav();
-            }, { passive: true });
+            track.addEventListener('scrollend', function () { if (!finger) syncNav(); }, { passive: true });
             track.addEventListener('scroll', function () {
                 if (finger) return;
                 clearTimeout(navTimer);
-                navTimer = setTimeout(syncNav, 450);
+                navTimer = setTimeout(syncNav, 70);
             }, { passive: true });
             window.addEventListener('resize', syncNav);
             update();
