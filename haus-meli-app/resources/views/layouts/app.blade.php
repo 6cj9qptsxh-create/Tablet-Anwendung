@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=101">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=102">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -615,6 +615,21 @@
             }
           };
           this._snapTimer = setTimeout(check, 70);
+        },
+        edgeGo(step) {
+          const tab = this.neighbor(step);
+          const track = this.$refs.track;
+          const pane = tab ? this.trackPane(tab) : null;
+          if (!tab || !track || !pane) return;
+          const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
+          this._prog = true;
+          track.style.scrollSnapType = 'none';
+          if (Math.abs(delta) > 1) track.scrollLeft += delta;
+          track.style.scrollSnapType = '';
+          this.setTab(tab, true);
+          this.finishChrome();
+          const self = this;
+          setTimeout(() => { self._prog = false; }, 80);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
@@ -739,12 +754,41 @@
         window.addEventListener('popstate', () => {
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
         });
+        document.querySelectorAll('.edge-swipe-left').forEach((el) => {
+          let ex = 0, ey = 0, horizontal = false;
+          el.addEventListener('touchstart', (event) => {
+            const t = event.touches[0];
+            ex = t ? t.clientX : 0;
+            ey = t ? t.clientY : 0;
+            horizontal = false;
+            if (event.cancelable) event.preventDefault();
+          }, { passive: false });
+          el.addEventListener('touchmove', (event) => {
+            const t = event.touches[0];
+            if (!t) return;
+            const dx = t.clientX - ex;
+            const dy = t.clientY - ey;
+            if (!horizontal && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            if (!horizontal && Math.abs(dy) > Math.abs(dx)) return;
+            horizontal = true;
+            if (event.cancelable) event.preventDefault();
+          }, { passive: false });
+          el.addEventListener('touchend', (event) => {
+            if (!horizontal) return;
+            const t = event.changedTouches && event.changedTouches[0];
+            const dx = t ? t.clientX - ex : 0;
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
+          }, { passive: true });
+        });
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
           if (tabs.includes(h) && h !== currentTab) setTab(h);
         });
       "
       x-cloak>
+
+    <div class="edge-swipe-left" aria-hidden="true"></div>
 
     @include('livewire.general-partials.header')
 

@@ -5975,6 +5975,18 @@ body.trip-detail-open {
     }
 }
 
+/* Schmaler Streifen links neben dem Kalender.
+   Der Wisch bleibt in der App und wird nicht zum iPhone-Zurück. */
+.edge-swipe-left {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    z-index: 10050;
+    touch-action: none;
+}
+
 @keyframes toursMapShimmer {
     from {
         background-position: 200% 0, 0 0;
