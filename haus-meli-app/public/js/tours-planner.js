@@ -1683,7 +1683,7 @@
                 + list.map((src, i) => {
                     const url = esc(imgUrl(src));
                     return `<button type="button" class="tours-saved-photo" data-photo-i="${i}" data-photo-src="${url}">`
-                        + `<img src="${url}" alt="" loading="lazy"></button>`;
+                        + `<img src="${url}" alt="" width="72" height="54" loading="lazy" decoding="async"></button>`;
                 }).join('')
                 + '</div>';
         };
