@@ -616,152 +616,20 @@
           };
           this._snapTimer = setTimeout(check, 70);
         },
-        edgeHalt() {
-          cancelAnimationFrame(this._edgeRaf);
-          clearTimeout(this._edgeFallback);
-          this._edgeGen = (this._edgeGen || 0) + 1;
-          this._edgeGliding = false;
-          this._prog = true;
+        edgeGo(step) {
+          const tab = this.neighbor(step);
           const track = this.$refs.track;
-          if (!track || track.style.scrollSnapType !== 'none') return;
-          const width = track.clientWidth || 1;
-          let index = Math.round(track.scrollLeft / width);
-          if (index < 0) index = 0;
-          if (index >= this.tabs.length) index = this.tabs.length - 1;
-          const tab = this.tabs[index];
           const pane = tab ? this.trackPane(tab) : null;
-          if (pane) {
-            const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
-            if (Math.abs(delta) > 1) track.scrollLeft += delta;
-          }
-          track.style.scrollSnapType = '';
-          if (tab && tab !== this.currentTab) this.setTab(tab, true);
-          else this.wheelIndex = index;
-          this.finishChrome();
-          this._touching = false;
-          this._fingerSnap = false;
-          this._scrolling = false;
-        },
-        edgeArm() {
-          const track = this.$refs.track;
-          if (!track) return;
-          cancelAnimationFrame(this._wheelRaf);
-          cancelAnimationFrame(this._edgeRaf);
-          clearTimeout(this._edgeFallback);
-          this._prog = true;
-          this._touching = true;
-          this._fingerSnap = true;
-          this._scrolling = true;
-          this._edgeGliding = false;
-          track.style.scrollSnapType = 'none';
-          this._edgeFrom = track.scrollLeft;
-          this._snapFrom = Math.max(0, this.tabs.indexOf(this.currentTab));
-          if (this.currentTab === 'tours' && window.cancelToursLoad) window.cancelToursLoad();
-        },
-        edgeFollow(dx) {
-          const track = this.$refs.track;
-          if (!track) return;
-          const width = track.clientWidth || 1;
-          const max = Math.max(0, track.scrollWidth - width);
-          let next = this._edgeFrom - dx;
-          if (next < 0) next = 0;
-          if (next > max) next = max;
-          track.style.scrollSnapType = 'none';
-          track.scrollLeft = next;
-          const shown = track.scrollLeft;
-          let shifted = (shown - this._edgeFrom) / width;
-          if (shifted > 1) shifted = 1;
-          if (shifted < -1) shifted = -1;
-          let idx = this._snapFrom + shifted / 0.42;
-          const maxIdx = this.tabs.length - 1;
-          const lo = Math.max(0, this._snapFrom - 1);
-          const hi = Math.min(maxIdx, this._snapFrom + 1);
-          if (idx < lo) idx = lo;
-          if (idx > hi) idx = hi;
-          this.wheelIndex = idx;
-        },
-        edgeRelease(dx, velocity) {
-          const track = this.$refs.track;
-          if (!track) return;
-          const width = track.clientWidth || 1;
-          const threshold = Math.max(48, width * 0.22);
-          const projected = dx + velocity * 160;
-          let step = 0;
-          if (projected >= threshold) step = -1;
-          else if (projected <= -threshold) step = 1;
-          let target = (this._snapFrom || 0) + step;
-          if (target < 0) target = 0;
-          if (target >= this.tabs.length) target = this.tabs.length - 1;
-          this.edgeGlide(this.tabs[target]);
-        },
-        edgeGlide(tab) {
-          const track = this.$refs.track;
-          const self = this;
-          const gen = this._edgeGen || 0;
-          if (!track) {
-            this._touching = false;
-            this._prog = false;
-            return;
-          }
-          const pane = tab ? this.trackPane(tab) : null;
-          const destWheel = Math.max(0, this.tabs.indexOf(tab));
-          this.wheelIndex = destWheel;
-          let settled = false;
-          const finish = () => {
-            if (settled || self._edgeGen !== gen) return;
-            settled = true;
-            clearTimeout(self._edgeFallback);
-            cancelAnimationFrame(self._edgeRaf);
-            if (pane) {
-              const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
-              if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
-            }
-            track.style.scrollSnapType = '';
-            if (tab && tab !== self.currentTab) self.setTab(tab, true);
-            else self.wheelIndex = destWheel;
-            self.finishChrome();
-            self._edgeGliding = false;
-            self._touching = false;
-            self._fingerSnap = false;
-            self._scrolling = false;
-            self.edgeIdle();
-            self.scheduleHash();
-            if (self.currentTab === 'tours' && window.maybeLoadTours) window.maybeLoadTours();
-          };
-          if (!pane) {
-            finish();
-            return;
-          }
+          if (!tab || !track || !pane) return;
           const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
-          const dest = track.scrollLeft + delta;
-          const fromLeft = track.scrollLeft;
-          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          if (reduce || Math.abs(dest - fromLeft) < 2) {
-            finish();
-            return;
-          }
-          this._edgeGliding = true;
-          const ms = Math.max(160, Math.min(320, Math.abs(dest - fromLeft) / (track.clientWidth || 1) * 360));
-          const start = performance.now();
-          const frame = (now) => {
-            if (self._edgeGen !== gen) return;
-            const t = Math.min(1, (now - start) / ms);
-            const e = 1 - Math.pow(1 - t, 3);
-            track.style.scrollSnapType = 'none';
-            track.scrollLeft = fromLeft + (dest - fromLeft) * e;
-            if (t < 1) self._edgeRaf = requestAnimationFrame(frame);
-            else finish();
-          };
-          this._edgeFallback = setTimeout(finish, ms + 140);
-          this._edgeRaf = requestAnimationFrame(frame);
-        },
-        edgeIdle() {
+          this._prog = true;
+          track.style.scrollSnapType = 'none';
+          if (Math.abs(delta) > 1) track.scrollLeft += delta;
+          track.style.scrollSnapType = '';
+          this.setTab(tab, true);
+          this.finishChrome();
           const self = this;
-          clearTimeout(this._progTimer);
-          this._progTimer = setTimeout(() => {
-            if (self._edgeHold || self._edgeGliding) return;
-            self._prog = false;
-          }, 90);
+          setTimeout(() => { self._prog = false; }, 80);
         }
       }"
       :class="{ 'is-cal-tab': chromeTab === 'events' }"
@@ -887,35 +755,45 @@
           history.pushState({ hausMeli: 1 }, '', location.pathname + location.search + '#' + currentTab);
         });
         document.querySelectorAll('.edge-swipe-left').forEach((el) => {
-          let ex = 0, ey = 0, horizontal = false, vertical = false, armed = false;
-          let lastX = 0, lastT = 0, velocity = 0;
+          let ex = 0, ey = 0, horizontal = false;
           el.addEventListener('touchstart', (event) => {
-            this._edgeHold = true;
-            this.edgeHalt();
             const t = event.touches[0];
             ex = t ? t.clientX : 0;
             ey = t ? t.clientY : 0;
-            lastX = ex;
-            lastT = performance.now();
-            velocity = 0;
             horizontal = false;
-            vertical = false;
-            armed = false;
             if (event.cancelable) event.preventDefault();
           }, { passive: false });
           el.addEventListener('touchmove', (event) => {
             const t = event.touches[0];
-            if (!t || vertical) return;
-            const now = performance.now();
-            const dt = now - lastT;
-            if (dt > 0) {
-              const sample = (t.clientX - lastX) / dt;
-              velocity = sample < -2.5 ? -2.5 : (sample > 2.5 ? 2.5 : sample);
-            }
-            lastX = t.clientX;
-            lastT = now;
+            if (!t) return;
             const dx = t.clientX - ex;
             const dy = t.clientY - ey;
+            if (!horizontal && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            if (!horizontal && Math.abs(dy) > Math.abs(dx)) return;
+            horizontal = true;
+            if (event.cancelable) event.preventDefault();
+          }, { passive: false });
+          el.addEventListener('touchend', (event) => {
+            if (!horizontal) return;
+            const t = event.changedTouches && event.changedTouches[0];
+            const dx = t ? t.clientX - ex : 0;
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
+          }, { passive: true });
+        });
+        document.addEventListener('touchstart', (event) => {
+          const t = event.touches[0];
+          const hit = t && t.target && t.target.closest && t.target.closest('.cal-week-times, .time-col-header');
+          if (!hit) return;
+          const x = t.clientX;
+          const y = t.clientY;
+          let horizontal = false;
+          let vertical = false;
+          const move = (ev) => {
+            const p = ev.touches[0];
+            if (!p || vertical) return;
+            const dx = p.clientX - x;
+            const dy = p.clientY - y;
             if (!horizontal) {
               if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
               if (Math.abs(dy) > Math.abs(dx)) {
@@ -923,25 +801,23 @@
                 return;
               }
               horizontal = true;
-              armed = true;
-              this.edgeArm();
             }
-            if (event.cancelable) event.preventDefault();
-            this.edgeFollow(dx);
-          }, { passive: false });
-          const end = (event) => {
-            this._edgeHold = false;
-            if (!armed) {
-              this.edgeIdle();
-              return;
-            }
-            const t = event.changedTouches && event.changedTouches[0];
-            const dx = t ? t.clientX - ex : 0;
-            this.edgeRelease(dx, velocity);
+            if (ev.cancelable) ev.preventDefault();
           };
-          el.addEventListener('touchend', end, { passive: true });
-          el.addEventListener('touchcancel', end, { passive: true });
-        });
+          const end = (ev) => {
+            document.removeEventListener('touchmove', move, true);
+            document.removeEventListener('touchend', end, true);
+            document.removeEventListener('touchcancel', end, true);
+            if (!horizontal || ev.type === 'touchcancel') return;
+            const p = ev.changedTouches && ev.changedTouches[0];
+            const dx = p ? p.clientX - x : 0;
+            if (Math.abs(dx) < 24) return;
+            edgeGo(dx > 0 ? -1 : 1);
+          };
+          document.addEventListener('touchmove', move, { passive: false, capture: true });
+          document.addEventListener('touchend', end, { passive: true, capture: true });
+          document.addEventListener('touchcancel', end, { passive: true, capture: true });
+        }, { passive: true, capture: true });
         window.addEventListener('hashchange', () => {
           const h = (location.hash || '').replace(/^#/, '');
           if (tabs.includes(h) && h !== currentTab) setTab(h);
