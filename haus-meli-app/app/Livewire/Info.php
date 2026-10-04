@@ -11,6 +11,8 @@ class Info extends Component
     {
         return view('livewire.info', [
             'forecast' => $weather->forecast(),
+            'infoOwner' => \App\Support\ClientNetwork::isFamily()
+                && ! \App\Support\ClientNetwork::guestPreview(),
         ]);
     }
 }
