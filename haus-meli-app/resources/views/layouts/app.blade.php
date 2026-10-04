@@ -197,9 +197,14 @@
 
 <body class="page-content"
       x-data="{
-        tabs: ['order', 'knx', 'events', 'info', 'tours'],
+        tabs: (function () {
+          const list = ['order', 'knx', 'events', 'info'];
+          if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) list.push('tours');
+          return list;
+        })(),
         currentTab: (function () {
-          const allowed = ['order', 'knx', 'events', 'info', 'tours'];
+          const allowed = ['order', 'knx', 'events', 'info'];
+          if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           if (allowed.includes(fromHash)) return fromHash;
           const saved = window.hausMeliReadTab(allowed);
@@ -209,7 +214,8 @@
         menuOpen: false,
         chromeTab: 'order',
         wheelIndex: (function () {
-          const allowed = ['order', 'knx', 'events', 'info', 'tours'];
+          const allowed = ['order', 'knx', 'events', 'info'];
+          if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           const name = allowed.includes(fromHash) ? fromHash : (window.hausMeliReadTab(allowed) || 'order');
           const idx = allowed.indexOf(name);
@@ -232,7 +238,7 @@
           const tab = this.neighbor(step);
           if (tab) this.setTab(tab);
         },
-        // Alle Namen stehen immer in der Leiste. Unter der Pille volle Groesse, daneben kleiner.
+        // Sichtbare Namen stehen in der Leiste. Unter der Pille volle Groesse, daneben kleiner.
         wheelInset(width) {
           return Math.min(56, Math.max(40, width * 0.12));
         },
@@ -871,11 +877,11 @@
                 @livewire('info', ['defer' => true])
             </section>
 
-            <section class="tab-pane"
-                     data-tab="tours"
->
+            @if(\App\Support\ClientNetwork::showsTours())
+            <section class="tab-pane" data-tab="tours">
                 @livewire('tours', ['defer' => true])
             </section>
+            @endif
         </div>
     </div>
 

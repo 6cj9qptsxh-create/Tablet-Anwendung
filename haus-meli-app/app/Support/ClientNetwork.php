@@ -42,6 +42,12 @@ class ClientNetwork
         return (bool) session('guest_preview', false);
     }
 
+    /** Touren gibt es in der Gast-Oberfläche, nicht in der Familienansicht. */
+    public static function showsTours(): bool
+    {
+        return ! self::isFamily() || self::guestPreview();
+    }
+
     /** @return list<string> */
     public static function candidateIps(): array
     {
@@ -73,6 +79,7 @@ class ClientNetwork
         return [
             'family' => self::isFamily(),
             'guest_preview' => self::guestPreview(),
+            'tours' => self::showsTours(),
             'ips' => self::candidateIps(),
             'laravel_ip' => request()->ip(),
             'host' => request()->getHost(),

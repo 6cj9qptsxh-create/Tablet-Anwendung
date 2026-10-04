@@ -63,7 +63,12 @@ Route::post('/gast-vorschau', function (\Illuminate\Http\Request $request) {
     }
 
     $tab = (string) $request->input('tab', '');
-    $allowed = ['order', 'knx', 'events', 'info', 'tours'];
+    $allowed = ['order', 'knx', 'events', 'info'];
+    if (\App\Support\ClientNetwork::showsTours()) {
+        $allowed[] = 'tours';
+    } elseif ($tab === 'tours') {
+        $tab = 'info';
+    }
     $location = url('/');
     if (in_array($tab, $allowed, true)) {
         $location .= '#'.$tab;
