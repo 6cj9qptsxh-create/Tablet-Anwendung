@@ -265,6 +265,12 @@ body {
     margin-top: var(--spacing);
 }
 
+/* Ohne Modus-Schalter ist die Region das erste Element. Der Abstand unter
+   der Leiste kommt dann schon vom Seitenrahmen, der Rand würde ihn verdoppeln. */
+.tab-pane .world > .shop-region:first-child {
+    margin-top: 0;
+}
+
 /* Die Sticky-Platte hinter dem Shop-Header: eine durchgehende, eckige Fläche
    in Hintergrundfarbe. Ragt seitlich über den Header hinaus (verdeckt die
    Schatten der wegscrollenden Product Cards) und endet unten exakt an der
