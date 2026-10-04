@@ -44,6 +44,7 @@
     @open-history.window="historyOpen = true"
     @cart-updated.window="location.reload()"
     @checkout-completed.window="paymentOpen = false; historyOpen = false; thanksOpen = true;">
+    @unless($isOwner)
     <div class="container">
 
         <div class="card toggle-btn-container">
@@ -55,6 +56,7 @@
             </button>
         </div>
     </div>
+    @endunless
 
     {{-- Sticky-Bereich: Header klebt nur innerhalb dieses Wrappers, der bis zum Ende der Produkte reicht --}}
     <div class="shop-region">

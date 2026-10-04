@@ -28,6 +28,9 @@ class Shop extends Component
     // Wird aufgerufen, wenn sich der Modus ändert
     public function setOrderMode($mode)
     {
+        if ($this->isOwner || ! in_array($mode, ['delivery', 'self'], true)) {
+            $mode = 'delivery';
+        }
         $this->orderMode = $mode;
         $this->selectedCategory = '__all'; // Kategorie beim Wechsel zurücksetzen
 
@@ -1003,6 +1006,9 @@ class Shop extends Component
     public function mount()
     {
         $this->isOwner = $this->detectOwnerFromIp();
+        if ($this->isOwner) {
+            $this->orderMode = 'delivery';
+        }
         $this->syncCart();
         $this->loadHistory();
         $this->checkStayDates();
