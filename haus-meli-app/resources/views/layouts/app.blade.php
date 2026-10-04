@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=105">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=106">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -219,6 +219,7 @@
         wheelDrag: false,
         wheelStretch: 0,
         wheelW: 0,
+        guestCodeOn: {{ \App\Support\ClientNetwork::isFamily() ? 'true' : 'false' }},
         tabName(tab) {
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
@@ -360,6 +361,19 @@
           const over = index < 0 ? -index : (index > max ? index - max : 0);
           this.wheelStretch = Math.min(1, over);
         },
+        noteGuestCode() {
+          if (!this.guestCodeOn) return;
+          const now = Date.now();
+          if (!this._guestAt || now - this._guestAt > 1000) this._guestN = 0;
+          this._guestAt = now;
+          this._guestN = (this._guestN || 0) + 1;
+          if (this._guestN < 5) return;
+          this._guestN = 0;
+          const form = document.getElementById('guest-preview-form');
+          if (!form) return;
+          if (form.requestSubmit) form.requestSubmit();
+          else form.submit();
+        },
         wheelUp(event) {
           const g = this._wheel;
           if (!g || event.pointerId !== g.id) return;
@@ -388,10 +402,13 @@
             this._wheelHold = true;
             this.wheelIndex = index;
             const picked = this.tabs[index];
+            if (picked && picked === this.currentTab) this.noteGuestCode();
+            else this._guestN = 0;
             if (picked && picked !== this.currentTab) this.setTab(picked);
             this._wheelHold = false;
             return;
           }
+          this._guestN = 0;
           let index = Math.round(this.wheelIndex);
           if (index < 0) index = 0;
           if (index > max) index = max;
@@ -984,11 +1001,10 @@
         });
     </script>
     @if(\App\Support\ClientNetwork::isFamily())
-        <form method="POST" action="{{ url('/gast-vorschau') }}" class="guest-preview {{ \App\Support\ClientNetwork::guestPreview() ? 'is-on' : '' }}">
+        <form id="guest-preview-form" method="POST" action="{{ url('/gast-vorschau') }}" hidden>
             @csrf
             <input type="hidden" name="on" value="{{ \App\Support\ClientNetwork::guestPreview() ? '0' : '1' }}">
             <input type="hidden" name="tab" x-bind:value="currentTab">
-            <button type="submit" title="{{ \App\Support\ClientNetwork::guestPreview() ? 'Zurück zur Familienansicht' : 'Gastansicht testen. Gast-Warenkörbe und Gast-Termine bleiben unsichtbar.' }}">{{ \App\Support\ClientNetwork::guestPreview() ? 'Familie' : 'Gast testen' }}</button>
         </form>
     @endif
 </body>
