@@ -88,35 +88,7 @@
         </div>
 
         <div class="info-kicker" data-i18n="info_wifi_title">Verbinden</div>
-        <div class="info-block info-connect">
-            <div class="info-copy-list">
-                <button type="button" class="info-copy" :class="{ 'is-copied': copied === 'ssid' }" @click="copy('ssid', $refs.ssid.textContent)">
-                    <span class="info-copy-body">
-                        <span class="info-copy-label" data-i18n="info_network">Netzwerk</span>
-                        <strong id="wifi-name-display" x-ref="ssid">Mein_Ferien_WLAN</strong>
-                    </span>
-                    <span class="material-symbols-rounded" x-text="copied === 'ssid' ? 'check' : 'content_copy'"></span>
-                </button>
-                <button type="button" class="info-copy is-mono" :class="{ 'is-copied': copied === 'pass' }" @click="copy('pass', $refs.pass.textContent)">
-                    <span class="info-copy-body">
-                        <span class="info-copy-label" data-i18n="info_password">Passwort</span>
-                        <strong id="wifi-pass-display" x-ref="pass">urlaub2026</strong>
-                    </span>
-                    <span class="material-symbols-rounded" x-text="copied === 'pass' ? 'check' : 'content_copy'"></span>
-                </button>
-                <p class="info-app-note" data-i18n="info_app_text">Scannen Sie den App-Code, um die Anwendung auf dem Handy zu öffnen.</p>
-            </div>
-            <div class="info-qrs">
-                <figure class="info-qr">
-                    <img id="wifi-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=WIFI:T:WPA;S:Mein_Ferien_WLAN;P:urlaub2026;;" alt="WLAN QR" width="120" height="120" />
-                    <figcaption>WLAN</figcaption>
-                </figure>
-                <figure class="info-qr info-app-qr">
-                    <img id="app-url-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ urlencode(rtrim((string) config('app.url'), '/').'/') }}" alt="App QR" width="120" height="120" />
-                    <figcaption data-i18n="info_app_title">App</figcaption>
-                </figure>
-            </div>
-        </div>
+        <livewire:info-wifi />
     </div>
 
     <div class="info-panel" x-show="section === 'wetter'" x-cloak>
