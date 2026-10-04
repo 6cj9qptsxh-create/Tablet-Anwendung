@@ -32,6 +32,16 @@ class ClientNetwork
         return false;
     }
 
+    /** Familien-Gerät schaut sich die Gast-Oberfläche an, ohne Gast-Daten. */
+    public static function guestPreview(): bool
+    {
+        if (! self::isFamily()) {
+            return false;
+        }
+
+        return (bool) session('guest_preview', false);
+    }
+
     /** @return list<string> */
     public static function candidateIps(): array
     {
@@ -62,6 +72,7 @@ class ClientNetwork
     {
         return [
             'family' => self::isFamily(),
+            'guest_preview' => self::guestPreview(),
             'ips' => self::candidateIps(),
             'laravel_ip' => request()->ip(),
             'host' => request()->getHost(),

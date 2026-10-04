@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=103">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=105">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=91">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -983,5 +983,13 @@
             
         });
     </script>
+    @if(\App\Support\ClientNetwork::isFamily())
+        <form method="POST" action="{{ url('/gast-vorschau') }}" class="guest-preview {{ \App\Support\ClientNetwork::guestPreview() ? 'is-on' : '' }}">
+            @csrf
+            <input type="hidden" name="on" value="{{ \App\Support\ClientNetwork::guestPreview() ? '0' : '1' }}">
+            <input type="hidden" name="tab" x-bind:value="currentTab">
+            <button type="submit" title="{{ \App\Support\ClientNetwork::guestPreview() ? 'Zurück zur Familienansicht' : 'Gastansicht testen. Gast-Warenkörbe und Gast-Termine bleiben unsichtbar.' }}">{{ \App\Support\ClientNetwork::guestPreview() ? 'Familie' : 'Gast testen' }}</button>
+        </form>
+    @endif
 </body>
 </html>

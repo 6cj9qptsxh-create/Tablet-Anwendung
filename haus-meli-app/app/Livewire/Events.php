@@ -126,7 +126,13 @@ class Events extends Component
 
     private function detectFamilyDevice(): bool
     {
-        return \App\Support\ClientNetwork::isFamily();
+        return \App\Support\ClientNetwork::isFamily()
+            && ! \App\Support\ClientNetwork::guestPreview();
+    }
+
+    private function guestPreview(): bool
+    {
+        return \App\Support\ClientNetwork::guestPreview();
     }
 
     public function setViewMode(string $mode): void
@@ -284,7 +290,7 @@ class Events extends Component
 
     public function toggleFavorite($eventId, $date): void
     {
-        if ($this->isFamily) {
+        if ($this->isFamily || $this->guestPreview()) {
             return;
         }
 
@@ -306,6 +312,10 @@ class Events extends Component
 
     public function toggleFavoriteModal(): void
     {
+        if ($this->isFamily || $this->guestPreview()) {
+            return;
+        }
+
         $this->toggleFavorite($this->modalEventId, $this->modalDate);
         $this->modalIsFavorite = ! $this->modalIsFavorite;
     }
@@ -418,6 +428,11 @@ class Events extends Component
         }
 
         if ($isPrivate) {
+            if ($this->guestPreview()) {
+                $this->dispatch('open-modal', ready: true);
+
+                return;
+            }
             $this->modalMode = 'edit';
             $ev = DB::table('ferienwohnung_laravel.guest_private_events')->where('id', $id)->first();
             if ($ev) {
@@ -447,7 +462,7 @@ class Events extends Component
                     $this->modalUrl = $ev->url ?? '';
                 }
             }
-            $this->modalIsFavorite = DB::table('ferienwohnung_laravel.guest_favorites')
+            $this->modalIsFavorite = ! $this->guestPreview() && DB::table('ferienwohnung_laravel.guest_favorites')
                 ->where('event_id', $id)
                 ->where('selected_date', $date)
                 ->exists();
@@ -536,6 +551,12 @@ class Events extends Component
             return;
         }
 
+        if ($this->guestPreview()) {
+            $this->addError('modalTitle', 'In der Gast-Ansicht werden keine Gast-Termine gespeichert.');
+
+            return;
+        }
+
         $data = [
             'title' => $this->modalTitle,
             'start_time' => $this->modalStartTime ?: null,
@@ -582,7 +603,7 @@ class Events extends Component
                 ->where('id', $this->modalEventId)
                 ->whereIn('type', $this->familyTypes())
                 ->delete();
-        } else {
+        } elseif (! $this->guestPreview()) {
             DB::table('ferienwohnung_laravel.guest_private_events')->where('id', $this->modalEventId)->delete();
         }
 
@@ -616,7 +637,7 @@ class Events extends Component
                     'end_time' => $endTime.':00',
                     'updated_at' => now(),
                 ]);
-        } else {
+        } elseif (! $this->guestPreview()) {
             DB::table('ferienwohnung_laravel.guest_private_events')
                 ->where('id', $id)
                 ->update([
@@ -1482,7 +1503,7 @@ class Events extends Component
 
     private function loadFavorites(): array
     {
-        if ($this->isFamily) {
+        if ($this->isFamily || $this->guestPreview()) {
             return [];
         }
 
@@ -1557,28 +1578,30 @@ class Events extends Component
         }
 
         $privateEvents = collect();
-        try {
-            $privateEvents = $this->expandYearlyOccurrences(
-                DB::table('ferienwohnung_laravel.guest_private_events')
-                ->where(function ($q) use ($rangeStart, $rangeEnd) {
-                    $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
-                        $inner->where('end_date', '>=', $rangeStart)
-                            ->where('start_date', '<=', $rangeEnd);
-                    })->orWhere('repeat_yearly', 1);
-                })
-                ->get()
-                ->map(function ($ev) {
-                    $ev->is_private = true;
-                    $ev->is_outline = true;
-                    $ev->type = 'private';
-                    $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
+        if (! $this->guestPreview()) {
+            try {
+                $privateEvents = $this->expandYearlyOccurrences(
+                    DB::table('ferienwohnung_laravel.guest_private_events')
+                    ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                        $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
+                            $inner->where('end_date', '>=', $rangeStart)
+                                ->where('start_date', '<=', $rangeEnd);
+                        })->orWhere('repeat_yearly', 1);
+                    })
+                    ->get()
+                    ->map(function ($ev) {
+                        $ev->is_private = true;
+                        $ev->is_outline = true;
+                        $ev->type = 'private';
+                        $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
 
-                    return $ev;
-                }),
-                $rangeStart,
-                $rangeEnd
-            );
-        } catch (\Exception $e) {
+                        return $ev;
+                    }),
+                    $rangeStart,
+                    $rangeEnd
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         $years = [Carbon::parse($rangeStart)->year, Carbon::parse($rangeEnd)->year];

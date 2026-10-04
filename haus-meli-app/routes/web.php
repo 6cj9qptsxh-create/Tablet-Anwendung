@@ -50,3 +50,24 @@ Route::get('/api/e1001/weather', [WeatherController::class, 'terminal'])
 Route::get('/api/whoami', function () {
     return response()->json(\App\Support\ClientNetwork::debug());
 });
+
+Route::post('/gast-vorschau', function (\Illuminate\Http\Request $request) {
+    if (! \App\Support\ClientNetwork::isFamily()) {
+        abort(403);
+    }
+
+    if ($request->boolean('on')) {
+        session(['guest_preview' => true]);
+    } else {
+        session()->forget('guest_preview');
+    }
+
+    $tab = (string) $request->input('tab', '');
+    $allowed = ['order', 'knx', 'events', 'info', 'tours'];
+    $location = url('/');
+    if (in_array($tab, $allowed, true)) {
+        $location .= '#'.$tab;
+    }
+
+    return redirect()->away($location);
+});

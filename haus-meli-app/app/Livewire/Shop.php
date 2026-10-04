@@ -28,7 +28,7 @@ class Shop extends Component
     // Wird aufgerufen, wenn sich der Modus ändert
     public function setOrderMode($mode)
     {
-        if ($this->isOwner || ! in_array($mode, ['delivery', 'self'], true)) {
+        if ($this->showsFamilyShop() || ! in_array($mode, ['delivery', 'self'], true)) {
             $mode = 'delivery';
         }
         $this->orderMode = $mode;
@@ -41,12 +41,23 @@ class Shop extends Component
 
     private function detectOwnerFromIp(): bool
     {
-        return \App\Support\ClientNetwork::isFamily();
+        return $this->showsFamilyShop();
+    }
+
+    /** Schalter aus, nur Lieferung. Die Gast-Vorschau zeigt die Gast-Oberfläche. */
+    private function showsFamilyShop(): bool
+    {
+        return \App\Support\ClientNetwork::isFamily()
+            && ! \App\Support\ClientNetwork::guestPreview();
     }
 
     private function getChannel(): string
     {
-        return $this->isOwner ? 'owner' : 'guest';
+        if (\App\Support\ClientNetwork::guestPreview()) {
+            return 'owner_preview';
+        }
+
+        return \App\Support\ClientNetwork::isFamily() ? 'owner' : 'guest';
     }
 
     /** Lieferfreie Tage (Y-m-d) aus calendar_events */
@@ -460,7 +471,11 @@ class Shop extends Component
     // Gibt den passenden Präfix zurück (z.B. "guest_" oder "owner_")
     private function getCartPrefix()
     {
-        return $this->isOwner ? 'owner_' : 'guest_';
+        if (\App\Support\ClientNetwork::guestPreview()) {
+            return 'owner_preview_';
+        }
+
+        return \App\Support\ClientNetwork::isFamily() ? 'owner_' : 'guest_';
     }
 
     // Speichert den aktuellen Stand sofort für alle anderen Geräte (gemeinsamer Cache pro Kanal)
@@ -649,6 +664,10 @@ class Shop extends Component
     /** Gespeicherte Bestellung für den gewählten Tag komplett löschen (inkl. Bestand zurück) */
     public function deleteOrder(): void
     {
+        if (\App\Support\ClientNetwork::guestPreview()) {
+            return;
+        }
+
         if ($this->orderMode !== 'delivery' || ! $this->selectedDeliveryDate) {
             return;
         }
@@ -1018,6 +1037,14 @@ class Shop extends Component
         }
     }
 
+    public function hydrate(): void
+    {
+        $this->isOwner = $this->showsFamilyShop();
+        if ($this->isOwner) {
+            $this->orderMode = 'delivery';
+        }
+    }
+
     public function loadHistory()
     {
         $prefix = $this->getCartPrefix();
@@ -1051,6 +1078,12 @@ class Shop extends Component
     // Wird aufgerufen, wenn man im Warenkorb auf "Kostenpflichtig bestellen" klickt
     public function placeOrder()
     {
+        if (\App\Support\ClientNetwork::guestPreview()) {
+            $this->dispatch('notify', message: 'In der Gast-Ansicht wird nichts bestellt.', type: 'error');
+
+            return;
+        }
+
         $this->pullSharedCart();
         $details = $this->cartDetails;
         if ($details['count'] === 0) {
