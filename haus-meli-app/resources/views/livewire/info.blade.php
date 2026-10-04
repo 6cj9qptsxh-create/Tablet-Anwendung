@@ -1,15 +1,19 @@
 <div class="container info-app"
      @haus-weather-hour.window="$wire.$refresh()"
      x-data="{
+        ownerInfo: {{ !empty($infoOwner) ? 'true' : 'false' }},
         section: (function () {
+            const owner = {{ !empty($infoOwner) ? 'true' : 'false' }};
+            const allowed = owner ? ['wetter', 'out'] : ['now', 'wetter', 'out', 'haus'];
             try {
                 const saved = localStorage.getItem('hausMeliInfoSection');
-                if (saved === 'now' || saved === 'haus' || saved === 'out' || saved === 'wetter') return saved;
+                if (allowed.indexOf(saved) !== -1) return saved;
             } catch (e) {}
-            return 'now';
+            return allowed[0];
         })(),
         copied: '',
         setSection(name) {
+            if (this.ownerInfo && name !== 'wetter' && name !== 'out') return;
             this.section = name;
             try { localStorage.setItem('hausMeliInfoSection', name); } catch (e) {}
             const pane = this.$root.closest('.tab-pane');
@@ -47,13 +51,18 @@
 
     <div class="info-toolbar card">
         <div class="info-switch" role="tablist" aria-label="Infobereiche">
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'now' }" :aria-selected="section === 'now'" @click="setSection('now')">Jetzt</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'out' }" :aria-selected="section === 'out'" @click="setSection('out')">Umgebung</button>
+            @unless($infoOwner)
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'now' }" :aria-selected="section === 'now'" @click="setSection('now')">Aktuell</button>
+            @endunless
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'wetter' }" :aria-selected="section === 'wetter'" @click="setSection('wetter')">Wetter</button>
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'out' }" :aria-selected="section === 'out'" @click="setSection('out')">Umgebung</button>
+            @unless($infoOwner)
+            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>
+            @endunless
         </div>
     </div>
 
+    @unless($infoOwner)
     <div class="info-panel" x-show="section === 'now'" x-cloak>
         <div class="info-sos">
             <div class="info-sos-nums">
@@ -90,6 +99,7 @@
         <div class="info-kicker" data-i18n="info_wifi_title">Verbinden</div>
         <livewire:info-wifi />
     </div>
+    @endunless
 
     <div class="info-panel" x-show="section === 'wetter'" x-cloak>
         @if(empty($forecast['ok']))
@@ -167,6 +177,7 @@
         @endif
     </div>
 
+    @unless($infoOwner)
     <div class="info-panel" x-show="section === 'haus'" x-cloak>
         <div class="info-kicker" data-i18n="info_apt_title">Infos zur Wohnung</div>
         <div class="info-rows">
@@ -240,6 +251,7 @@
             </details>
         </div>
     </div>
+    @endunless
 
     <div class="info-panel" x-show="section === 'out'" x-cloak>
         <div class="info-kicker" data-i18n="info_links_title">Nützliche Links</div>
