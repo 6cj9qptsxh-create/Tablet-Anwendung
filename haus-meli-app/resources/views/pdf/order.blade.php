@@ -13,7 +13,7 @@
             margin: 0;
         }
         .header {
-            border-bottom: 2px solid #6c25b3;
+            border-bottom: 2px solid #660000;
             padding-bottom: 8px;
             margin-bottom: 14px;
         }
@@ -21,7 +21,7 @@
             font-size: 16pt;
             font-weight: bold;
             margin: 0 0 6px 0;
-            color: #6c25b3;
+            color: #660000;
         }
         .header-grid {
             width: 100%;
@@ -86,7 +86,7 @@
         }
         .totals td {
             padding: 8px 10px;
-            border: 1px solid #6c25b3;
+            border: 1px solid #660000;
             background: #f3eef8;
         }
         .totals .sum-label {
@@ -99,7 +99,7 @@
             text-align: right;
             font-size: 14pt;
             font-weight: bold;
-            color: #6c25b3;
+            color: #660000;
         }
         .footer {
             margin-top: 16px;

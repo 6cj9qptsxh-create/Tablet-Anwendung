@@ -16,12 +16,16 @@
     --soft: #495057;
     --border: rgba(255, 255, 255, 0.1);
 
-    /* Farben: Akzent & Semantic */
-    --accent: #6c25b3;
+    /* Farben: Akzent. Hell und dunkel nur über Weiß und Schwarz, damit alles an --accent hängt. */
+    --accent: #660000;
     --accent-contrast: #ffffff;
     --accent-soft: color-mix(in srgb, var(--accent), white 30%);
+    --accent-deep: color-mix(in srgb, var(--accent), black 40%);
+    --accent-tint: color-mix(in srgb, var(--accent), transparent 90%);
+    --accent-wash: color-mix(in srgb, var(--accent), transparent 72%);
+    --accent-glow: color-mix(in srgb, var(--accent), transparent 60%);
 
-    /* Warenkorb-Schiene: dezentes Grau mit leichtem Lila, nicht bunt */
+    /* Warenkorb-Schiene: dezentes Grau mit wenig Akzent */
     --cart-rail: color-mix(in srgb, var(--bg), var(--accent) 7%);
     --cart-rail-edge: color-mix(in srgb, var(--bg), var(--accent) 14%);
 
@@ -31,8 +35,8 @@
     --color-red-soft: #f8d7da;
     --color-red-border: #ff717f;
     --color-red-text: #721c24;
-    --color-magenta-soft: #e2d9eb;
-    --color-magenta-text: #4b367c;
+    --color-magenta-soft: color-mix(in srgb, var(--accent), white 80%);
+    --color-magenta-text: color-mix(in srgb, var(--accent), black 25%);
 
     /* Layout & Sizes */
     --radius: 10px;
@@ -347,7 +351,7 @@ body {
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    /* Mobile Overlay: ruhiger Grau-Lila-Ton */
+    /* Mobile Overlay: ruhiger Grauton mit wenig Akzent */
     background: var(--cart-rail);
 }
 
@@ -779,7 +783,7 @@ body {
     cursor: pointer;
     font-weight: 700;
 
-    /* Lila Verlauf */
+    /* Akzent-Verlauf */
     background: linear-gradient(135deg, var(--accent), var(--accent-soft));
     color: var(--accent-contrast);
     border: none;
@@ -946,7 +950,7 @@ body {
     font-weight: 700;
     font-size: 18px;
     /* Kleiner Lichteffekt oben am Symbol */
-    filter: drop-shadow(0 -1px 0 color-mix(in srgb, var(--accent), black 40%));
+    filter: drop-shadow(0 -1px 0 var(--accent-deep));
 
     text-shadow: 0 0 5px color-mix(in srgb, var(--accent-soft), transparent 30%);
 
@@ -1469,7 +1473,7 @@ body.is-cal-tab .shell-nav {
     background-clip: text;
     color: transparent;
     background-size: 100vw auto;
-    filter: drop-shadow(0 -1px 0 color-mix(in srgb, var(--accent), black 40%));
+    filter: drop-shadow(0 -1px 0 var(--accent-deep));
 }
 
 
@@ -2082,7 +2086,7 @@ body.is-cal-tab .shell-nav {
 
 .import-zone.dragover {
     border-color: var(--accent-soft);
-    background: rgba(108, 37, 179, 0.1);
+    background: var(--accent-tint);
 }
 
 /* --- PRODUKT INFO MODAL (Fullscreen Overlay) --- */
@@ -2287,7 +2291,7 @@ body.is-cal-tab .shell-nav {
 .card-title {
     font-size: 1.1rem;
     color: var(--accent-soft);
-    /* Lila Titel */
+    /* Akzent-Titel */
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
     font-weight: 700;
@@ -3124,7 +3128,7 @@ body.is-cal-tab .shell-nav {
     background: var(--border);
     /* Graue Basis */
 
-    /* Lila Füllung (wird von JS berechnet) */
+    /* Akzent-Füllung (wird von JS berechnet) */
     background-image: linear-gradient(to right,
             transparent var(--a),
             var(--accent-soft) var(--a),
@@ -3372,10 +3376,9 @@ body.is-cal-tab .shell-nav {
 
     /* HIER KOMBINIEREN WIR BEIDES: */
     /* 1. Weiße Linie innen */
-    /* 2. Lila Leuchten außen */
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.3),
-        0 4px 12px rgba(108, 37, 179, 0.4) !important;
+        0 4px 12px var(--accent-glow) !important;
 
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -3385,7 +3388,7 @@ body.is-cal-tab .shell-nav {
     /* Beim Klicken wird der Schatten etwas kleiner */
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        0 2px 6px rgba(108, 37, 179, 0.4) !important;
+        0 2px 6px var(--accent-glow) !important;
 }
 
 
@@ -3894,7 +3897,7 @@ body.page-content {
 .toast.info {
     background: var(--card);
     border-left: 4px solid var(--accent);
-    /* Lila Balken links */
+    /* Akzent-Balken links */
 }
 
 /* Warnung (Gelb/Orange - falls du es brauchst) */
@@ -5461,8 +5464,8 @@ body.trip-detail-open {
 }
 
 .wx-col.is-on {
-    background: rgba(108, 37, 179, 0.28);
-    box-shadow: inset 0 0 0 1px var(--accent-soft, #9b6dff);
+    background: var(--accent-wash);
+    box-shadow: inset 0 0 0 1px var(--accent-soft);
 }
 
 .wx-col-name {
@@ -5635,7 +5638,7 @@ body.trip-detail-open {
 }
 
 .wx-hour.is-now {
-    border-color: var(--accent-soft, #9b6dff);
+    border-color: var(--accent-soft);
 }
 
 .wx-hour-time {
