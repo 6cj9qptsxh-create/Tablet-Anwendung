@@ -12,36 +12,46 @@ class MeteoblueForecast
 {
     /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. Anzeige in L/m². */
     private const RAIN_FULL_MM = 10.0;
-    /** @return array<string, array{label:string,lat:float,lon:float,asl:int}> */
-    public function places(): array
+    /** @return array<string, array{label:string,zones:array<string,array{lat:float,lon:float,asl:int}>}> */
+    public function orts(): array
     {
-        $places = config('weather.places');
+        $orts = config('weather.orts');
 
-        return is_array($places) ? $places : [];
+        return is_array($orts) ? $orts : [];
     }
 
-    /** @return array{id:string,label:string,lat:float,lon:float,asl:int} */
-    public function place(?string $id = null): array
+    /**
+     * @return array{id:string,ort:string,zone:string,label:string,lat:float,lon:float,asl:int,zones:list<string>}
+     */
+    public function resolve(?string $ort = null, ?string $zone = null): array
     {
-        $places = $this->places();
-        $id = is_string($id) && isset($places[$id]) ? $id : 'lauterach';
-        if (! isset($places[$id])) {
-            $id = (string) array_key_first($places);
+        $orts = $this->orts();
+        $ort = is_string($ort) && isset($orts[$ort]) ? $ort : 'lauterach';
+        if (! isset($orts[$ort])) {
+            $ort = (string) array_key_first($orts);
         }
-        $row = $places[$id];
+        $row = $orts[$ort];
+        $zones = is_array($row['zones'] ?? null) ? $row['zones'] : [];
+        if (! is_string($zone) || ! isset($zones[$zone])) {
+            $zone = isset($zones['tal']) ? 'tal' : (string) array_key_first($zones);
+        }
+        $spot = $zones[$zone];
 
         return [
-            'id' => $id,
+            'id' => $ort.'-'.$zone,
+            'ort' => $ort,
+            'zone' => $zone,
             'label' => (string) ($row['label'] ?? ''),
-            'lat' => (float) ($row['lat'] ?? 0),
-            'lon' => (float) ($row['lon'] ?? 0),
-            'asl' => (int) ($row['asl'] ?? 0),
+            'lat' => (float) ($spot['lat'] ?? 0),
+            'lon' => (float) ($spot['lon'] ?? 0),
+            'asl' => (int) ($spot['asl'] ?? 0),
+            'zones' => array_keys($zones),
         ];
     }
 
-    public function forecast(?string $placeId = null): array
+    public function forecast(?string $ort = null, ?string $zone = null): array
     {
-        $place = $this->place($placeId);
+        $place = $this->resolve($ort, $zone);
         $key = (string) config('weather.api_key');
         if ($key === '') {
             return ['ok' => false, 'error' => 'Kein Wetterschlüssel hinterlegt.', 'place' => $place['label']];

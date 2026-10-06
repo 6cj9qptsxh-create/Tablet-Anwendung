@@ -5385,54 +5385,57 @@ body.trip-detail-open {
     border: 1px solid var(--border) !important;
 }
 
-.wx-place-dd {
-    position: relative;
+.wx-pick-card {
+    flex-wrap: wrap;
+    align-items: center;
     width: 100%;
-}
-
-.wx-place-select {
-    width: 100%;
-    height: var(--input-height);
-    min-height: var(--input-height);
     box-sizing: border-box;
-    margin: 0;
-    padding: 0 36px 0 12px;
-    font: inherit;
-    font-size: 14px;
+}
+
+.wx-pick-card .custom-dd {
+    flex: 1 1 180px;
+    width: auto;
+    min-width: 0;
+    height: var(--input-height);
+}
+
+.wx-pick-card .custom-dd-header {
+    height: var(--input-height);
+    box-sizing: border-box;
     font-weight: 700;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
-    appearance: none;
-    -webkit-appearance: none;
-    color-scheme: dark;
-    cursor: pointer;
 }
 
-.wx-place-select:focus {
-    outline: none;
-    border-color: var(--accent-soft);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-soft), transparent 85%);
+.wx-pick-card .wx-zone {
+    flex: 1 1 100%;
+    width: 100%;
 }
 
-.wx-place-dd .custom-dd-arrow {
-    position: absolute;
-    top: 50%;
-    right: 12px;
+.wx-pick-card .wx-place {
+    flex: 1 0 100%;
     margin: 0;
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-.wx-place {
-    margin: 0 2px;
     color: var(--muted);
     font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+@media (min-width: 768px) {
+    .wx-pick-card .custom-dd {
+        flex: 1 1 auto;
+        width: auto !important;
+    }
+
+    .wx-pick-card .wx-zone {
+        flex: 0 0 auto;
+        width: auto;
+    }
+
+    .wx-pick-card .wx-zone .info-switch-btn {
+        flex: 0 0 auto;
+        min-width: 92px;
+        padding: 0 18px;
+    }
 }
 
 .wx-board {
@@ -5448,8 +5451,8 @@ body.trip-detail-open {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 6px 2px 4px;
+    gap: 4px;
+    padding: 8px 3px 6px;
     border: 0;
     border-radius: 12px;
     background: transparent;
@@ -5565,8 +5568,8 @@ body.trip-detail-open {
 
 .wx-rain {
     width: 92%;
-    height: 48px;
-    margin-top: 4px;
+    height: 58px;
+    margin-top: 6px;
     display: flex;
     align-items: flex-end;
     gap: 2px;
@@ -5613,7 +5616,7 @@ body.trip-detail-open {
 
 .wx-hours {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     overflow-x: auto;
     padding-bottom: 4px;
 }
@@ -5623,8 +5626,8 @@ body.trip-detail-open {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 6px 2px;
+    gap: 4px;
+    padding: 8px 2px;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface);
@@ -5672,7 +5675,7 @@ body.trip-detail-open {
 
 .wx-hour-track {
     width: 12px;
-    height: 22px;
+    height: 28px;
     display: flex;
     align-items: flex-end;
 }
@@ -5720,6 +5723,96 @@ body.trip-detail-open {
     background: #f3d36b;
     color: #2c2610;
     font-weight: 800;
+}
+
+@media (min-width: 768px) {
+    .info-block.wx-board-wrap {
+        padding: 20px 18px 18px;
+    }
+
+    .wx-board {
+        gap: 10px;
+    }
+
+    .wx-col {
+        gap: 8px;
+        padding: 14px 6px 12px;
+    }
+
+    .wx-col-name {
+        font-size: 0.92rem;
+    }
+
+    .wx-col-icon {
+        font-size: 2.15rem;
+    }
+
+    .wx-col-max {
+        font-size: 1.85rem;
+    }
+
+    .wx-col-min {
+        font-size: 1.05rem;
+    }
+
+    .wx-pop-pct {
+        min-height: 1.15rem;
+        font-size: 0.86rem;
+    }
+
+    .wx-rain {
+        height: 92px;
+        margin-top: 10px;
+    }
+
+    .wx-col-rain,
+    .wx-col-wind,
+    .wx-col-sun {
+        font-size: 0.92rem;
+    }
+
+    .wx-detail {
+        margin-top: 20px;
+        padding-top: 18px;
+    }
+
+    .wx-detail-head {
+        margin-bottom: 14px;
+    }
+
+    .wx-detail-head strong {
+        font-size: 1.2rem;
+    }
+
+    .wx-hours {
+        gap: 10px;
+    }
+
+    .wx-hour {
+        flex-basis: 88px;
+        gap: 8px;
+        padding: 12px 4px;
+    }
+
+    .wx-hour-time {
+        font-size: 0.78rem;
+    }
+
+    .wx-hour-icon {
+        font-size: 1.55rem;
+    }
+
+    .wx-hour strong {
+        font-size: 1rem;
+    }
+
+    .wx-hour-track {
+        height: 40px;
+    }
+
+    .wx-hour-rain {
+        font-size: 0.72rem;
+    }
 }
 
 @media (max-width: 767px) {
