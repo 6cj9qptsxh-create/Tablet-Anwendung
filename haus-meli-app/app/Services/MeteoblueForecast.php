@@ -12,17 +12,47 @@ class MeteoblueForecast
 {
     /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. Anzeige in L/m². */
     private const RAIN_FULL_MM = 10.0;
-    public function forecast(): array
+    /** @return array<string, array{label:string,lat:float,lon:float,asl:int}> */
+    public function places(): array
     {
+        $places = config('weather.places');
+
+        return is_array($places) ? $places : [];
+    }
+
+    /** @return array{id:string,label:string,lat:float,lon:float,asl:int} */
+    public function place(?string $id = null): array
+    {
+        $places = $this->places();
+        $id = is_string($id) && isset($places[$id]) ? $id : 'lauterach';
+        if (! isset($places[$id])) {
+            $id = (string) array_key_first($places);
+        }
+        $row = $places[$id];
+
+        return [
+            'id' => $id,
+            'label' => (string) ($row['label'] ?? ''),
+            'lat' => (float) ($row['lat'] ?? 0),
+            'lon' => (float) ($row['lon'] ?? 0),
+            'asl' => (int) ($row['asl'] ?? 0),
+        ];
+    }
+
+    public function forecast(?string $placeId = null): array
+    {
+        $place = $this->place($placeId);
         $key = (string) config('weather.api_key');
         if ($key === '') {
-            return ['ok' => false, 'error' => 'Kein Wetterschlüssel hinterlegt.'];
+            return ['ok' => false, 'error' => 'Kein Wetterschlüssel hinterlegt.', 'place' => $place['label']];
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v5.%s.%s',
-            config('weather.lat'),
-            config('weather.lon')
+            'weather.meteoblue.v6.%s.%s.%s.%d',
+            $place['id'],
+            $place['lat'],
+            $place['lon'],
+            $place['asl']
         );
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
@@ -32,13 +62,13 @@ class MeteoblueForecast
         }
 
         try {
-            $fresh = Cache::lock($cacheKey.'.lock', 25)->block(20, function () use ($cacheKey, $key) {
+            $fresh = Cache::lock($cacheKey.'.lock', 25)->block(20, function () use ($cacheKey, $key, $place) {
                 $cached = Cache::get($cacheKey);
                 if (is_array($cached)) {
                     return $cached;
                 }
 
-                $fresh = $this->download($key);
+                $fresh = $this->download($key, $place);
                 Cache::put($cacheKey, $fresh, $this->freshUntil());
 
                 return $fresh;
@@ -49,11 +79,11 @@ class MeteoblueForecast
                 return $this->present($cached);
             }
 
-            return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.'];
+            return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
         } catch (Throwable $e) {
             Log::warning('meteoblue request failed', ['message' => $e->getMessage()]);
 
-            return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.'];
+            return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
         }
 
         return $this->present($fresh);
@@ -174,12 +204,13 @@ class MeteoblueForecast
         ];
     }
 
-    private function download(string $key): array
+    /** @param  array{id:string,label:string,lat:float,lon:float,asl:int}  $place */
+    private function download(string $key, array $place): array
     {
         $response = Http::timeout(20)->acceptJson()->get('https://my.meteoblue.com/packages/basic-1h_basic-day_clouds-day', [
-            'lat' => config('weather.lat'),
-            'lon' => config('weather.lon'),
-            'asl' => config('weather.asl'),
+            'lat' => $place['lat'],
+            'lon' => $place['lon'],
+            'asl' => $place['asl'],
             'format' => 'json',
             'tz' => config('weather.timezone'),
             'temperature' => 'C',
@@ -194,10 +225,10 @@ class MeteoblueForecast
             throw new \RuntimeException('meteoblue status '.$response->status());
         }
 
-        return $this->normalize($response->json());
+        return $this->normalize($response->json(), $place['label']);
     }
 
-    private function normalize(array $raw): array
+    private function normalize(array $raw, string $place): array
     {
         $hours = $raw['data_1h'] ?? [];
         $days = $raw['data_day'] ?? [];
@@ -291,7 +322,7 @@ class MeteoblueForecast
 
         return [
             'ok' => true,
-            'place' => (string) config('weather.place'),
+            'place' => $place,
             'updated' => (string) ($meta['modelrun_updatetime_utc'] ?? ''),
             'current' => $current,
             'days' => $outDays,
