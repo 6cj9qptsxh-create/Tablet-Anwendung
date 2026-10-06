@@ -49,11 +49,22 @@
         }
      }"
      x-init="
-        let saved = null;
-        try { saved = localStorage.getItem('hausMeliWeatherPlace'); } catch (e) {}
-        const allowed = [@foreach(array_keys($weatherPlaces) as $placeId)'{{ $placeId }}',@endforeach];
+        let ort = null;
+        let zone = '';
         try {
-            if (saved && allowed.indexOf(saved) !== -1 && saved !== $wire.weatherPlace) $wire.setWeatherPlace(saved);
+            ort = localStorage.getItem('hausMeliWeatherOrt');
+            zone = localStorage.getItem('hausMeliWeatherZone') || '';
+            if (!ort) {
+                const old = localStorage.getItem('hausMeliWeatherPlace');
+                if (old === 'kappl') { ort = 'kappl'; zone = 'tal'; }
+                else if (old === 'kappl-ski') { ort = 'kappl'; zone = 'berg'; }
+                else if (old === 'ischgl-ski') { ort = 'ischgl'; zone = 'berg'; }
+                else if (old === 'see-ski') { ort = 'see'; zone = 'berg'; }
+                else if (old === 'lauterach') ort = 'lauterach';
+            }
+        } catch (e) {}
+        try {
+            if (ort && (ort !== $wire.weatherOrt || (zone && zone !== $wire.weatherZone))) $wire.setWeatherChoice(ort, zone);
         } catch (e) {}
      ">
 
@@ -110,18 +121,36 @@
     @endunless
 
     <div class="info-panel" x-show="section === 'wetter'" x-cloak>
-        <div class="wx-place-dd">
-            <select class="wx-place-select"
-                    aria-label="Ort"
-                    wire:model.live="weatherPlace"
-                    @change="try { localStorage.setItem('hausMeliWeatherPlace', $event.target.value) } catch (e) {}">
-                @foreach($weatherPlaces as $placeId => $placeOption)
-                    <option value="{{ $placeId }}" @selected($weatherPlace === $placeId)>{{ $placeOption['label'] }}</option>
-                @endforeach
-            </select>
-            <span class="custom-dd-arrow" aria-hidden="true"></span>
+        <div class="card wx-pick-card">
+            <div class="custom-dd" x-data="{ open: false }" @click.away="open = false" :class="{ 'open': open }">
+                <div class="custom-dd-header" @click="open = !open" tabindex="0" role="button" aria-label="Ort">
+                    <div class="custom-dd-label">{{ $weatherOrts[$weatherOrt]['label'] ?? '' }}</div>
+                    <span class="custom-dd-arrow"></span>
+                </div>
+                <div class="custom-dd-list" x-show="open" style="display: none;" x-transition>
+                    @foreach($weatherOrts as $ortId => $ortOption)
+                        <div class="custom-dd-item {{ $weatherOrt === $ortId ? 'selected' : '' }}"
+                             wire:click="setWeatherOrt('{{ $ortId }}')"
+                             @click="open = false; try { localStorage.setItem('hausMeliWeatherOrt', '{{ $ortId }}') } catch (e) {}">
+                            {{ $ortOption['label'] }}
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @if(count($weatherZones) > 1)
+            <div class="info-switch wx-zone" role="group" aria-label="Lage">
+                <button type="button"
+                        class="info-switch-btn {{ $weatherZone === 'tal' ? 'is-on add-btn' : '' }}"
+                        wire:click="setWeatherZone('tal')"
+                        @click="try { localStorage.setItem('hausMeliWeatherZone', 'tal') } catch (e) {}">Tal</button>
+                <button type="button"
+                        class="info-switch-btn {{ $weatherZone === 'berg' ? 'is-on add-btn' : '' }}"
+                        wire:click="setWeatherZone('berg')"
+                        @click="try { localStorage.setItem('hausMeliWeatherZone', 'berg') } catch (e) {}">Berg</button>
+            </div>
+            @endif
+            <div class="wx-place">@if(count($weatherZones) < 2 && $weatherZone === 'berg')Berg · @endif{{ $weatherAsl }} m</div>
         </div>
-        <div class="wx-place">{{ $weatherPlaces[$weatherPlace]['label'] }} · {{ $weatherAsl }} m</div>
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
         @else

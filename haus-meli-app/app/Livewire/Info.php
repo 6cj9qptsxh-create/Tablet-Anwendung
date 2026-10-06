@@ -7,43 +7,47 @@ use Livewire\Component;
 
 class Info extends Component
 {
-    public string $weatherPlace = 'lauterach';
+    public string $weatherOrt = 'lauterach';
 
-    public function setWeatherPlace(string $id): void
+    public string $weatherZone = '';
+
+    public function setWeatherOrt(string $ort): void
     {
-        if (! $this->knownWeatherPlace($id)) {
-            return;
-        }
-
-        $this->weatherPlace = $id;
+        $this->applyWeather($ort, $this->weatherZone);
     }
 
-    public function updatedWeatherPlace(string $id): void
+    public function setWeatherZone(string $zone): void
     {
-        if (! $this->knownWeatherPlace($id)) {
-            $this->weatherPlace = 'lauterach';
-        }
+        $this->applyWeather($this->weatherOrt, $zone);
     }
 
-    private function knownWeatherPlace(string $id): bool
+    public function setWeatherChoice(string $ort, string $zone = ''): void
     {
-        $places = config('weather.places');
-
-        return is_array($places) && isset($places[$id]);
+        $this->applyWeather($ort, $zone);
     }
 
     public function render(MeteoblueForecast $weather)
     {
-        $place = $weather->place($this->weatherPlace);
-        $this->weatherPlace = $place['id'];
+        $spot = $weather->resolve($this->weatherOrt, $this->weatherZone);
+        $this->weatherOrt = $spot['ort'];
+        $this->weatherZone = $spot['zone'];
 
         return view('livewire.info', [
-            'forecast' => $weather->forecast($place['id']),
-            'weatherPlaces' => $weather->places(),
-            'weatherPlace' => $place['id'],
-            'weatherAsl' => $place['asl'],
+            'forecast' => $weather->forecast($spot['ort'], $spot['zone']),
+            'weatherOrts' => $weather->orts(),
+            'weatherOrt' => $spot['ort'],
+            'weatherZone' => $spot['zone'],
+            'weatherZones' => $spot['zones'],
+            'weatherAsl' => $spot['asl'],
             'infoOwner' => \App\Support\ClientNetwork::isFamily()
                 && ! \App\Support\ClientNetwork::guestPreview(),
         ]);
+    }
+
+    private function applyWeather(string $ort, string $zone): void
+    {
+        $spot = app(MeteoblueForecast::class)->resolve($ort, $zone);
+        $this->weatherOrt = $spot['ort'];
+        $this->weatherZone = $spot['zone'];
     }
 }
