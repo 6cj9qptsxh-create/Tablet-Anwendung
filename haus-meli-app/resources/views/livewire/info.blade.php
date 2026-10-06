@@ -248,14 +248,6 @@
                         </button>
                     @endforeach
                 </div>
-                @foreach($forecast['days'] as $index => $day)
-                    <div class="wx-detail" x-show="day === {{ $index }}" x-cloak>
-                        <div class="wx-detail-head">
-                            <strong>{{ $day['name'] }}</strong>
-                            <span>{{ $day['title'] }} · {{ $day['label'] }} · {{ $day['min'] }}° bis {{ $day['max'] }}° · {{ $day['rain_text'] }}</span>
-                        </div>
-                    </div>
-                @endforeach
                 <div class="wx-hours" x-ref="hours" @scroll="noteHourScroll()">
                     @foreach($forecast['days'] as $index => $day)
                         @foreach($day['hours'] as $hour)

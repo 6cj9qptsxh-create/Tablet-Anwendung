@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=113">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=114">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=92">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -191,6 +191,236 @@
             };
             next();
         };
+    </script>
+    <script>
+        /* Akzent pro Person. Gast hat eine Standardfarbe und verliert sie beim Zurückschalten. */
+        (function () {
+            var GUEST = @json(! \App\Support\ClientNetwork::isFamily() || \App\Support\ClientNetwork::guestPreview());
+            var STANDARD = '#660000';
+            var PRESETS = ['#6c25b3', '#660000'];
+            window.hausMeliAccentGuest = GUEST;
+
+            function hexOk(v) {
+                return typeof v === 'string' && /^#[0-9a-f]{6}$/.test(v);
+            }
+            function norm(v) {
+                return hexOk(v) ? v.toLowerCase() : '';
+            }
+            function read(key) {
+                try { return norm(localStorage.getItem(key) || ''); }
+                catch (e) { return ''; }
+            }
+            function write(key, value) {
+                try { localStorage.setItem(key, value); } catch (e) {}
+            }
+            function who() {
+                try {
+                    var w = localStorage.getItem('cal-device') || '';
+                    return (w === 'L' || w === 'M') ? w : '';
+                } catch (e) { return ''; }
+            }
+            function storageKey() {
+                if (GUEST) return 'hausMeliAccentG';
+                var w = who();
+                return w ? ('hausMeliAccent' + w) : 'hausMeliAccent';
+            }
+            function contrast(hex) {
+                var r = parseInt(hex.slice(1, 3), 16);
+                var g = parseInt(hex.slice(3, 5), 16);
+                var b = parseInt(hex.slice(5, 7), 16);
+                var y = (r * 299 + g * 587 + b * 114) / 1000;
+                return y > 160 ? '#14181c' : '#ffffff';
+            }
+            function paint(hex) {
+                hex = norm(hex) || STANDARD;
+                var root = document.documentElement;
+                root.style.setProperty('--accent', hex);
+                root.style.setProperty('--accent-contrast', contrast(hex));
+                var input = document.getElementById('accent-palette');
+                if (input && document.activeElement !== input) input.value = hex;
+                syncWho();
+                var pop = document.getElementById('accent-pop');
+                if (!pop) return;
+                var nodes = pop.querySelectorAll('[data-accent]');
+                for (var i = 0; i < nodes.length; i++) {
+                    nodes[i].classList.toggle('is-on', norm(nodes[i].getAttribute('data-accent')) === hex);
+                }
+                var palette = document.getElementById('accent-palette-wrap');
+                if (palette) palette.classList.toggle('is-on', PRESETS.indexOf(hex) === -1);
+            }
+            function syncWho() {
+                var name = document.getElementById('accent-pop-who');
+                if (!name || !window.hausMeliAccentWho) return;
+                var label = window.hausMeliAccentWho();
+                name.textContent = label;
+                name.hidden = !label;
+            }
+            window.hausMeliAccentWho = function () {
+                if (GUEST) return 'Gast';
+                var w = who();
+                if (w === 'L') return 'Lukas';
+                if (w === 'M') return 'Meli';
+                return '';
+            };
+            window.hausMeliApplyAccent = function (code) {
+                if (!GUEST && (code === 'L' || code === 'M')) {
+                    var own = read('hausMeliAccent' + code);
+                    if (!own) {
+                        var loose = read('hausMeliAccent');
+                        if (loose) {
+                            write('hausMeliAccent' + code, loose);
+                            try { localStorage.removeItem('hausMeliAccent'); } catch (e) {}
+                            own = loose;
+                        }
+                    }
+                    paint(own || STANDARD);
+                    return;
+                }
+                paint(read(storageKey()) || STANDARD);
+            };
+            window.hausMeliSetAccent = function (hex) {
+                hex = norm(hex);
+                if (!hex) return;
+                write(storageKey(), hex);
+                paint(hex);
+            };
+
+            if (!GUEST) {
+                try { localStorage.removeItem('hausMeliAccentG'); } catch (e) {}
+            }
+            window.hausMeliApplyAccent(who());
+
+            var holdTimer = 0;
+            var holdBtn = null;
+            var holdX = 0;
+            var holdY = 0;
+            var popOpenedAt = 0;
+            var swallowClick = false;
+            var HOLD_MS = 560;
+            var SLOP = 14;
+
+            function accentButton(node) {
+                if (!node || !node.closest) return null;
+                if (node.closest('#accent-pop')) return null;
+                var btn = node.closest('.add-btn, #mode-btn-self.active, #mode-btn-delivery.active');
+                if (!btn || btn.disabled) return null;
+                return btn;
+            }
+            function closePop() {
+                var pop = document.getElementById('accent-pop');
+                if (pop) pop.hidden = true;
+            }
+            function openPop(btn) {
+                var pop = document.getElementById('accent-pop');
+                if (!pop) return;
+                paint((function () {
+                    var raw = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+                    return norm(raw.trim()) || STANDARD;
+                })());
+                pop.hidden = false;
+                var rect = btn.getBoundingClientRect();
+                var width = pop.offsetWidth;
+                var height = pop.offsetHeight;
+                var left = rect.left + (rect.width - width) / 2;
+                left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+                var top = rect.bottom + 8;
+                if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 8);
+                pop.style.left = left + 'px';
+                pop.style.top = top + 'px';
+                popOpenedAt = Date.now();
+            }
+
+            document.addEventListener('pointerdown', function (e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                var pop = document.getElementById('accent-pop');
+                var inside = pop && !pop.hidden && pop.contains(e.target);
+                if (!inside) closePop();
+                var btn = accentButton(e.target);
+                if (!btn) {
+                    holdBtn = null;
+                    clearTimeout(holdTimer);
+                    return;
+                }
+                holdBtn = btn;
+                holdX = e.clientX;
+                holdY = e.clientY;
+                clearTimeout(holdTimer);
+                holdTimer = setTimeout(function () {
+                    if (!holdBtn) return;
+                    swallowClick = true;
+                    holdBtn.setAttribute('data-accent-hold', '1');
+                    openPop(holdBtn);
+                }, HOLD_MS);
+            }, true);
+
+            document.addEventListener('pointermove', function (e) {
+                if (!holdBtn || (holdBtn.getAttribute('data-accent-hold') === '1')) return;
+                if (Math.abs(e.clientX - holdX) > SLOP || Math.abs(e.clientY - holdY) > SLOP) {
+                    clearTimeout(holdTimer);
+                    holdBtn = null;
+                }
+            }, true);
+
+            document.addEventListener('pointerup', function () {
+                clearTimeout(holdTimer);
+                if (!swallowClick) return;
+                var btn = holdBtn;
+                setTimeout(function () {
+                    swallowClick = false;
+                    if (btn) btn.removeAttribute('data-accent-hold');
+                }, 700);
+            }, true);
+
+            document.addEventListener('pointercancel', function () {
+                clearTimeout(holdTimer);
+                holdBtn = null;
+                swallowClick = false;
+                var held = document.querySelector('[data-accent-hold]');
+                if (held) held.removeAttribute('data-accent-hold');
+            }, true);
+
+            document.addEventListener('click', function (e) {
+                if (!swallowClick) return;
+                swallowClick = false;
+                var held = document.querySelector('[data-accent-hold]');
+                if (held) held.removeAttribute('data-accent-hold');
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }, true);
+
+            document.addEventListener('click', function (e) {
+                var sw = e.target && e.target.closest && e.target.closest('#accent-pop [data-accent]');
+                if (!sw) return;
+                e.preventDefault();
+                window.hausMeliSetAccent(sw.getAttribute('data-accent'));
+            });
+
+            function onPalette(e) {
+                if (!e.target || e.target.id !== 'accent-palette') return;
+                window.hausMeliSetAccent(e.target.value);
+            }
+            document.addEventListener('input', onPalette);
+            document.addEventListener('change', onPalette);
+
+            document.addEventListener('contextmenu', function (e) {
+                if (accentButton(e.target) || (e.target && e.target.closest && e.target.closest('#accent-pop'))) {
+                    e.preventDefault();
+                }
+            }, true);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closePop();
+            });
+
+            function dismissPop() {
+                if (Date.now() - popOpenedAt < 450) return;
+                var input = document.getElementById('accent-palette');
+                if (input && document.activeElement === input) return;
+                closePop();
+            }
+            window.addEventListener('scroll', dismissPop, true);
+            window.addEventListener('resize', dismissPop);
+        })();
     </script>
     @livewireStyles
 </head>
@@ -1006,6 +1236,16 @@
             
         });
     </script>
+    <div id="accent-pop" class="accent-pop" hidden role="dialog" aria-label="Farbe">
+        <p class="accent-pop-who" id="accent-pop-who" hidden></p>
+        <div class="accent-pop-row">
+            <button type="button" class="accent-swatch" data-accent="#6c25b3" style="background:#6c25b3" aria-label="Lila"></button>
+            <button type="button" class="accent-swatch" data-accent="#660000" style="background:#660000" aria-label="Rot"></button>
+            <label class="accent-palette" id="accent-palette-wrap" aria-label="Farbpalette">
+                <input type="color" id="accent-palette" value="#660000" aria-label="Farbpalette">
+            </label>
+        </div>
+    </div>
     @if(\App\Support\ClientNetwork::isFamily())
         <form id="guest-preview-form" method="POST" action="{{ url('/gast-vorschau') }}" hidden>
             @csrf

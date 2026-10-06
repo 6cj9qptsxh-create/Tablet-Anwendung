@@ -18,6 +18,7 @@
             localStorage.setItem('cal-device', code);
             this.who = code;
             this.$wire.setActor(code);
+            if (window.hausMeliApplyAccent) window.hausMeliApplyAccent(code);
         },
         init() {
             if (this.who === 'L' || this.who === 'M') this.$wire.setActor(this.who);
