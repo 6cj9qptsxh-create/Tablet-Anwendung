@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=114">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=115">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=92">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1235,6 +1235,72 @@
             setInterval(updateClock, 1000);
             
         });
+    </script>
+    <script>
+        /* Buttons übernehmen den hell–dunkel–hell-Strich ihrer Box, an der Stelle, wo sie liegen. */
+        (function () {
+            var TRACK = '.card, .cart-header-box, .history-card, .info-block.wx-board-wrap';
+            var BTN = '.add-btn, .info-switch-btn, .toggle-btn';
+            var SKIP = '.cart-reset-btn, .tours-plan-secondary-btn, .tours-sel-alt-btn, .tours-route-dir-icon';
+            var INSET = 16;
+            var queued = false;
+            var ro = window.ResizeObserver
+                ? new ResizeObserver(function () { schedule(); })
+                : { observe: function () {} };
+
+            function schedule() {
+                if (queued) return;
+                queued = true;
+                requestAnimationFrame(paint);
+            }
+
+            function paint() {
+                queued = false;
+                var tracks = document.querySelectorAll(TRACK);
+                for (var i = 0; i < tracks.length; i++) {
+                    var track = tracks[i];
+                    if (track.classList.contains('delivery-day-picker')) continue;
+                    var tr = track.getBoundingClientRect();
+                    var buttons = track.querySelectorAll(BTN);
+                    for (var j = 0; j < buttons.length; j++) {
+                        var btn = buttons[j];
+                        if (btn.closest('.delivery-day-picker')) continue;
+                        if (btn.closest(TRACK) !== track) continue;
+                        if (btn.matches(SKIP) || btn.style.background || btn.style.backgroundColor) {
+                            btn.classList.remove('accent-fit');
+                            continue;
+                        }
+                        ro.observe(btn);
+                        var br = btn.getBoundingClientRect();
+                        if (tr.width < 8 || br.width < 2) {
+                            btn.classList.remove('accent-fit');
+                            continue;
+                        }
+                        var span = Math.max(0, tr.width - INSET * 2);
+                        var x = (tr.left + INSET) - br.left;
+                        btn.style.setProperty('--accent-span', span.toFixed(2) + 'px');
+                        btn.style.setProperty('--accent-x', x.toFixed(2) + 'px');
+                        if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
+                    }
+                    if (tr.width >= 8) ro.observe(track);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', paint);
+            } else {
+                paint();
+            }
+            window.addEventListener('resize', schedule);
+            window.addEventListener('orientationchange', schedule);
+            var mo = new MutationObserver(function () { schedule(); });
+            mo.observe(document.body, {
+                subtree: true,
+                childList: true,
+                attributes: true,
+                attributeFilter: ['class', 'hidden']
+            });
+        })();
     </script>
     <div id="accent-pop" class="accent-pop" hidden role="dialog" aria-label="Farbe">
         <p class="accent-pop-who" id="accent-pop-who" hidden></p>

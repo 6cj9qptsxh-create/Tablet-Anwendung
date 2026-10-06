@@ -6195,4 +6195,20 @@ body.trip-detail-open {
     border: none;
 }
 
+/* Farbige Buttons in einer Box mit dem unteren Strich hell–dunkel–hell
+   zeigen denselben Verlauf, an ihrer Stelle. Die Maße setzt das Skript. */
+.accent-fit.add-btn,
+.hike-card .accent-fit.add-btn,
+#mode-btn-self.accent-fit.active,
+#mode-btn-delivery.accent-fit.active,
+.accent-fit.toggle-btn.active {
+    background-color: var(--accent-soft) !important;
+    background-image: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft)) !important;
+    background-repeat: no-repeat !important;
+    background-origin: border-box !important;
+    background-clip: border-box !important;
+    background-size: var(--accent-span, 100%) 100% !important;
+    background-position: var(--accent-x, 0px) center !important;
+}
+
 
