@@ -137,19 +137,14 @@
                     @endforeach
                 </div>
             </div>
-            @if(count($weatherZones) > 1)
             <div class="info-switch wx-zone" role="group" aria-label="Lage">
-                <button type="button"
-                        class="info-switch-btn {{ $weatherZone === 'tal' ? 'is-on add-btn' : '' }}"
-                        wire:click="setWeatherZone('tal')"
-                        @click="try { localStorage.setItem('hausMeliWeatherZone', 'tal') } catch (e) {}">Tal</button>
-                <button type="button"
-                        class="info-switch-btn {{ $weatherZone === 'berg' ? 'is-on add-btn' : '' }}"
-                        wire:click="setWeatherZone('berg')"
-                        @click="try { localStorage.setItem('hausMeliWeatherZone', 'berg') } catch (e) {}">Berg</button>
+                @foreach($weatherOrts[$weatherOrt]['zones'] as $zoneId => $zone)
+                    <button type="button"
+                            class="info-switch-btn {{ $weatherZone === $zoneId ? 'is-on add-btn' : '' }}"
+                            wire:click="setWeatherZone('{{ $zoneId }}')"
+                            @click="try { localStorage.setItem('hausMeliWeatherZone', '{{ $zoneId }}') } catch (e) {}">@if($zoneId === 'tal')Tal · @elseif($zoneId === 'berg')Berg · @endif{{ $zone['asl'] }} m</button>
+                @endforeach
             </div>
-            @endif
-            <div class="wx-place">@if(count($weatherZones) < 2 && $weatherZone === 'berg')Berg · @endif{{ $weatherAsl }} m</div>
         </div>
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>

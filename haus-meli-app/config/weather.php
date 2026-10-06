@@ -10,7 +10,7 @@ return [
     // Ein Abruf pro Ort, gültig bis zur nächsten vollen Stunde.
     'api_key' => env('METEOBLUE_API_KEY', ''),
     // Meteoblue kennt keine Ortsnamen, nur einen Punkt (Breite, Länge, Höhe).
-    // Tal ist der Ort, Berg ein Punkt auf der Piste. Gibt es nur einen Punkt, entfällt die Wahl.
+    // Tal ist der Ort, Berg ein Punkt auf der Piste. Ein einzelner Punkt bleibt ein Button.
     'orts' => [
         'lauterach' => [
             'label' => env('WEATHER_PLACE', 'Lauterach'),
