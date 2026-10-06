@@ -1291,7 +1291,7 @@ body.cal-creating {
 .form-input:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(108, 37, 179, 0.3);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 70%);
 }
 
 /* Kalender- & Uhrzeit-Icons in den Inputs weiß färben (für Darkmode) */

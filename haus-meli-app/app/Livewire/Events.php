@@ -73,7 +73,7 @@ class Events extends Component
 
     public $modalIsFavorite = false;
 
-    public $modalColor = '#6c25b3';
+    public $modalColor = '#660000';
 
     public bool $modalColorTouched = false;
 
@@ -508,7 +508,7 @@ class Events extends Component
                 'location' => $type !== 'schicht' ? $this->normalizedEventLocation() : null,
                 'url' => $type !== 'schicht' ? $this->normalizedEventUrl() : null,
                 'type' => $type,
-                'color' => $this->modalColor ?: ($type === 'schicht' ? '#2563eb' : '#6c25b3'),
+                'color' => $this->modalColor ?: ($type === 'schicht' ? '#2563eb' : '#660000'),
                 'show_dot' => 0,
                 'show_month_info' => 0,
                 'show_booking_detail' => 0,
@@ -563,7 +563,7 @@ class Events extends Component
             'end_time' => $this->modalEndTime ?: null,
             'location' => $this->normalizedEventLocation(),
             'url' => $this->normalizedEventUrl(),
-            'color' => $this->modalColor ?: '#6c25b3',
+            'color' => $this->modalColor ?: '#660000',
             'repeat_yearly' => $this->modalRepeatYearly ? 1 : 0,
             'updated_at' => now(),
         ];
