@@ -5407,17 +5407,14 @@ body.trip-detail-open {
 
 .wx-pick-card .wx-zone {
     flex: 1 1 100%;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
 }
 
-.wx-pick-card .wx-place {
-    flex: 1 0 100%;
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 650;
-    letter-spacing: 0.02em;
-    text-transform: none;
+.wx-pick-card .wx-zone .info-switch-btn {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    padding: 0 14px;
 }
 
 @media (min-width: 768px) {
@@ -5432,8 +5429,6 @@ body.trip-detail-open {
     }
 
     .wx-pick-card .wx-zone .info-switch-btn {
-        flex: 0 0 auto;
-        min-width: 92px;
         padding: 0 18px;
     }
 }
