@@ -149,15 +149,77 @@
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
         @else
-            <div class="info-block wx-board-wrap" x-data="{ day: 0 }">
-                <div class="wx-board" role="tablist" aria-label="Tage">
+            <div class="info-block wx-board-wrap" wire:key="wx-board-{{ $weatherOrt }}-{{ $weatherZone }}" x-data="{
+                day: 0,
+                _wxLock: false,
+                _wxBooted: false,
+                bootHours() {
+                    if (this._wxBooted || section !== 'wetter') return;
+                    const strip = this.$refs.hours;
+                    if (!strip || strip.clientWidth === 0) return;
+                    const now = strip.querySelector('.is-now');
+                    const target = now || strip.querySelector('[data-day=\'0\']');
+                    if (!target) return;
+                    this._wxLock = true;
+                    strip.scrollLeft = target.offsetLeft;
+                    this._wxBooted = true;
+                    const self = this;
+                    setTimeout(() => { self._wxLock = false; }, 80);
+                },
+                goDay(index) {
+                    this.day = index;
+                    const strip = this.$refs.hours;
+                    if (!strip) return;
+                    let target = null;
+                    if (index === 0) target = strip.querySelector('.is-now');
+                    if (!target) target = strip.querySelector('[data-day=\'' + index + '\']');
+                    if (!target) return;
+                    this._wxLock = true;
+                    this._wxBooted = true;
+                    strip.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+                    const self = this;
+                    clearTimeout(this._wxUnlock);
+                    this._wxUnlock = setTimeout(() => { self._wxLock = false; }, 700);
+                },
+                noteHourScroll() {
+                    if (this._wxLock || this._wxFrame) return;
+                    const self = this;
+                    this._wxFrame = requestAnimationFrame(() => {
+                        self._wxFrame = 0;
+                        self.syncDayFromHours();
+                    });
+                },
+                syncDayFromHours() {
+                    if (this._wxLock) return;
+                    const strip = this.$refs.hours;
+                    if (!strip) return;
+                    const edge = strip.scrollLeft + 16;
+                    const nodes = strip.children;
+                    let found = 0;
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (nodes[i].offsetLeft <= edge) found = parseInt(nodes[i].getAttribute('data-day'), 10) || 0;
+                        else break;
+                    }
+                    if (found === this.day) return;
+                    this.day = found;
+                    const board = this.$refs.days;
+                    const col = board && board.children[found];
+                    if (!board || !col) return;
+                    const left = col.offsetLeft;
+                    const right = left + col.offsetWidth;
+                    if (left < board.scrollLeft - 4 || right > board.scrollLeft + board.clientWidth + 4) {
+                        board.scrollTo({ left: Math.max(0, left - 8), behavior: 'smooth' });
+                    }
+                }
+            }" x-init="$nextTick(() => requestAnimationFrame(() => bootHours())); $watch('section', () => { $nextTick(() => requestAnimationFrame(() => bootHours())); });">
+                <div class="wx-board" x-ref="days" role="tablist" aria-label="Tage">
                     @foreach($forecast['days'] as $index => $day)
                         <button type="button"
                                 class="wx-col"
                                 role="tab"
                                 :class="{ 'is-on': day === {{ $index }} }"
                                 :aria-selected="day === {{ $index }}"
-                                @click="day = {{ $index }}">
+                                @click="goDay({{ $index }})">
                             <span class="wx-col-name">{{ $day['name'] }}</span>
                             <span class="wx-col-icon-wrap">
                                 @if($index > 0 && !empty($forecast['days'][$index - 1]['night']))
@@ -192,30 +254,25 @@
                             <strong>{{ $day['name'] }}</strong>
                             <span>{{ $day['title'] }} · {{ $day['label'] }} · {{ $day['min'] }}° bis {{ $day['max'] }}° · {{ $day['rain_text'] }}</span>
                         </div>
-                        <div class="wx-hours" @if($index === 0) x-effect="
-                            if (section !== 'wetter' || day !== 0) return;
-                            $nextTick(() => requestAnimationFrame(() => requestAnimationFrame(() => {
-                                const now = $el.querySelector('.is-now');
-                                if (!now || $el.clientWidth === 0) return;
-                                $el.scrollLeft = now.getBoundingClientRect().left - $el.getBoundingClientRect().left + $el.scrollLeft;
-                            })));
-                        " @endif>
-                            @foreach($day['hours'] as $hour)
-                                <div class="wx-hour {{ !empty($hour['is_now']) ? 'is-now' : '' }}">
-                                    <span class="wx-hour-time">{{ $hour['time'] }}</span>
-                                    <span class="material-symbols-rounded wx-hour-icon is-{{ $hour['icon'] }}">{{ $hour['icon'] }}</span>
-                                    <strong>{{ $hour['temp'] }}°</strong>
-                                    <span class="wx-hour-track">
-                                        @if(($hour['rain_height'] ?? 0) > 0)
-                                            <span class="wx-hour-bar" style="height: {{ $hour['rain_height'] }}%"></span>
-                                        @endif
-                                    </span>
-                                    <span class="wx-hour-rain">{{ ($hour['rain'] ?? 0) > 0 ? $hour['rain_text'] : '–' }}</span>
-                                </div>
-                            @endforeach
-                        </div>
                     </div>
                 @endforeach
+                <div class="wx-hours" x-ref="hours" @scroll="noteHourScroll()">
+                    @foreach($forecast['days'] as $index => $day)
+                        @foreach($day['hours'] as $hour)
+                            <div class="wx-hour {{ !empty($hour['is_now']) ? 'is-now' : '' }}" data-day="{{ $index }}">
+                                <span class="wx-hour-time">{{ $hour['time'] }}</span>
+                                <span class="material-symbols-rounded wx-hour-icon is-{{ $hour['icon'] }}">{{ $hour['icon'] }}</span>
+                                <strong>{{ $hour['temp'] }}°</strong>
+                                <span class="wx-hour-track">
+                                    @if(($hour['rain_height'] ?? 0) > 0)
+                                        <span class="wx-hour-bar" style="height: {{ $hour['rain_height'] }}%"></span>
+                                    @endif
+                                </span>
+                                <span class="wx-hour-rain">{{ ($hour['rain'] ?? 0) > 0 ? $hour['rain_text'] : '–' }}</span>
+                            </div>
+                        @endforeach
+                    @endforeach
+                </div>
             </div>
         @endif
     </div>

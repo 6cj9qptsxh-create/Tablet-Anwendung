@@ -5407,14 +5407,15 @@ body.trip-detail-open {
 
 .wx-pick-card .wx-zone {
     flex: 1 1 100%;
-    width: auto;
+    width: 100%;
     max-width: 100%;
 }
 
 .wx-pick-card .wx-zone .info-switch-btn {
-    flex: 0 1 auto;
+    flex: 1 1 0;
+    min-width: 0;
     white-space: nowrap;
-    padding: 0 14px;
+    padding: 0 8px;
 }
 
 @media (min-width: 768px) {
@@ -5429,11 +5430,14 @@ body.trip-detail-open {
     }
 
     .wx-pick-card .wx-zone .info-switch-btn {
-        padding: 0 18px;
+        flex: 0 0 168px;
+        width: 168px;
+        padding: 0 12px;
     }
 }
 
 .wx-board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(7, minmax(80px, 1fr));
     gap: 4px;
@@ -5610,9 +5614,11 @@ body.trip-detail-open {
 }
 
 .wx-hours {
+    position: relative;
     display: flex;
     gap: 8px;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     padding-bottom: 4px;
 }
 
