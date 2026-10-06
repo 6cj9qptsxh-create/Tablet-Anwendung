@@ -12,6 +12,7 @@
             return allowed[0];
         })(),
         copied: '',
+        weatherReady: false,
         setSection(name) {
             if (this.ownerInfo && name !== 'wetter' && name !== 'out') return;
             this.section = name;
@@ -47,7 +48,18 @@
             clearTimeout(this._copyT);
             this._copyT = setTimeout(() => { this.copied = ''; }, 1400);
         }
-     }">
+     }"
+     x-init="
+        let saved = null;
+        try { saved = localStorage.getItem('hausMeliWeatherPlace'); } catch (e) {}
+        const allowed = [@foreach(array_keys($weatherPlaces) as $placeId)'{{ $placeId }}',@endforeach];
+        if (saved && allowed.indexOf(saved) !== -1 && saved !== $wire.weatherPlace) {
+            const show = () => { this.weatherReady = true; };
+            Promise.resolve($wire.setWeatherPlace(saved)).then(show).catch(show);
+            return;
+        }
+        this.weatherReady = true;
+     ">
 
     <div class="info-toolbar card">
         <div class="info-switch" role="tablist" aria-label="Infobereiche">
@@ -102,11 +114,27 @@
     @endunless
 
     <div class="info-panel" x-show="section === 'wetter'" x-cloak>
+        <div class="wx-places" role="tablist" aria-label="Ort">
+            @foreach($weatherPlaces as $placeId => $placeOption)
+                <button type="button"
+                        class="wx-place-btn {{ $weatherPlace === $placeId ? 'is-on add-btn' : '' }}"
+                        role="tab"
+                        aria-selected="{{ $weatherPlace === $placeId ? 'true' : 'false' }}"
+                        wire:click="setWeatherPlace('{{ $placeId }}')"
+                        @click="try { localStorage.setItem('hausMeliWeatherPlace', '{{ $placeId }}') } catch (e) {}">
+                    {{ $placeOption['label'] }}
+                </button>
+            @endforeach
+        </div>
+        <div class="info-weather-loading" x-show="!weatherReady" x-cloak>Wetter wird geladen.</div>
+        <div x-show="weatherReady" x-cloak>
+        <div wire:loading.flex wire:target="setWeatherPlace" class="info-weather-loading">Wetter wird geladen.</div>
+        <div wire:loading.remove wire:target="setWeatherPlace">
+        <div class="wx-place">{{ $weatherPlaces[$weatherPlace]['label'] }} · {{ $weatherAsl }} m</div>
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
         @else
             <div class="info-block wx-board-wrap" x-data="{ day: 0 }">
-                <div class="wx-place">{{ $forecast['place'] }}</div>
                 <div class="wx-board" role="tablist" aria-label="Tage">
                     @foreach($forecast['days'] as $index => $day)
                         <button type="button"
@@ -175,6 +203,8 @@
                 @endforeach
             </div>
         @endif
+        </div>
+        </div>
     </div>
 
     @unless($infoOwner)
