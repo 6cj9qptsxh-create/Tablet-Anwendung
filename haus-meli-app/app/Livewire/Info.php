@@ -11,12 +11,25 @@ class Info extends Component
 
     public function setWeatherPlace(string $id): void
     {
-        $places = config('weather.places');
-        if (! is_array($places) || ! isset($places[$id])) {
+        if (! $this->knownWeatherPlace($id)) {
             return;
         }
 
         $this->weatherPlace = $id;
+    }
+
+    public function updatedWeatherPlace(string $id): void
+    {
+        if (! $this->knownWeatherPlace($id)) {
+            $this->weatherPlace = 'lauterach';
+        }
+    }
+
+    private function knownWeatherPlace(string $id): bool
+    {
+        $places = config('weather.places');
+
+        return is_array($places) && isset($places[$id]);
     }
 
     public function render(MeteoblueForecast $weather)

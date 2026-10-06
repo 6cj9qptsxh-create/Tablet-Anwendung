@@ -12,7 +12,6 @@
             return allowed[0];
         })(),
         copied: '',
-        weatherReady: false,
         setSection(name) {
             if (this.ownerInfo && name !== 'wetter' && name !== 'out') return;
             this.section = name;
@@ -53,12 +52,9 @@
         let saved = null;
         try { saved = localStorage.getItem('hausMeliWeatherPlace'); } catch (e) {}
         const allowed = [@foreach(array_keys($weatherPlaces) as $placeId)'{{ $placeId }}',@endforeach];
-        if (saved && allowed.indexOf(saved) !== -1 && saved !== $wire.weatherPlace) {
-            const show = () => { this.weatherReady = true; };
-            Promise.resolve($wire.setWeatherPlace(saved)).then(show).catch(show);
-            return;
-        }
-        this.weatherReady = true;
+        try {
+            if (saved && allowed.indexOf(saved) !== -1 && saved !== $wire.weatherPlace) $wire.setWeatherPlace(saved);
+        } catch (e) {}
      ">
 
     <div class="info-toolbar card">
@@ -114,22 +110,17 @@
     @endunless
 
     <div class="info-panel" x-show="section === 'wetter'" x-cloak>
-        <div class="wx-places" role="tablist" aria-label="Ort">
-            @foreach($weatherPlaces as $placeId => $placeOption)
-                <button type="button"
-                        class="wx-place-btn {{ $weatherPlace === $placeId ? 'is-on add-btn' : '' }}"
-                        role="tab"
-                        aria-selected="{{ $weatherPlace === $placeId ? 'true' : 'false' }}"
-                        wire:click="setWeatherPlace('{{ $placeId }}')"
-                        @click="try { localStorage.setItem('hausMeliWeatherPlace', '{{ $placeId }}') } catch (e) {}">
-                    {{ $placeOption['label'] }}
-                </button>
-            @endforeach
+        <div class="wx-place-dd">
+            <select class="wx-place-select"
+                    aria-label="Ort"
+                    wire:model.live="weatherPlace"
+                    @change="try { localStorage.setItem('hausMeliWeatherPlace', $event.target.value) } catch (e) {}">
+                @foreach($weatherPlaces as $placeId => $placeOption)
+                    <option value="{{ $placeId }}" @selected($weatherPlace === $placeId)>{{ $placeOption['label'] }}</option>
+                @endforeach
+            </select>
+            <span class="custom-dd-arrow" aria-hidden="true"></span>
         </div>
-        <div class="info-weather-loading" x-show="!weatherReady" x-cloak>Wetter wird geladen.</div>
-        <div x-show="weatherReady" x-cloak>
-        <div wire:loading.flex wire:target="setWeatherPlace" class="info-weather-loading">Wetter wird geladen.</div>
-        <div wire:loading.remove wire:target="setWeatherPlace">
         <div class="wx-place">{{ $weatherPlaces[$weatherPlace]['label'] }} · {{ $weatherAsl }} m</div>
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
@@ -203,8 +194,6 @@
                 @endforeach
             </div>
         @endif
-        </div>
-        </div>
     </div>
 
     @unless($infoOwner)
