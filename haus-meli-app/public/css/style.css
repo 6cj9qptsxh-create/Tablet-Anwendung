@@ -1480,6 +1480,15 @@ body.is-cal-tab .shell-nav {
     filter: drop-shadow(0 -1px 0 var(--accent-deep));
 }
 
+/* Shop-Titel zeigen denselben Strich, an der Stelle, an der die Schrift steht. */
+.shop-content .super-heading span {
+    background-color: var(--accent-soft);
+    background-image: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    background-repeat: no-repeat;
+    background-size: var(--accent-span, 100%) 100%;
+    background-position: var(--accent-x, 0px) center;
+}
+
 
 
 /* =========================================
