@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=117">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=118">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=95">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,14 +266,20 @@
                 var b = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
                 return '#' + linearToByte(r) + linearToByte(g) + linearToByte(b);
             }
-            /* Gleicher wahrgenommener Schritt. Oben wird abgedunkelt, unten aufgehellt. */
+            /* Dunkle Farben: kleiner Schritt. Helle Farben brauchen mehr Abstand,
+               sonst liest sich der dünne Strich als eine Fläche. */
+            function pairStep(L) {
+                if (L <= 0.55) return 0.09;
+                var t = Math.min(1, (L - 0.55) / 0.30);
+                return 0.09 + t * 0.18;
+            }
             function shiftLight(hex, dir) {
                 var lab = toOklab(hex);
-                var step = 0.09;
+                var step = pairStep(lab.L);
                 var L = lab.L + dir * step;
-                if (dir > 0 && L > 0.92) L = lab.L - step;
-                if (dir < 0 && L < 0.22) L = lab.L + step;
-                lab.L = Math.max(0.18, Math.min(0.94, L));
+                if (dir > 0 && L > 0.94) L = lab.L - step;
+                if (dir < 0 && L < 0.20) L = lab.L + step;
+                lab.L = Math.max(0.16, Math.min(0.96, L));
                 return fromOklab(lab);
             }
             function relLum(hex) {
@@ -290,7 +296,6 @@
             }
             var INK = '#14181c';
             var PAPER = '#ffffff';
-            var SURFACE = '#2e343a';
             function contrast(hex) {
                 return ratio(INK, hex) >= ratio(PAPER, hex) ? INK : PAPER;
             }
@@ -299,27 +304,15 @@
                 var paper = Math.min(ratio(PAPER, a), ratio(PAPER, b));
                 return ink >= paper ? INK : PAPER;
             }
-            /* Schrift und Icons auf dem dunklen Grund, unabhängig vom Strich-Abstand. */
-            function readable(hex) {
-                if (ratio(hex, SURFACE) >= 4.5) return hex;
-                var lab = toOklab(hex);
-                var guard = 0;
-                var next = hex;
-                while (ratio(next, SURFACE) < 4.5 && lab.L < 0.88 && guard < 18) {
-                    lab.L += 0.035;
-                    next = fromOklab(lab);
-                    guard++;
-                }
-                return next;
-            }
             function paint(hex) {
                 hex = norm(hex) || STANDARD;
                 var soft = shiftLight(hex, 1);
+                var fg = relLum(soft) >= relLum(hex) ? soft : hex;
                 var root = document.documentElement;
                 root.style.setProperty('--accent', hex);
                 root.style.setProperty('--accent-soft', soft);
                 root.style.setProperty('--accent-deep', shiftLight(hex, -1));
-                root.style.setProperty('--accent-fg', readable(hex));
+                root.style.setProperty('--accent-fg', fg);
                 root.style.setProperty('--accent-contrast', contrastPair(hex, soft));
                 root.style.setProperty('--accent-on', contrast(hex));
                 root.style.setProperty('--accent-on-soft', contrast(soft));

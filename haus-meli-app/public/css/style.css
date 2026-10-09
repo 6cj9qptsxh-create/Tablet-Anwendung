@@ -16,14 +16,14 @@
     --soft: #495057;
     --border: rgba(255, 255, 255, 0.1);
 
-    /* Akzent. Hell/Dunkel setzt das Skript mit festem Helligkeitsschritt.
-       --accent-fg bleibt auf dem dunklen Grund lesbar, auch wenn der Strich eng ist. */
+    /* Akzent. Das Skript setzt Hell und Dunkel.
+       --accent-fg ist die hellere der beiden Verlaufsfarben. */
     --accent: #660000;
     --accent-contrast: #ffffff;
     --accent-on: #ffffff;
     --accent-on-soft: #ffffff;
-    --accent-fg: color-mix(in srgb, var(--accent), white 62%);
     --accent-soft: color-mix(in srgb, var(--accent), white 30%);
+    --accent-fg: var(--accent-soft);
     --accent-deep: color-mix(in srgb, var(--accent), black 40%);
     --accent-tint: color-mix(in srgb, var(--accent), transparent 90%);
     --accent-wash: color-mix(in srgb, var(--accent), transparent 72%);
@@ -1399,7 +1399,7 @@ body.is-cal-tab .shell-nav {
 
 /* Text-Verlauf im aktiven Tab */
 .shell-btn.active span {
-    background: linear-gradient(to right, var(--accent-fg), color-mix(in srgb, var(--accent-fg), white 14%), var(--accent-fg));
+    background: var(--accent-fg);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1472,7 +1472,7 @@ body.is-cal-tab .shell-nav {
 
 /* Text-Verlauf */
 .super-heading span {
-    background: linear-gradient(to right, var(--accent-fg), color-mix(in srgb, var(--accent-fg), white 14%), var(--accent-fg));
+    background: var(--accent-fg);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
