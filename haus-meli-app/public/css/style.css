@@ -16,9 +16,13 @@
     --soft: #495057;
     --border: rgba(255, 255, 255, 0.1);
 
-    /* Farben: Akzent. Hell und dunkel nur über Weiß und Schwarz, damit alles an --accent hängt. */
+    /* Akzent. Hell/Dunkel setzt das Skript mit festem Helligkeitsschritt.
+       --accent-fg bleibt auf dem dunklen Grund lesbar, auch wenn der Strich eng ist. */
     --accent: #660000;
     --accent-contrast: #ffffff;
+    --accent-on: #ffffff;
+    --accent-on-soft: #ffffff;
+    --accent-fg: color-mix(in srgb, var(--accent), white 62%);
     --accent-soft: color-mix(in srgb, var(--accent), white 30%);
     --accent-deep: color-mix(in srgb, var(--accent), black 40%);
     --accent-tint: color-mix(in srgb, var(--accent), transparent 90%);
@@ -617,7 +621,7 @@ body {
     border-radius: 999px;
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--card), transparent 8%);
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
 }
@@ -946,7 +950,7 @@ body {
     border: 0;
     background: transparent;
     cursor: pointer;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     font-weight: 700;
     font-size: 18px;
     /* Kleiner Lichteffekt oben am Symbol */
@@ -991,12 +995,12 @@ body {
 }
 
 .custom-dd.open .custom-dd-header {
-    border-color: var(--accent-soft);
+    border-color: var(--accent-fg);
     box-shadow: 0 0 10px color-mix(in srgb, var(--accent-soft), transparent 85%);
 }
 
 .custom-dd-arrow {
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     font-size: 18px;
     margin-left: auto;
     text-shadow: 0 0 8px var(--accent-soft);
@@ -1042,7 +1046,7 @@ body {
 
 .custom-dd-item.super-category-title {
     font-weight: bold;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     background: var(--card);
     text-transform: uppercase;
     font-size: 0.9em;
@@ -1373,7 +1377,7 @@ body.is-cal-tab .shell-nav {
 
 /* Aktiver Tab */
 .shell-btn.active {
-    color: var(--accent-contrast);
+    color: var(--accent-fg);
     /* Helles Icon */
     background: linear-gradient(to top, rgba(124, 77, 255, 0.05), transparent);
 }
@@ -1395,7 +1399,7 @@ body.is-cal-tab .shell-nav {
 
 /* Text-Verlauf im aktiven Tab */
 .shell-btn.active span {
-    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    background: linear-gradient(to right, var(--accent-fg), color-mix(in srgb, var(--accent-fg), white 14%), var(--accent-fg));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1468,7 +1472,7 @@ body.is-cal-tab .shell-nav {
 
 /* Text-Verlauf */
 .super-heading span {
-    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    background: linear-gradient(to right, var(--accent-fg), color-mix(in srgb, var(--accent-fg), white 14%), var(--accent-fg));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1599,14 +1603,14 @@ body.is-cal-tab .shell-nav {
 
 /* Aktiver Tag: gleicher Look wie Liefer-Toggle */
 .delivery-day-picker .toggle-btn.active {
-    color: #fff;
+    color: var(--accent-contrast);
     background: linear-gradient(to right, var(--accent-soft), var(--accent));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .delivery-day-picker .toggle-btn.active .delivery-day-chip-day,
 .delivery-day-picker .toggle-btn.active .delivery-day-chip-date {
-    color: #fff;
+    color: var(--accent-contrast);
 }
 
 .delivery-day-chip.is-blocked {
@@ -1987,7 +1991,7 @@ body.is-cal-tab .shell-nav {
     text-align: right;
     font-weight: 800;
     font-size: 1.15em;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     padding-top: 4px;
     border-top: 1px solid var(--border);
 }
@@ -2085,7 +2089,7 @@ body.is-cal-tab .shell-nav {
 }
 
 .import-zone.dragover {
-    border-color: var(--accent-soft);
+    border-color: var(--accent-fg);
     background: var(--accent-tint);
 }
 
@@ -2165,7 +2169,7 @@ body.is-cal-tab .shell-nav {
 /* Preis hervorheben */
 .cart-item-price {
     font-weight: 700;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     min-width: 70px;
     text-align: right;
 }
@@ -2290,7 +2294,7 @@ body.is-cal-tab .shell-nav {
 
 .card-title {
     font-size: 1.1rem;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     /* Akzent-Titel */
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
@@ -2910,9 +2914,9 @@ body.is-cal-tab .shell-nav {
     transition: all 0.3s;
 }
 
-/* Aktiver Zustand (Glow & Verlauf) */
+/* Aktiver Zustand (Glow & Verlauf). Schrift folgt der Helligkeit der Akzentfarbe. */
 .toggle-btn.active {
-    color: #fff;
+    color: var(--accent-contrast);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -3008,7 +3012,7 @@ body.is-cal-tab .shell-nav {
 }
 
 .multi-select-dd.open .dd-header {
-    border-color: var(--accent-soft);
+    border-color: var(--accent-fg);
 }
 
 .multi-select-dd.open .custom-dd-arrow {
@@ -3048,7 +3052,7 @@ body.is-cal-tab .shell-nav {
 .chk-box::after {
     content: '✓';
     font-size: 12px;
-    color: white;
+    color: var(--accent-on-soft);
     font-weight: bold;
     display: none;
 }
@@ -3202,7 +3206,7 @@ body.is-cal-tab .shell-nav {
 .tours-check-option input {
     width: 1.1rem;
     height: 1.1rem;
-    accent-color: var(--accent-soft);
+    accent-color: var(--accent-fg);
 }
 
 .tours-start-select {
@@ -3372,7 +3376,7 @@ body.is-cal-tab .shell-nav {
 
     background-size: 100% auto;
     border: none;
-    color: #fff;
+    color: var(--accent-contrast);
 
     /* HIER KOMBINIEREN WIR BEIDES: */
     /* 1. Weiße Linie innen */
@@ -3667,7 +3671,7 @@ input[type="range"],
     }
 
     .card:hover {
-        border-color: var(--accent-soft);
+        border-color: var(--accent-fg);
         /* Dezentes Aufleuchten der Karte */
     }
 }
@@ -4098,7 +4102,7 @@ body.page-content {
     gap: 8px 14px;
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
 }
 
 .tours-sel-stats[hidden] {
@@ -4224,7 +4228,7 @@ body.page-content {
 .tours-route-stats-total {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
 }
 
 .tours-route-stats-modes {
@@ -4328,7 +4332,7 @@ body.page-content {
 }
 
 .tours-route-arrow {
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     font-weight: 700;
     font-size: 1.1rem;
     line-height: 1;
@@ -4598,7 +4602,7 @@ body.trip-detail-open {
 
 .trip-variant-chip.active {
     background: var(--accent-soft);
-    color: #fff;
+    color: var(--accent-on-soft);
     border-color: transparent;
 }
 
@@ -4607,7 +4611,7 @@ body.trip-detail-open {
     flex-wrap: wrap;
     gap: 14px;
     margin-top: 6px;
-    color: var(--accent-soft);
+    color: var(--accent-fg);
     font-weight: 700;
 }
 
@@ -5367,7 +5371,7 @@ body.trip-detail-open {
     margin-top: 10px;
     font-size: 0.78rem;
     word-break: break-all;
-    color: var(--accent-soft, #7ec8a0);
+    color: var(--accent-fg, #7ec8a0);
     text-align: center;
 }
 
@@ -5384,7 +5388,7 @@ body.trip-detail-open {
 
 .tours-sel-alt-btn {
     background: transparent !important;
-    color: var(--accent-soft) !important;
+    color: var(--accent-fg) !important;
     border: 1px solid var(--border) !important;
 }
 
@@ -5616,7 +5620,7 @@ body.trip-detail-open {
 }
 
 .wx-hour.is-now {
-    border-color: var(--accent-soft);
+    border-color: var(--accent-fg);
 }
 
 .wx-hour-time {
@@ -5831,7 +5835,7 @@ body.trip-detail-open {
 .cal-chip:focus-visible,
 .shell-nav-side:focus-visible,
 .cal-icon-btn:focus-visible {
-    outline-color: var(--accent-soft);
+    outline-color: var(--accent-fg);
     outline-offset: 2px;
 }
 
@@ -6083,7 +6087,7 @@ body.trip-detail-open {
     height: 34px;
     border-radius: 50%;
     border: 3px solid color-mix(in srgb, var(--accent-soft), transparent 70%);
-    border-top-color: var(--accent-soft);
+    border-top-color: var(--accent-fg);
     animation: toursMapSpin 0.8s linear infinite;
 }
 
@@ -6202,6 +6206,7 @@ body.trip-detail-open {
 #mode-btn-self.accent-fit.active,
 #mode-btn-delivery.accent-fit.active,
 .accent-fit.toggle-btn.active {
+    color: var(--accent-contrast);
     background-color: var(--accent-soft) !important;
     background-image: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft)) !important;
     background-repeat: no-repeat !important;
