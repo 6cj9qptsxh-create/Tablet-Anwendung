@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=118">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=119">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=95">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1363,6 +1363,22 @@
                         if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
                     }
                     if (tr.width >= 8) ro.observe(track);
+                }
+                var heads = document.querySelectorAll('.shop-content .super-heading');
+                for (var h = 0; h < heads.length; h++) {
+                    var head = heads[h];
+                    ro.observe(head);
+                    var hr = head.getBoundingClientRect();
+                    if (hr.width < 8) continue;
+                    var labels = head.querySelectorAll('span');
+                    for (var s = 0; s < labels.length; s++) {
+                        var label = labels[s];
+                        if (label.classList.contains('material-symbols-rounded')) continue;
+                        var lr = label.getBoundingClientRect();
+                        if (lr.width < 2) continue;
+                        label.style.setProperty('--accent-span', hr.width.toFixed(2) + 'px');
+                        label.style.setProperty('--accent-x', (hr.left - lr.left).toFixed(2) + 'px');
+                    }
                 }
             }
 
