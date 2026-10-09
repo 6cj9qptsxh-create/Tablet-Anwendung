@@ -947,10 +947,18 @@ body.cal-creating {
     flex-direction: column;
     overflow: hidden;
     z-index: 10;
-    transition: width 0.3s ease, left 0.3s ease;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0);
+    transition: width 0.2s ease, left 0.2s ease;
+}
+
+/* Während des Wischens keine eigene Lage-Animation, sonst flackern die Karten. */
+.cal-week-shell.is-swiping .event-card.timed {
+    transition: none;
+}
+
+/* Erst einblenden, wenn der sichtbare Tag steht. Sonst blitzt die Leiste bei Tag 0 auf. */
+.cal-week-shell:not(.is-placed) .cal-week-head-track,
+.cal-week-shell:not(.is-placed) .cal-week-track {
+    visibility: hidden;
 }
 
 .event-card.timed:hover {
