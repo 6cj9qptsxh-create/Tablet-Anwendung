@@ -1276,13 +1276,14 @@
                 head() { return this.$refs.hHead; },
 
                 trackStyle() {
-                    return 'transform:translate3d(' + (-Math.round(this.hLeft)) + 'px,0,0)';
+                    return 'left:' + (-Math.round(this.hLeft)) + 'px';
                 },
 
                 applyShift() {
-                    const t = 'translate3d(' + (-Math.round(this.hLeft)) + 'px,0,0)';
+                    const left = (-Math.round(this.hLeft)) + 'px';
                     this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
-                        el.style.transform = t;
+                        el.style.left = left;
+                        el.style.transform = '';
                     });
                 },
 
