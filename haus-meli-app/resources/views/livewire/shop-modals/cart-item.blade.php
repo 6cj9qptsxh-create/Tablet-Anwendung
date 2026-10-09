@@ -19,7 +19,7 @@
             </button>
         </div>
 
-        <div style="font-weight: 700; color: var(--accent-soft); font-size: 1.1rem; margin-bottom: 10px;">
+        <div style="font-weight: 700; color: var(--accent-fg); font-size: 1.1rem; margin-bottom: 10px;">
             {{ number_format($item['line_total'], 2, ',', '.') }} €
         </div>
 

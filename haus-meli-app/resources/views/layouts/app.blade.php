@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=115">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=93">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=117">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=95">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -224,18 +224,105 @@
                 var w = who();
                 return w ? ('hausMeliAccent' + w) : 'hausMeliAccent';
             }
+            function channel(hex, i) {
+                return parseInt(hex.slice(i, i + 2), 16);
+            }
+            function clampByte(n) {
+                n = Math.max(0, Math.min(255, Math.round(n)));
+                var s = n.toString(16);
+                return s.length === 1 ? '0' + s : s;
+            }
+            function srgbToLinear(c) {
+                c = c / 255;
+                return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+            }
+            function linearToByte(c) {
+                c = Math.max(0, Math.min(1, c));
+                c = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+                return clampByte(c * 255);
+            }
+            function toOklab(hex) {
+                var r = srgbToLinear(channel(hex, 1));
+                var g = srgbToLinear(channel(hex, 3));
+                var b = srgbToLinear(channel(hex, 5));
+                var l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+                var m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+                var s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+                return {
+                    L: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+                    a: 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+                    b: 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+                };
+            }
+            function fromOklab(lab) {
+                var l_ = lab.L + 0.3963377774 * lab.a + 0.2158037573 * lab.b;
+                var m_ = lab.L - 0.1055613458 * lab.a - 0.0638541728 * lab.b;
+                var s_ = lab.L - 0.0894841775 * lab.a - 1.2914855480 * lab.b;
+                var l = l_ * l_ * l_;
+                var m = m_ * m_ * m_;
+                var s = s_ * s_ * s_;
+                var r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+                var g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+                var b = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+                return '#' + linearToByte(r) + linearToByte(g) + linearToByte(b);
+            }
+            /* Gleicher wahrgenommener Schritt. Oben wird abgedunkelt, unten aufgehellt. */
+            function shiftLight(hex, dir) {
+                var lab = toOklab(hex);
+                var step = 0.09;
+                var L = lab.L + dir * step;
+                if (dir > 0 && L > 0.92) L = lab.L - step;
+                if (dir < 0 && L < 0.22) L = lab.L + step;
+                lab.L = Math.max(0.18, Math.min(0.94, L));
+                return fromOklab(lab);
+            }
+            function relLum(hex) {
+                var r = srgbToLinear(channel(hex, 1));
+                var g = srgbToLinear(channel(hex, 3));
+                var b = srgbToLinear(channel(hex, 5));
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            }
+            function ratio(a, b) {
+                var hi = relLum(a);
+                var lo = relLum(b);
+                if (lo > hi) { var t = hi; hi = lo; lo = t; }
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            var INK = '#14181c';
+            var PAPER = '#ffffff';
+            var SURFACE = '#2e343a';
             function contrast(hex) {
-                var r = parseInt(hex.slice(1, 3), 16);
-                var g = parseInt(hex.slice(3, 5), 16);
-                var b = parseInt(hex.slice(5, 7), 16);
-                var y = (r * 299 + g * 587 + b * 114) / 1000;
-                return y > 160 ? '#14181c' : '#ffffff';
+                return ratio(INK, hex) >= ratio(PAPER, hex) ? INK : PAPER;
+            }
+            function contrastPair(a, b) {
+                var ink = Math.min(ratio(INK, a), ratio(INK, b));
+                var paper = Math.min(ratio(PAPER, a), ratio(PAPER, b));
+                return ink >= paper ? INK : PAPER;
+            }
+            /* Schrift und Icons auf dem dunklen Grund, unabhängig vom Strich-Abstand. */
+            function readable(hex) {
+                if (ratio(hex, SURFACE) >= 4.5) return hex;
+                var lab = toOklab(hex);
+                var guard = 0;
+                var next = hex;
+                while (ratio(next, SURFACE) < 4.5 && lab.L < 0.88 && guard < 18) {
+                    lab.L += 0.035;
+                    next = fromOklab(lab);
+                    guard++;
+                }
+                return next;
             }
             function paint(hex) {
                 hex = norm(hex) || STANDARD;
+                var soft = shiftLight(hex, 1);
                 var root = document.documentElement;
                 root.style.setProperty('--accent', hex);
-                root.style.setProperty('--accent-contrast', contrast(hex));
+                root.style.setProperty('--accent-soft', soft);
+                root.style.setProperty('--accent-deep', shiftLight(hex, -1));
+                root.style.setProperty('--accent-fg', readable(hex));
+                root.style.setProperty('--accent-contrast', contrastPair(hex, soft));
+                root.style.setProperty('--accent-on', contrast(hex));
+                root.style.setProperty('--accent-on-soft', contrast(soft));
                 var input = document.getElementById('accent-palette');
                 if (input && document.activeElement !== input) input.value = hex;
                 syncWho();

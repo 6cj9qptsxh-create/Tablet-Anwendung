@@ -47,7 +47,7 @@
 .filter-chk-btn .chk-box::after {
     content: '✓';
     font-size: 11px;
-    color: white;
+    color: var(--accent-on-soft);
     font-weight: bold;
     display: none;
 }
@@ -892,7 +892,7 @@ body.cal-creating {
 .day-col-header.is-today .date-badge {
     background: none;
     box-shadow: none;
-    color: #fff;
+    color: var(--accent-contrast);
 }
 
 /* =========================================
@@ -953,12 +953,6 @@ body.cal-creating {
 /* Während des Wischens keine eigene Lage-Animation, sonst flackern die Karten. */
 .cal-week-shell.is-swiping .event-card.timed {
     transition: none;
-}
-
-/* Erst einblenden, wenn der sichtbare Tag steht. Sonst blitzt die Leiste bei Tag 0 auf. */
-.cal-week-shell:not(.is-placed) .cal-week-head-track,
-.cal-week-shell:not(.is-placed) .cal-week-track {
-    visibility: hidden;
 }
 
 .event-card.timed:hover {
@@ -1456,6 +1450,7 @@ body.cal-creating {
 
 .events-month-day.is-range {
     background: var(--accent-soft);
+    color: var(--accent-on-soft);
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
 }
@@ -1513,7 +1508,7 @@ body.cal-creating {
 
 .events-month-day.is-today .events-month-num {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-on);
 }
 
 .events-month-pills {
@@ -1612,7 +1607,7 @@ body.cal-creating {
 }
 
 .agenda-day-group.is-today .agenda-day-label {
-    color: var(--accent-soft);
+    color: var(--accent-fg);
 }
 
 .agenda-item {
@@ -1859,7 +1854,7 @@ body.cal-creating {
 }
 
 .agenda-item.is-today .agenda-date {
-    color: var(--accent-soft);
+    color: var(--accent-fg);
 }
 
 .agenda-family .agenda-time {
