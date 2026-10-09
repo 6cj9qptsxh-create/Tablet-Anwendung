@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=115">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=92">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=93">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1239,7 +1239,7 @@
     <script>
         /* Buttons übernehmen den hell–dunkel–hell-Strich ihrer Box, an der Stelle, wo sie liegen. */
         (function () {
-            var TRACK = '.card, .cart-header-box, .history-card, .info-block.wx-board-wrap';
+            var TRACK = '.card, .cart-header-box, .history-card, .info-block.wx-board-wrap, .cal-toolbar';
             var BTN = '.add-btn, .info-switch-btn, .toggle-btn';
             var SKIP = '.cart-reset-btn, .tours-plan-secondary-btn, .tours-sel-alt-btn, .tours-route-dir-icon';
             var INSET = 16;

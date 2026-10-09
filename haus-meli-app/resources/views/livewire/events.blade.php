@@ -235,14 +235,14 @@
                 <div class="cal-picker cal-today-wrap">
                     <button type="button"
                             class="toggle-btn cal-chip"
-                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; @if($viewMode === 'week') window.calWeekForceToday = Date.now(); @endif"
+                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; @if($viewMode === 'week') window.calWeekForceToday = Date.now(); @endif"
                             wire:click="goToToday">Heute</button>
                 </div>
                 <div class="cal-picker cal-view-switch" role="tablist" aria-label="Kalenderansicht">
                     <button type="button"
                             role="tab"
                             wire:click="setViewMode('week')"
-                            @click="window.calWeekPos = null; window.calWeekJumpDate = null"
+                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false"
                             class="toggle-btn cal-chip {{ $viewMode === 'week' ? 'active' : '' }}">3-Tage</button>
                     <button type="button" role="tab" wire:click="setViewMode('month')" class="toggle-btn cal-chip {{ $viewMode === 'month' ? 'active' : '' }}">Monat</button>
                     <button type="button" role="tab" wire:click="setViewMode('agenda')" class="toggle-btn cal-chip {{ $viewMode === 'agenda' ? 'active' : '' }}">Agenda</button>
@@ -428,6 +428,7 @@
                  wire:key="week-{{ $weekEpoch }}"
                  x-data="calWeekScroll()"
                  x-init="init()"
+                 :class="{ 'is-swiping': swiping }"
                  :style="weekShellStyle()"
                  @cal-scroll-today.window="scrollToToday(true)"
                  @cal-scroll-date.window="if ($event.detail && $event.detail.date) scrollToDate($event.detail.date, false)">
@@ -980,7 +981,10 @@
         window.calWeekScroll = function () {
             return {
                 loading: false,
-                hLeft: (window.calWeekPos && typeof window.calWeekPos.hLeft === 'number') ? window.calWeekPos.hLeft : 0,
+                swiping: false,
+                hLeft: 0,
+                _placed: false,
+                _userMoved: false,
                 _programmatic: false,
                 _extendCooldownUntil: 0,
                 _syncing: false,
@@ -993,6 +997,7 @@
                 _lastX: 0,
                 _lastAt: 0,
                 _ovY: '',
+                _wantDate: '',
 
                 init() {
                     this._onRemeasure = () => this.layoutWhenVisible();
@@ -1011,26 +1016,40 @@
                                 const nowW = hEl.clientWidth;
                                 if (nowW < 120 || Math.abs(nowW - lastW) < 1) return;
                                 const oldDay = lastW / 3;
-                                const idx = oldDay >= 40 ? Math.round(this.hLeft / oldDay) : 0;
                                 lastW = nowW;
                                 const day = this.measureDayWidth();
-                                if (day >= 40) {
-                                    this.setH(idx * day);
-                                    this.updateOverflowHints();
+                                if (day < 40) return;
+                                if (!this._placed) {
+                                    this.layoutWhenVisible();
+                                    return;
                                 }
+                                const idx = oldDay >= 40 ? Math.round(this.hLeft / oldDay) : this.todayIndex();
+                                this.setH(idx * day);
+                                this.updateOverflowHints();
                             }).observe(hEl);
                         }
                         window.addEventListener('resize', () => {
+                            if (!this._placed) {
+                                this.layoutWhenVisible();
+                                return;
+                            }
                             const keep = this.hLeft;
                             this.measureDayWidth();
                             this.setH(keep);
                             this.updateOverflowHints();
                         }, { passive: true });
                     });
+                    this._giveUp = setTimeout(() => {
+                        if (this._dead || this._placed) return;
+                        this.layoutWhenVisible();
+                        this.markPlaced();
+                    }, 1600);
                 },
 
                 destroy() {
                     this._dead = true;
+                    clearTimeout(this._giveUp);
+                    clearTimeout(this._confirmTimer);
                     this.hideOverflowHints();
                     if (this._onRemeasure) window.removeEventListener('cal-remeasure', this._onRemeasure);
                     if (this._onHash) window.removeEventListener('hashchange', this._onHash);
@@ -1067,66 +1086,143 @@
                 },
 
                 saveWeekPos() {
-                    if (this._dead || (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000)) return;
-                    const h = this.h();
-                    const w = h && h.clientWidth ? h.clientWidth / 3 : 0;
-                    if (w >= 40) window.calWeekDayW = w;
+                    if (this._dead || !this._placed || this.swiping || this._bridging) return;
+                    if (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000) return;
                     const dayW = this.colWidth();
+                    const prev = window.calWeekPos || {};
+                    const user = !!(this._userMoved || window.calWeekUserMoved || prev.user);
                     window.calWeekPos = {
+                        user: user,
                         hLeft: this.hLeft,
                         hDays: dayW ? this.hLeft / dayW : null,
-                        vTop: this.v() ? this.v().scrollTop : ((window.calWeekPos && window.calWeekPos.vTop) || 0),
+                        vTop: this.v() ? this.v().scrollTop : (prev.vTop || 0),
                     };
                 },
 
                 restoreWeekPos() {
                     const saved = window.calWeekPos;
-                    if (!saved || typeof saved.hLeft !== 'number') return false;
+                    if (!saved || !saved.user || typeof saved.hDays !== 'number') return false;
                     const day = this.colWidth();
-                    const days = (typeof saved.hDays === 'number') ? saved.hDays : (day ? saved.hLeft / day : null);
-                    this.hLeft = (day && days !== null) ? this.clampH(Math.round(days) * day) : saved.hLeft;
+                    if (!(day >= 40)) return false;
+                    this.setH(Math.round(saved.hDays) * day);
                     const v = this.v();
-                    if (v && typeof saved.vTop === 'number') {
-                        v.scrollTop = saved.vTop;
-                    }
-                    this.updateWeekTitle();
+                    if (v && typeof saved.vTop === 'number') v.scrollTop = saved.vTop;
                     return true;
                 },
 
+                todayIso() {
+                    const col = this.$el.querySelector('.day-col-body.is-today');
+                    return col ? (col.getAttribute('data-date') || '') : '';
+                },
+
+                todayIndex() {
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    for (let i = 0; i < cols.length; i++) {
+                        if (cols[i].classList.contains('is-today')) return i;
+                    }
+                    return 0;
+                },
+
+                leftDate() {
+                    const day = this.colWidth();
+                    const cols = this.$el.querySelectorAll('.day-col-body[data-date]');
+                    if (!(day >= 40) || !cols.length) return '';
+                    const idx = Math.max(0, Math.min(cols.length - 1, Math.round(this.hLeft / day)));
+                    return cols[idx].getAttribute('data-date') || '';
+                },
+
+                markPlaced() {
+                    if (this._placed) return;
+                    this._placed = true;
+                    this.$el.classList.add('is-placed');
+                    this.scheduleConfirm();
+                },
+
+                scheduleConfirm() {
+                    const delays = [60, 180, 420, 900];
+                    const run = (i) => {
+                        if (this._dead || this._userMoved || this.swiping) return;
+                        this.confirmAnchor();
+                        if (i + 1 < delays.length) {
+                            this._confirmTimer = setTimeout(() => run(i + 1), delays[i + 1] - delays[i]);
+                        }
+                    };
+                    clearTimeout(this._confirmTimer);
+                    this._confirmTimer = setTimeout(() => run(0), delays[0]);
+                },
+
+                confirmAnchor() {
+                    if (this._dead || this._userMoved || this.swiping || this._bridging || this.loading) return;
+                    if (!this._wantDate) return;
+                    if (this.leftDate() === this._wantDate) return;
+                    this.scrollToDate(this._wantDate, false);
+                },
+
                 layoutWhenVisible() {
+                    if (this.loading || this._dead) return;
+                    if (this._placed
+                        && !window.calWeekJumpDate
+                        && !(window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000)) {
+                        this.measureDayWidth();
+                        if (this._userMoved) return;
+                        if (this._wantDate && this.leftDate() === this._wantDate) return;
+                        if (!this._wantDate && this.leftDate() && this.leftDate() === this.todayIso()) return;
+                    }
                     const apply = () => {
                         const w = this.measureDayWidth();
                         if (w < 40) return false;
                         const jump = window.calWeekJumpDate;
                         const force = window.calWeekForceToday && (Date.now() - window.calWeekForceToday < 4000);
+                        const vTop = window.calWeekPos && typeof window.calWeekPos.vTop === 'number'
+                            ? window.calWeekPos.vTop
+                            : null;
                         if (force) {
                             window.calWeekForceToday = 0;
                             window.calWeekPos = null;
-                            this.scrollToToday(false);
+                            window.calWeekUserMoved = false;
+                            this._userMoved = false;
+                            this._wantDate = this.todayIso();
+                            if (!this._wantDate || !this.scrollToToday(false)) return false;
                         } else if (jump) {
+                            this._wantDate = jump;
+                            if (!this.scrollToDate(jump, false)) return false;
                             window.calWeekJumpDate = null;
-                            window.calWeekPos = null;
-                            this.scrollToDate(jump, false);
-                        } else if (!this.restoreWeekPos()) {
-                            this.scrollToToday(false);
+                            if (vTop != null && this.v()) this.v().scrollTop = vTop;
+                        } else if (window.calWeekUserMoved) {
+                            if (this.restoreWeekPos()) {
+                                this._wantDate = this.leftDate();
+                            } else if (this._placed && this.leftDate()) {
+                                this._wantDate = this.leftDate();
+                            } else {
+                                this._wantDate = this.todayIso();
+                                if (!this._wantDate || !this.scrollToToday(false)) return false;
+                            }
+                        } else {
+                            this._wantDate = this.todayIso();
+                            if (!this._wantDate || !this.scrollToToday(false)) return false;
                         }
+                        if (this.leftDate() && this._wantDate && this.leftDate() !== this._wantDate) return false;
                         this.updateWeekTitle();
+                        this.markPlaced();
+                        if (window.calWeekUserMoved) this.saveWeekPos();
                         return true;
                     };
-                    if (apply()) {
+                    const finish = () => {
                         this.bindOverflowScroll();
                         this.updateOverflowHints();
                         this.$nextTick(() => this.updateOverflowHints());
-                        setTimeout(() => this.updateOverflowHints(), 80);
+                        setTimeout(() => { if (!this._dead) this.updateOverflowHints(); }, 80);
+                    };
+                    if (apply()) {
+                        finish();
                         return;
                     }
                     let n = 0;
                     const tick = () => {
-                        if (apply() || ++n > 24) {
-                            this.bindOverflowScroll();
-                            this.updateOverflowHints();
-                            this.$nextTick(() => this.updateOverflowHints());
-                            setTimeout(() => this.updateOverflowHints(), 80);
+                        if (this._dead) return;
+                        if (apply() || ++n > 90) {
+                            if (!this._placed) this.markPlaced();
+                            finish();
                             return;
                         }
                         requestAnimationFrame(tick);
@@ -1135,6 +1231,7 @@
                 },
 
                 queueOverflowHints() {
+                    if (this.swiping || this._bridging) return;
                     if (this._hintFrame) return;
                     this._hintFrame = requestAnimationFrame(() => {
                         this._hintFrame = 0;
@@ -1179,14 +1276,22 @@
                 head() { return this.$refs.hHead; },
 
                 trackStyle() {
-                    return 'left:' + (-this.hLeft) + 'px';
+                    return 'transform:translate3d(' + (-Math.round(this.hLeft)) + 'px,0,0)';
+                },
+
+                applyShift() {
+                    const t = 'translate3d(' + (-Math.round(this.hLeft)) + 'px,0,0)';
+                    this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
+                        el.style.transform = t;
+                    });
                 },
 
                 measureDayWidth() {
                     const h = this.h();
-                    if (!h) return 160;
-                    const w = h.clientWidth / 3;
-                    if (w >= 40) {
+                    if (!h || h.clientWidth < 120) return 0;
+                    const w = Math.round(h.clientWidth / 3);
+                    if (w < 40) return 0;
+                    if (window.calWeekDayW !== w) {
                         window.calWeekDayW = w;
                         this.$el.style.setProperty('--cal-day-w', w + 'px');
                     }
@@ -1203,19 +1308,34 @@
                 },
 
                 scrollToToday(smooth) {
-                    this.scrollToDate(null, smooth);
+                    window.calWeekUserMoved = false;
+                    this._userMoved = false;
+                    const ok = this.scrollToDate(null, !!(smooth && this._placed));
+                    if (ok) this._wantDate = this.todayIso() || this.leftDate();
+                    return ok;
                 },
 
                 scrollToDate(date, smooth) {
-                    this.measureDayWidth();
-                    const col = date
-                        ? this.$el.querySelector('.day-col-body[data-date="' + date + '"]')
-                        : this.$el.querySelector('.day-col-body.is-today');
-                    if (!col) return;
-                    const left = col.offsetLeft;
+                    const day = this.measureDayWidth();
+                    if (!(day >= 40)) return false;
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    if (!cols.length) return false;
+                    let idx = -1;
+                    for (let i = 0; i < cols.length; i++) {
+                        if (date) {
+                            if (cols[i].getAttribute('data-date') === date) idx = i;
+                        } else if (cols[i].classList.contains('is-today')) {
+                            idx = i;
+                        }
+                    }
+                    if (idx < 0) return false;
+                    const pitch = cols[0].offsetWidth || day;
+                    if (pitch < 20) return false;
+                    if (idx > 0 && cols[idx].offsetLeft < pitch * 0.5) return false;
+                    const left = idx === 0 ? 0 : cols[idx].offsetLeft;
                     if (smooth) this.snapTo(left);
                     else this.setH(left);
-                    this.queueOverflowHints();
+                    return Math.round(this.hLeft / pitch) === idx || Math.abs(this.hLeft - left) < 2;
                 },
 
                 withProgrammatic(fn, ms) {
@@ -1237,9 +1357,10 @@
 
                 setH(left) {
                     this.hLeft = this.clampH(left);
+                    this.applyShift();
                     this.updateWeekTitle();
-                    this.maybeExtend();
-                    this.queueOverflowHints();
+                    if (this._placed && !this.swiping) this.maybeExtend();
+                    if (!this.swiping && !this._bridging) this.queueOverflowHints();
                 },
 
                 updateWeekTitle() {
@@ -1260,14 +1381,17 @@
                     const t0 = performance.now();
                     const dur = 240;
                     this._programmatic = true;
+                    this.setSwiping(true);
                     const step = (now) => {
+                        if (this._dead) return;
                         const t = Math.min(1, (now - t0) / dur);
                         const ease = 1 - Math.pow(1 - t, 3);
                         this.hLeft = from + (target - from) * ease;
-                        this.queueOverflowHints();
+                        this.applyShift();
                         if (t < 1) {
                             requestAnimationFrame(step);
                         } else {
+                            this.setSwiping(false);
                             this.setH(target);
                             this._programmatic = false;
                         }
@@ -1337,6 +1461,7 @@
                         }
 
                         if (this._axis === 'x') {
+                            this.noteUserSwipe();
                             this.setH(this._startLeft - dx);
                             this._lastX = clientX;
                             this._lastAt = Date.now();
@@ -1356,7 +1481,12 @@
                         this._axis = null;
                         this._extendCooldownUntil = Math.max(this._extendCooldownUntil, Date.now() + 280);
 
-                        if (!wasX || Math.abs(dx) < 8) return;
+                        if (!wasX || Math.abs(dx) < 8) {
+                            this.setSwiping(false);
+                            this.queueOverflowHints();
+                            return;
+                        }
+                        this.noteUserSwipe();
                         this.snapH(startLeft, dx, velocity);
                     };
 
@@ -1380,6 +1510,7 @@
                             }
 
                             this.clearCreates();
+                            this.noteUserSwipe();
 
                             moveNonPassive = (ev2) => {
                                 if (!this._bridging || !ev2.touches[0]) return;
@@ -1419,6 +1550,7 @@
                         head.addEventListener('touchmove', (e) => {
                             if (!this._bridging || this._axis !== 'x' || !e.touches[0]) return;
                             const x = e.touches[0].clientX;
+                            if (Math.abs(x - this._startX) > 8) this.noteUserSwipe();
                             this.setH(this._startLeft - (x - this._startX));
                             this._lastX = x;
                             this._lastAt = Date.now();
@@ -1430,8 +1562,19 @@
                     }
                 },
 
+                setSwiping(on) {
+                    this.swiping = !!on;
+                    if (this.$el) this.$el.classList.toggle('is-swiping', !!on);
+                },
+
+                noteUserSwipe() {
+                    this._userMoved = true;
+                    window.calWeekUserMoved = true;
+                    this.setSwiping(true);
+                },
+
                 async maybeExtend() {
-                    if (this.loading || this._programmatic || this._bridging) return;
+                    if (!this._placed || this.loading || this._programmatic || this._bridging || this.swiping) return;
                     if (Date.now() < this._extendCooldownUntil) return;
                     const w = this.colWidth();
                     if (!w) return;
@@ -1439,23 +1582,22 @@
                     const atEnd = this.hLeft >= this.clampH(999999) - 8;
                     if (!atStart && !atEnd) return;
 
+                    const anchor = this.leftDate();
+                    const vTop = this.v() ? this.v().scrollTop : 0;
                     this.loading = true;
                     this._extendCooldownUntil = Date.now() + 1200;
                     this._programmatic = true;
+                    window.calWeekUserMoved = true;
+                    window.calWeekJumpDate = anchor || null;
+                    window.calWeekPos = { user: true, vTop: vTop, hDays: null, hLeft: null };
                     try {
-                        if (atStart) {
-                            const keep = this.hLeft;
-                            await this.$wire.extendPast(14);
-                            await this.$nextTick();
-                            this.measureDayWidth();
-                            this.hLeft = keep + this.colWidth() * 14;
-                        } else {
-                            await this.$wire.extendFuture(21);
-                            await this.$nextTick();
-                            this.measureDayWidth();
-                        }
+                        if (atStart) await this.$wire.extendPast(14);
+                        else await this.$wire.extendFuture(21);
+                    } catch (_) {
+                        window.calWeekJumpDate = null;
                     } finally {
                         requestAnimationFrame(() => {
+                            if (this._dead) return;
                             this._programmatic = false;
                             this.loading = false;
                         });
