@@ -7,8 +7,8 @@
     --cart-dock-top: 120px;
     --cart-width: 400px;
 
-    /* Farben: Basis */
-    --bg: #2e343a;
+    /* Farben: Basis. Hintergrund versuchsweise Akzent, zu 90 % Schwarz. */
+    --bg: color-mix(in srgb, var(--accent), black 90%);
     --surface: #343a40;
     --card: #222229;
     --muted: #adb5bd;
