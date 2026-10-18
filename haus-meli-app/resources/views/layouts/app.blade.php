@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=96">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=97">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -835,6 +835,20 @@
           this._progTimer = setTimeout(() => { this._prog = false; }, 80);
         },
         onPagerScroll() {
+          if (window.calModal && window.calModal.open) {
+            const locked = this.trackPane('events');
+            const track = this.$refs.track;
+            if (track && locked) {
+              const delta = locked.getBoundingClientRect().left - track.getBoundingClientRect().left;
+              if (Math.abs(delta) > 1) {
+                this._prog = true;
+                track.scrollLeft += delta;
+                clearTimeout(this._progTimer);
+                this._progTimer = setTimeout(() => { this._prog = false; }, 80);
+              }
+            }
+            return;
+          }
           if (this._prog) return;
           this._scrolling = true;
           const tab = this.tabFromScroll();

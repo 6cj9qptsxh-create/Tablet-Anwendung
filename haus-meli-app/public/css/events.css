@@ -95,10 +95,6 @@ body.is-cal-tab .shell-nav {
     flex: 0 0 auto;
 }
 
-body.is-cal-tab .cal-toolbar {
-    padding-top: 8px;
-}
-
 body.is-cal-tab .cal-tab-pane {
     flex: 0 0 100%;
     width: 100%;
@@ -130,8 +126,8 @@ body.is-cal-tab .cal-tab-pane {
     flex-shrink: 0;
     position: relative;
     z-index: 10001;
-    /* 16px wie der Strich, damit das Kontrollmenü auf dem Verlauf sitzt. */
-    padding: 8px 16px 10px;
+    /* Gleicher Innenabstand wie die Karten der anderen Tabs. */
+    padding: var(--spacing);
     background: var(--card);
     border-style: solid;
     border-color: var(--border);
@@ -140,6 +136,7 @@ body.is-cal-tab .cal-tab-pane {
     border-right-width: 0;
     border-bottom: var(--border-th) solid var(--accent-soft);
     border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
     overflow: visible;
 }
 
@@ -239,7 +236,9 @@ body.is-cal-tab .cal-tab-pane {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: var(--spacing);
+    /* Kontrollmenü auf den 16px-Inset des Strichs, der Titel bleibt im Kartenabstand. */
+    margin-inline: calc(16px - var(--spacing));
 }
 
 .cal-filter-wrap {
@@ -1324,11 +1323,16 @@ body.cal-creating {
     min-width: 0;
     height: var(--input-height);
     min-height: var(--input-height);
-    padding: 0 8px;
+    padding: 0 12px;
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
+}
+
+/* Drei Ansichten teilen sich eine Zeile, deshalb darf ihr Innenabstand enger sein. */
+.cal-view-switch .cal-chip {
+    padding: 0 4px;
 }
 
 .cal-chip.active {
