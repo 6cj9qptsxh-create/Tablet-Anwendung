@@ -1049,8 +1049,9 @@
                                     this.layoutWhenVisible();
                                     return;
                                 }
-                                const idx = oldDay >= 40 ? Math.round(this.hLeft / oldDay) : this.todayIndex();
-                                this.setH(idx * day);
+                                const idx = oldDay >= 40 ? this.indexAt(this.hLeft) : this.todayIndex();
+                                const edge = this.columnLeft(idx);
+                                this.setH(edge == null ? idx * day : edge);
                                 this.updateOverflowHints();
                             }).observe(hEl);
                         }
@@ -1065,15 +1066,12 @@
                             this.updateOverflowHints();
                         }, { passive: true });
                     });
-                    this._giveUp = setTimeout(() => {
-                        if (this._dead || this._placed) return;
-                        this.layoutWhenVisible();
-                        this.markPlaced();
-                    }, 1600);
+                    this._giveUp = setTimeout(() => this.giveUpPlace(0), 1600);
                 },
 
                 destroy() {
-                    if (!window.calViewRestore) this.saveWeekPos();
+                    const stillCurrent = document.querySelector('.cal-week-shell') === this.$el;
+                    if (stillCurrent && !window.calViewRestore) this.saveWeekPos();
                     this._dead = true;
                     clearTimeout(this._giveUp);
                     clearTimeout(this._confirmTimer);
@@ -1117,21 +1115,33 @@
                     if (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000) return;
                     const dayW = this.colWidth();
                     const prev = window.calWeekPos || {};
+                    const date = this.leftDate() || prev.date || '';
+                    const pending = this.pendingAnchor();
+                    if (pending && date && date !== pending && this.hLeft <= 8) return;
                     const user = !!(this._userMoved || window.calWeekUserMoved || prev.user);
                     window.calWeekPos = {
                         user: user,
                         hLeft: this.hLeft,
                         hDays: dayW ? this.hLeft / dayW : (typeof prev.hDays === 'number' ? prev.hDays : null),
                         vTop: this.v() ? this.v().scrollTop : (prev.vTop || 0),
+                        date: date,
                     };
                 },
 
                 restoreWeekPos() {
                     const saved = window.calWeekPos;
-                    if (!saved || typeof saved.hDays !== 'number') return false;
+                    if (!saved) return false;
+                    if (saved.date && this.scrollToDate(saved.date, false)) {
+                        const v = this.v();
+                        if (v && typeof saved.vTop === 'number') v.scrollTop = saved.vTop;
+                        return this.leftDate() === saved.date;
+                    }
+                    if (typeof saved.hDays !== 'number') return false;
                     const day = this.colWidth();
                     if (!(day >= 40)) return false;
-                    this.setH(Math.round(saved.hDays) * day);
+                    const idx = Math.round(saved.hDays);
+                    const edge = this.columnLeft(idx);
+                    this.setH(edge == null ? idx * day : edge);
                     const v = this.v();
                     if (v && typeof saved.vTop === 'number') v.scrollTop = saved.vTop;
                     return true;
@@ -1151,11 +1161,32 @@
                 },
 
                 leftDate() {
-                    const day = this.colWidth();
                     const cols = this.$el.querySelectorAll('.day-col-body[data-date]');
-                    if (!(day >= 40) || !cols.length) return '';
-                    const idx = Math.max(0, Math.min(cols.length - 1, Math.round(this.hLeft / day)));
+                    if (!cols.length || !this.columnPitch()) return '';
+                    const idx = Math.max(0, Math.min(cols.length - 1, this.indexAt(this.hLeft)));
                     return cols[idx].getAttribute('data-date') || '';
+                },
+
+                pendingAnchor() {
+                    if (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000) {
+                        return this.todayIso() || '';
+                    }
+                    if (window.calWeekJumpDate) return window.calWeekJumpDate;
+                    if (window.calWeekPin && window.calWeekPin.date) return window.calWeekPin.date;
+                    if (window.calViewRestore && window.calViewRestore.date) return window.calViewRestore.date;
+                    if (window.calWeekPos && window.calWeekPos.date) return window.calWeekPos.date;
+                    return '';
+                },
+
+                giveUpPlace(tryNo) {
+                    if (this._dead || this._placed) return;
+                    this.layoutWhenVisible();
+                    const pending = this.pendingAnchor();
+                    if (pending && this.leftDate() !== pending && tryNo < 4) {
+                        this._giveUp = setTimeout(() => this.giveUpPlace(tryNo + 1), 400);
+                        return;
+                    }
+                    this.markPlaced();
                 },
 
                 markPlaced() {
@@ -1181,15 +1212,28 @@
                 confirmAnchor() {
                     if (this._dead || this._userMoved || this.swiping || this._bridging || this.loading) return;
                     if (!this._wantDate) return;
-                    if (this.leftDate() === this._wantDate) return;
-                    this.scrollToDate(this._wantDate, false);
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    let idx = -1;
+                    for (let i = 0; i < cols.length; i++) {
+                        if (cols[i].getAttribute('data-date') === this._wantDate) idx = i;
+                    }
+                    if (idx < 0) return;
+                    const pitch = this.columnPitch();
+                    const at = idx === 0 ? 0 : cols[idx].offsetLeft;
+                    if (!(pitch >= 20) || (idx > 0 && at < pitch * 0.5)) {
+                        if (this.leftDate() !== this._wantDate) this.scrollToDate(this._wantDate, false);
+                        return;
+                    }
+                    if (Math.abs(this.hLeft - at) > 1) this.setH(at);
                 },
 
                 layoutWhenVisible() {
                     if (this.loading || this._dead) return;
                     if (window.calModal && window.calModal.open && this._placed) return;
+                    const pinPending = window.calWeekPin && window.calWeekPin.date && this.leftDate() !== window.calWeekPin.date;
                     if (this._placed
                         && !window.calWeekJumpDate
+                        && !pinPending
                         && !(window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000)) {
                         this.measureDayWidth();
                         if (this._userMoved) return;
@@ -1206,41 +1250,43 @@
                         const vTop = window.calWeekPos && typeof window.calWeekPos.vTop === 'number'
                             ? window.calWeekPos.vTop
                             : null;
-                        if (pin && pin.date) {
-                            window.calWeekForceToday = 0;
-                            window.calWeekJumpDate = null;
-                            if (!this.scrollToDate(pin.date, false)) return false;
-                            if (typeof pin.vTop === 'number' && this.v()) this.v().scrollTop = pin.vTop;
-                            this._wantDate = pin.date;
-                            this._userMoved = true;
-                            window.calWeekUserMoved = true;
-                        } else if (held && (typeof held.hDays === 'number' || held.date)) {
-                            window.calWeekForceToday = 0;
-                            window.calWeekJumpDate = null;
-                            window.calWeekUserMoved = true;
-                            if (typeof held.hDays === 'number') {
-                                window.calWeekPos = held;
-                                if (!this.restoreWeekPos()) return false;
-                            } else if (!this.scrollToDate(held.date, false)) {
-                                return false;
-                            }
-                            if (typeof held.vTop === 'number' && this.v()) this.v().scrollTop = held.vTop;
-                            this._wantDate = this.leftDate();
-                            window.calViewRestore = null;
-                            window.calSaveKeepsView = false;
-                        } else if (force) {
-                            window.calWeekForceToday = 0;
+                        if (force) {
                             window.calWeekPos = null;
+                            window.calWeekPin = null;
+                            window.calViewRestore = null;
+                            window.calWeekJumpDate = null;
                             window.calWeekUserMoved = false;
                             this._userMoved = false;
                             this._wantDate = this.todayIso();
                             if (!this._wantDate || !this.scrollToToday(false)) return false;
+                            window.calWeekForceToday = 0;
                         } else if (jump) {
                             this._wantDate = jump;
                             if (!this.scrollToDate(jump, false)) return false;
                             window.calWeekJumpDate = null;
+                            window.calViewRestore = null;
+                            window.calSaveKeepsView = false;
+                            if (window.calWeekPin && window.calWeekPin.date === this.leftDate()) window.calWeekPin = null;
                             if (vTop != null && this.v()) this.v().scrollTop = vTop;
-                        } else if (window.calWeekPos && typeof window.calWeekPos.hDays === 'number') {
+                        } else if (pin && pin.date) {
+                            this._wantDate = pin.date;
+                            if (!this.scrollToDate(pin.date, false)) return false;
+                            if (typeof pin.vTop === 'number' && this.v()) this.v().scrollTop = pin.vTop;
+                            if (this.leftDate() === pin.date) window.calWeekPin = null;
+                        } else if (held && (held.date || typeof held.hDays === 'number')) {
+                            const heldDate = held.date || '';
+                            if (heldDate) {
+                                this._wantDate = heldDate;
+                                if (!this.scrollToDate(heldDate, false)) return false;
+                            } else {
+                                window.calWeekPos = held;
+                                if (!this.restoreWeekPos()) return false;
+                                this._wantDate = this.leftDate();
+                            }
+                            if (typeof held.vTop === 'number' && this.v()) this.v().scrollTop = held.vTop;
+                            window.calViewRestore = null;
+                            window.calSaveKeepsView = false;
+                        } else if (window.calWeekPos && (window.calWeekPos.date || typeof window.calWeekPos.hDays === 'number')) {
                             if (this.restoreWeekPos()) {
                                 this._wantDate = this.leftDate();
                             } else if (this._placed && this.leftDate()) {
@@ -1273,7 +1319,10 @@
                     const tick = () => {
                         if (this._dead) return;
                         if (apply() || ++n > 90) {
-                            if (!this._placed) this.markPlaced();
+                            if (!this._placed) {
+                                const pending = this.pendingAnchor();
+                                if (!pending || this.leftDate() === pending) this.markPlaced();
+                            }
                             finish();
                             return;
                         }
@@ -1368,6 +1417,41 @@
                     return ok;
                 },
 
+                columnPitch() {
+                    const col = this.$el.querySelector('.day-col-body');
+                    const day = this.measureDayWidth();
+                    const width = col && col.offsetWidth >= 20 ? col.offsetWidth : day;
+                    return width >= 20 ? width : 0;
+                },
+
+                columnLeft(idx) {
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    const pitch = this.columnPitch();
+                    if (!cols.length || !pitch || idx < 0 || idx >= cols.length) return null;
+                    if (idx === 0) return 0;
+                    const at = cols[idx].offsetLeft;
+                    if (at >= pitch * 0.5) return at;
+                    return idx * pitch;
+                },
+
+                indexAt(left) {
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    const pitch = this.columnPitch();
+                    if (!cols.length || !pitch) return 0;
+                    let best = 0;
+                    let bestDist = Infinity;
+                    for (let i = 0; i < cols.length; i++) {
+                        const pos = i === 0 ? 0 : cols[i].offsetLeft;
+                        const at = (i > 0 && pos < pitch * 0.5) ? i * pitch : pos;
+                        const dist = Math.abs(at - left);
+                        if (dist < bestDist) {
+                            best = i;
+                            bestDist = dist;
+                        }
+                    }
+                    return best;
+                },
+
                 scrollToDate(date, smooth) {
                     const day = this.measureDayWidth();
                     if (!(day >= 40)) return false;
@@ -1382,12 +1466,17 @@
                         }
                     }
                     if (idx < 0) return false;
-                    const pitch = (cols[0].offsetWidth >= 20) ? cols[0].offsetWidth : day;
+                    const pitch = cols[0].offsetWidth >= 20 ? cols[0].offsetWidth : day;
                     if (pitch < 20) return false;
-                    const left = idx * pitch;
+                    const at = idx === 0 ? 0 : cols[idx].offsetLeft;
+                    const laidOut = idx === 0 || at >= pitch * 0.5;
+                    const left = laidOut ? at : idx * pitch;
                     if (smooth) this.snapTo(left);
                     else this.setH(left);
-                    return Math.round(this.hLeft / pitch) === idx || Math.abs(this.hLeft - left) < 2;
+                    const shown = this.leftDate();
+                    const wanted = date || cols[idx].getAttribute('data-date') || '';
+                    if (wanted && shown === wanted) return true;
+                    return laidOut && Math.abs(this.hLeft - left) < 2;
                 },
 
                 withProgrammatic(fn, ms) {
@@ -1402,8 +1491,11 @@
                 },
 
                 clampH(left) {
+                    const count = this.dayCount();
+                    const maxIdx = Math.max(0, count - 3);
+                    const edge = this.columnLeft(maxIdx);
                     const day = this.colWidth();
-                    const max = Math.max(0, (this.dayCount() - 3) * day);
+                    const max = edge == null ? Math.max(0, maxIdx * (day || 0)) : edge;
                     return Math.max(0, Math.min(max, left));
                 },
 
@@ -1416,10 +1508,9 @@
                 },
 
                 updateWeekTitle() {
-                    const day = this.colWidth();
                     const cols = this.$el.querySelectorAll('.day-col-body[data-date]');
-                    if (!day || !cols.length) return;
-                    const idx = Math.max(0, Math.min(cols.length - 1, Math.round(this.hLeft / day)));
+                    if (!this.columnPitch() || !cols.length) return;
+                    const idx = Math.max(0, Math.min(cols.length - 1, this.indexAt(this.hLeft)));
                     const iso = cols[idx].getAttribute('data-date');
                     if (!iso) return;
                     const d = new Date(iso + 'T12:00:00');
@@ -1452,18 +1543,21 @@
                 },
 
                 snapH(startLeft, dx, velocity) {
-                    const day = this.colWidth();
-                    if (!day) return;
-
-                    let target;
-                    if (Math.abs(velocity) > 0.38 || Math.abs(dx) > day * 1.15) {
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    const pitch = this.columnPitch();
+                    if (!pitch || !cols.length) return;
+                    const maxIdx = Math.max(0, cols.length - 3);
+                    let idx;
+                    if (Math.abs(velocity) > 0.38 || Math.abs(dx) > pitch * 1.15) {
                         const dir = dx < 0 ? 1 : -1;
-                        const page = Math.round(startLeft / (day * 3));
-                        target = (page + dir) * day * 3;
+                        const page = Math.round(startLeft / (pitch * 3));
+                        idx = (page + dir) * 3;
                     } else {
-                        target = Math.round(this.hLeft / day) * day;
+                        idx = this.indexAt(this.hLeft);
                     }
-                    this.snapTo(target);
+                    idx = Math.max(0, Math.min(maxIdx, idx));
+                    const edge = this.columnLeft(idx);
+                    this.snapTo(edge == null ? 0 : edge);
                 },
 
                 /**
@@ -1622,9 +1716,10 @@
                 noteUserSwipe() {
                     this._userMoved = true;
                     window.calWeekUserMoved = true;
-                    if (!(window.calModal && window.calModal.open)) {
+                    if (!(window.calModal && window.calModal.open) && !window.calSaveKeepsView) {
                         window.calViewRestore = null;
                         window.calWeekPin = null;
+                        window.calWeekJumpDate = null;
                     }
                     this.setSwiping(true);
                 },
@@ -1632,6 +1727,8 @@
                 async maybeExtend() {
                     if (window.calModal && window.calModal.open) return;
                     if (!this._placed || this.loading || this._programmatic || this._bridging || this.swiping) return;
+                    const pending = this.pendingAnchor();
+                    if (pending && this.leftDate() && this.leftDate() !== pending) return;
                     if (Date.now() < this._extendCooldownUntil) return;
                     const w = this.colWidth();
                     if (!w) return;
@@ -1932,26 +2029,28 @@
         window.calPinWeek = function () {
             const shell = document.querySelector('.cal-week-shell');
             if (!shell) return;
-            const pane = shell.querySelector('.cal-week-h-body') || shell.querySelector('.cal-week-h-head');
-            const cols = shell.querySelectorAll('.day-col-body[data-date]');
+            const data = window.calWeekApi ? window.calWeekApi() : null;
             let date = '';
-            if (pane && cols.length) {
-                const edge = pane.getBoundingClientRect().left + 8;
-                for (let i = 0; i < cols.length; i++) {
-                    const rect = cols[i].getBoundingClientRect();
-                    if (rect.right > edge) {
-                        date = cols[i].getAttribute('data-date') || '';
-                        break;
+            if (data && typeof data.leftDate === 'function') date = data.leftDate() || '';
+            if (!date) {
+                const pane = shell.querySelector('.cal-week-h-body') || shell.querySelector('.cal-week-h-head');
+                const cols = shell.querySelectorAll('.day-col-body[data-date]');
+                if (pane && cols.length) {
+                    const edge = pane.getBoundingClientRect().left + 8;
+                    for (let i = 0; i < cols.length; i++) {
+                        const rect = cols[i].getBoundingClientRect();
+                        if (rect.right > edge) {
+                            date = cols[i].getAttribute('data-date') || '';
+                            break;
+                        }
                     }
                 }
             }
-            const data = window.calWeekApi ? window.calWeekApi() : null;
-            if (!date && data) date = data.leftDate();
             if (!date) return;
             const v = data && data.v ? data.v() : shell.querySelector('.cal-week-bottom');
             window.calWeekPin = { date: date, vTop: v ? v.scrollTop : 0 };
+            window.calWeekJumpDate = date;
             window.calWeekForceToday = 0;
-            window.calWeekJumpDate = null;
         };
 
         window.calRememberView = function () {
@@ -1974,7 +2073,7 @@
                 window.calWeekPos = snap;
                 window.calWeekUserMoved = true;
                 window.calWeekForceToday = 0;
-                window.calWeekJumpDate = null;
+                if (snap.date) window.calWeekJumpDate = snap.date;
             }
             const agenda = {};
             document.querySelectorAll('.agenda-pane, .agenda-list').forEach((el) => {
@@ -2003,18 +2102,6 @@
                 if (!col || typeof savedAgenda[key] !== 'number') return;
                 if (Math.abs(col.scrollTop - savedAgenda[key]) > 1) col.scrollTop = savedAgenda[key];
             });
-            const pin = window.calWeekPin;
-            const data = window.calWeekApi ? window.calWeekApi() : null;
-            if (!pin || !pin.date || !data || data._pinning || data.swiping) return;
-            if (data.leftDate() === pin.date) {
-                const v = data.v ? data.v() : null;
-                if (v && typeof pin.vTop === 'number' && Math.abs(v.scrollTop - pin.vTop) > 1) v.scrollTop = pin.vTop;
-                return;
-            }
-            data._pinning = true;
-            data.scrollToDate(pin.date, false);
-            if (typeof pin.vTop === 'number' && data.v && data.v()) data.v().scrollTop = pin.vTop;
-            data._pinning = false;
         };
 
         if (!window._calHoldPane) {
