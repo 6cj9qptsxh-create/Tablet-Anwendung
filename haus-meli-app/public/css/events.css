@@ -130,7 +130,8 @@ body.is-cal-tab .cal-tab-pane {
     flex-shrink: 0;
     position: relative;
     z-index: 10001;
-    padding: 8px 12px 10px;
+    /* 16px wie der Strich, damit das Kontrollmenü auf dem Verlauf sitzt. */
+    padding: 8px 16px 10px;
     background: var(--card);
     border-style: solid;
     border-color: var(--border);
