@@ -242,7 +242,7 @@
                     <button type="button"
                             role="tab"
                             wire:click="setViewMode('week')"
-                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false"
+                            @click="window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; window.calWeekForceToday = Date.now();"
                             class="toggle-btn cal-chip {{ $viewMode === 'week' ? 'active' : '' }}">3-Tage</button>
                     <button type="button" role="tab" wire:click="setViewMode('month')" class="toggle-btn cal-chip {{ $viewMode === 'month' ? 'active' : '' }}">Monat</button>
                     <button type="button" role="tab" wire:click="setViewMode('agenda')" class="toggle-btn cal-chip {{ $viewMode === 'agenda' ? 'active' : '' }}">Agenda</button>
@@ -283,8 +283,18 @@
                                     <div class="agenda-col-title">{{ $col['title'] }}</div>
                                     <div class="agenda-col"
                                          x-data
+                                         x-init="
+                                            const key = $el.closest('[data-col]') && $el.closest('[data-col]').getAttribute('data-col');
+                                            const saved = key && window.calAgendaScroll && window.calAgendaScroll[key];
+                                            if (typeof saved === 'number') $el.scrollTop = saved;
+                                         "
                                          @scroll.throttle.200ms="
                                             const el = $event.target;
+                                            const key = el.closest('[data-col]') && el.closest('[data-col]').getAttribute('data-col');
+                                            if (key) {
+                                                window.calAgendaScroll = window.calAgendaScroll || {};
+                                                window.calAgendaScroll[key] = el.scrollTop;
+                                            }
                                             if (el.scrollTop + el.clientHeight > el.scrollHeight - 200) $wire.extendFuture(21);
                                          ">
                                         @forelse($col['entries'] as $entry)
@@ -325,8 +335,14 @@
                     @else
                 <div class="agenda-list"
                      x-data
+                     x-init="
+                        const saved = window.calAgendaScroll && window.calAgendaScroll.list;
+                        if (typeof saved === 'number') $el.scrollTop = saved;
+                     "
                      @scroll.throttle.200ms="
                         const el = $event.target;
+                        window.calAgendaScroll = window.calAgendaScroll || {};
+                        window.calAgendaScroll.list = el.scrollTop;
                         if (el.scrollTop + el.clientHeight > el.scrollHeight - 200) $wire.extendFuture(21);
                      ">
                         @forelse($agendaItems as $group)
@@ -1047,6 +1063,7 @@
                 },
 
                 destroy() {
+                    this.saveWeekPos();
                     this._dead = true;
                     clearTimeout(this._giveUp);
                     clearTimeout(this._confirmTimer);
@@ -1094,14 +1111,14 @@
                     window.calWeekPos = {
                         user: user,
                         hLeft: this.hLeft,
-                        hDays: dayW ? this.hLeft / dayW : null,
+                        hDays: dayW ? this.hLeft / dayW : (typeof prev.hDays === 'number' ? prev.hDays : null),
                         vTop: this.v() ? this.v().scrollTop : (prev.vTop || 0),
                     };
                 },
 
                 restoreWeekPos() {
                     const saved = window.calWeekPos;
-                    if (!saved || !saved.user || typeof saved.hDays !== 'number') return false;
+                    if (!saved || typeof saved.hDays !== 'number') return false;
                     const day = this.colWidth();
                     if (!(day >= 40)) return false;
                     this.setH(Math.round(saved.hDays) * day);
@@ -1188,7 +1205,7 @@
                             if (!this.scrollToDate(jump, false)) return false;
                             window.calWeekJumpDate = null;
                             if (vTop != null && this.v()) this.v().scrollTop = vTop;
-                        } else if (window.calWeekUserMoved) {
+                        } else if (window.calWeekPos && typeof window.calWeekPos.hDays === 'number') {
                             if (this.restoreWeekPos()) {
                                 this._wantDate = this.leftDate();
                             } else if (this._placed && this.leftDate()) {
@@ -1861,7 +1878,70 @@
             } catch (_) {}
         };
 
+        window.calRememberView = function () {
+            const shell = document.querySelector('.cal-week-shell');
+            if (shell) {
+                const moved = shell.querySelector('.cal-week-track');
+                const day = window.calWeekDayW || 0;
+                const left = moved ? Math.abs(parseFloat(moved.style.left) || 0) : 0;
+                const v = shell.querySelector('.cal-week-bottom');
+                const prev = window.calWeekPos || {};
+                window.calWeekPos = {
+                    user: true,
+                    hLeft: left,
+                    hDays: day >= 40 ? left / day : (typeof prev.hDays === 'number' ? prev.hDays : null),
+                    vTop: v ? v.scrollTop : (prev.vTop || 0),
+                };
+                window.calWeekUserMoved = true;
+            }
+            const agenda = {};
+            document.querySelectorAll('.agenda-pane, .agenda-list').forEach((el) => {
+                const col = el.classList.contains('agenda-list') ? el : el.querySelector('.agenda-col');
+                const key = el.getAttribute('data-col') || 'list';
+                if (col) agenda[key] = col.scrollTop;
+            });
+            window.calAgendaScroll = agenda;
+        };
+
+        window.calHoldPane = function () {
+            const track = document.querySelector('.tab-track');
+            const pane = track && track.querySelector(':scope > [data-tab="events"]');
+            if (track && pane) {
+                const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
+                if (Math.abs(delta) > 1) track.scrollLeft += delta;
+            }
+            const savedAgenda = window.calAgendaScroll || {};
+            document.querySelectorAll('.agenda-pane, .agenda-list').forEach((el) => {
+                const col = el.classList.contains('agenda-list') ? el : el.querySelector('.agenda-col');
+                const key = el.getAttribute('data-col') || 'list';
+                if (!col || typeof savedAgenda[key] !== 'number') return;
+                if (Math.abs(col.scrollTop - savedAgenda[key]) > 1) col.scrollTop = savedAgenda[key];
+            });
+            const v = document.querySelector('.cal-week-bottom');
+            if (v && window.calWeekPos && typeof window.calWeekPos.vTop === 'number'
+                && Math.abs(v.scrollTop - window.calWeekPos.vTop) > 1) {
+                v.scrollTop = window.calWeekPos.vTop;
+            }
+        };
+
+        if (!window._calHoldPane) {
+            window._calHoldPane = true;
+            document.addEventListener('scroll', function (e) {
+                if (!window.calModal || !window.calModal.open) return;
+                const t = e.target;
+                if (t && t.closest && t.closest('.modal-card, .modal-backdrop, .cal-filter-menu')) return;
+                window.calHoldPane();
+            }, true);
+            document.addEventListener('focusin', function (e) {
+                if (!e.target || !e.target.closest || !e.target.closest('.modal-card')) return;
+                requestAnimationFrame(function () { window.calHoldPane(); });
+                setTimeout(function () { window.calHoldPane(); }, 60);
+                setTimeout(function () { window.calHoldPane(); }, 320);
+            });
+        }
+
         window.calOpenModalShell = function (intent, showShifts) {
+            if (window.calRememberView) window.calRememberView();
             window.calBlockSelect();
             if (window.calLastPointer) {
                 window.calModalOrigin = { x: window.calLastPointer.x, y: window.calLastPointer.y };
