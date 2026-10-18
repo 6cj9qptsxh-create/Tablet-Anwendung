@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=120">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=121">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=95">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1334,6 +1334,36 @@
                 requestAnimationFrame(paint);
             }
 
+            function fitButton(btn, tr) {
+                ro.observe(btn);
+                var br = btn.getBoundingClientRect();
+                if (tr.width < 8 || br.width < 2) {
+                    btn.classList.remove('accent-fit');
+                    return;
+                }
+                var span = Math.max(0, tr.width - INSET * 2);
+                var x = (tr.left + INSET) - br.left;
+                btn.style.setProperty('--accent-span', span.toFixed(2) + 'px');
+                btn.style.setProperty('--accent-x', x.toFixed(2) + 'px');
+                if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
+            }
+
+            /* Die Tagesleiste scrollt, der Strich der Shop-Karte nicht.
+               Deshalb am Kartenrand messen, nicht an der Leiste, und beim Scrollen neu setzen. */
+            function paintDayChips() {
+                var pickers = document.querySelectorAll('.delivery-day-picker');
+                for (var p = 0; p < pickers.length; p++) {
+                    var picker = pickers[p];
+                    var card = picker.parentElement ? picker.parentElement.closest(TRACK) : null;
+                    if (!card) continue;
+                    ro.observe(picker);
+                    var tr = card.getBoundingClientRect();
+                    if (tr.width >= 8) ro.observe(card);
+                    var chips = picker.querySelectorAll(BTN);
+                    for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr);
+                }
+            }
+
             function paint() {
                 queued = false;
                 var tracks = document.querySelectorAll(TRACK);
@@ -1350,20 +1380,11 @@
                             btn.classList.remove('accent-fit');
                             continue;
                         }
-                        ro.observe(btn);
-                        var br = btn.getBoundingClientRect();
-                        if (tr.width < 8 || br.width < 2) {
-                            btn.classList.remove('accent-fit');
-                            continue;
-                        }
-                        var span = Math.max(0, tr.width - INSET * 2);
-                        var x = (tr.left + INSET) - br.left;
-                        btn.style.setProperty('--accent-span', span.toFixed(2) + 'px');
-                        btn.style.setProperty('--accent-x', x.toFixed(2) + 'px');
-                        if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
+                        fitButton(btn, tr);
                     }
                     if (tr.width >= 8) ro.observe(track);
                 }
+                paintDayChips();
                 var heads = document.querySelectorAll('.shop-content .super-heading');
                 for (var h = 0; h < heads.length; h++) {
                     var head = heads[h];
@@ -1389,6 +1410,22 @@
             }
             window.addEventListener('resize', schedule);
             window.addEventListener('orientationchange', schedule);
+            var dayQueued = false;
+            function scheduleDays() {
+                if (dayQueued || queued) return;
+                dayQueued = true;
+                requestAnimationFrame(function () {
+                    dayQueued = false;
+                    if (queued) return;
+                    paintDayChips();
+                });
+            }
+            /* Scroll bubbelt nicht. Die Leiste bewegt sich, der Strich bleibt. */
+            document.addEventListener('scroll', function (e) {
+                var t = e.target;
+                if (!t || t.nodeType !== 1 || !t.classList.contains('delivery-day-picker')) return;
+                scheduleDays();
+            }, true);
             var mo = new MutationObserver(function () { schedule(); });
             mo.observe(document.body, {
                 subtree: true,
