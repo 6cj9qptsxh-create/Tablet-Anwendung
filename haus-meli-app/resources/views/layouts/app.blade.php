@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=98">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=100">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

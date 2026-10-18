@@ -126,7 +126,9 @@ body.is-cal-tab .cal-tab-pane {
     flex-shrink: 0;
     position: relative;
     z-index: 10001;
-    /* Gleicher Innenabstand wie die Karten der anderen Tabs. */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
     padding: var(--spacing);
     background: var(--card);
     border-style: solid;
@@ -168,7 +170,7 @@ body.is-cal-tab .cal-tab-pane {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--spacing);
     min-height: 36px;
 }
 
@@ -185,7 +187,7 @@ body.is-cal-tab .cal-tab-pane {
 .cal-toolbar-icons {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--spacing);
     flex-shrink: 0;
 }
 
@@ -235,10 +237,8 @@ body.is-cal-tab .cal-tab-pane {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
-    /* Kästen bleiben auf dem Strich-Inset, der Spalt zwischen Heute und den Ansichten ist weiter. */
-    gap: 28px;
-    margin-top: var(--spacing);
-    margin-inline: calc(16px - var(--spacing));
+    gap: var(--spacing);
+    margin: 0;
 }
 
 .cal-filter-wrap {
@@ -503,6 +503,12 @@ body.is-cal-tab .cal-tab-pane {
     overflow: hidden;
     border-radius: 16px;
     touch-action: pan-y;
+}
+
+/* Bis der sichtbare Tag steht, nicht den Leistenanfang (eine Woche vorher) zeigen. */
+.cal-week-shell:not(.is-placed) .cal-week-head-track,
+.cal-week-shell:not(.is-placed) .cal-week-track {
+    visibility: hidden;
 }
 
 .cal-week-top {
@@ -1305,8 +1311,8 @@ body.cal-creating {
 /* --- Ansicht-Umschalter: gleicher Look wie die Tagesauswahl im Shop --- */
 .cal-picker {
     display: flex;
-    gap: 6px;
-    padding: 6px;
+    gap: var(--spacing);
+    padding: var(--spacing);
     border: 1px solid var(--border);
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: var(--radius);
@@ -1314,14 +1320,8 @@ body.cal-creating {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.cal-toolbar-row .cal-picker {
-    padding-left: 0;
-    padding-right: 0;
-}
-
 .cal-toolbar-row .cal-view-switch {
     grid-column: span 3;
-    gap: 8px;
 }
 
 .cal-chip {
@@ -1329,16 +1329,11 @@ body.cal-creating {
     min-width: 0;
     height: var(--input-height);
     min-height: var(--input-height);
-    padding: 0 12px;
+    padding: 0 var(--spacing);
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
-}
-
-/* Drei Ansichten teilen sich eine Zeile, deshalb darf ihr Innenabstand enger sein. */
-.cal-view-switch .cal-chip {
-    padding: 0 4px;
 }
 
 .cal-chip.active {
