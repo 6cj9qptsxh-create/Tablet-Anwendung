@@ -242,14 +242,14 @@
                 <div class="cal-picker cal-today-wrap">
                     <button type="button"
                             class="toggle-btn cal-chip"
-                            @click="window.calViewRestore = null; window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; @if($viewMode === 'week') window.calWeekForceToday = Date.now(); @endif"
+                            @click="window.calWeekPin = null; window.calViewRestore = null; window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; @if($viewMode === 'week') window.calWeekForceToday = Date.now(); @endif"
                             wire:click="goToToday">Heute</button>
                 </div>
                 <div class="cal-picker cal-view-switch" role="tablist" aria-label="Kalenderansicht">
                     <button type="button"
                             role="tab"
                             wire:click="setViewMode('week')"
-                            @click="window.calViewRestore = null; window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; window.calWeekForceToday = Date.now();"
+                            @click="window.calWeekPin = null; window.calViewRestore = null; window.calWeekPos = null; window.calWeekJumpDate = null; window.calWeekUserMoved = false; window.calWeekForceToday = Date.now();"
                             class="toggle-btn cal-chip {{ $viewMode === 'week' ? 'active' : '' }}">3-Tage</button>
                     <button type="button" role="tab" wire:click="setViewMode('month')" class="toggle-btn cal-chip {{ $viewMode === 'month' ? 'active' : '' }}">Monat</button>
                     <button type="button" role="tab" wire:click="setViewMode('agenda')" class="toggle-btn cal-chip {{ $viewMode === 'agenda' ? 'active' : '' }}">Agenda</button>
@@ -887,6 +887,7 @@
 
                 goWeek(date) {
                     if (!date) return;
+                    window.calWeekPin = null;
                     window.calViewRestore = null;
                     window.calWeekJumpDate = date;
                     window.calWeekPos = null;
@@ -1201,10 +1202,19 @@
                         const jump = window.calWeekJumpDate;
                         const force = window.calWeekForceToday && (Date.now() - window.calWeekForceToday < 4000);
                         const held = window.calViewRestore;
+                        const pin = window.calWeekPin;
                         const vTop = window.calWeekPos && typeof window.calWeekPos.vTop === 'number'
                             ? window.calWeekPos.vTop
                             : null;
-                        if (held && (typeof held.hDays === 'number' || held.date)) {
+                        if (pin && pin.date) {
+                            window.calWeekForceToday = 0;
+                            window.calWeekJumpDate = null;
+                            if (!this.scrollToDate(pin.date, false)) return false;
+                            if (typeof pin.vTop === 'number' && this.v()) this.v().scrollTop = pin.vTop;
+                            this._wantDate = pin.date;
+                            this._userMoved = true;
+                            window.calWeekUserMoved = true;
+                        } else if (held && (typeof held.hDays === 'number' || held.date)) {
                             window.calWeekForceToday = 0;
                             window.calWeekJumpDate = null;
                             window.calWeekUserMoved = true;
@@ -1372,10 +1382,9 @@
                         }
                     }
                     if (idx < 0) return false;
-                    const pitch = cols[0].offsetWidth || day;
+                    const pitch = (cols[0].offsetWidth >= 20) ? cols[0].offsetWidth : day;
                     if (pitch < 20) return false;
-                    if (idx > 0 && cols[idx].offsetLeft < pitch * 0.5) return false;
-                    const left = idx === 0 ? 0 : cols[idx].offsetLeft;
+                    const left = idx * pitch;
                     if (smooth) this.snapTo(left);
                     else this.setH(left);
                     return Math.round(this.hLeft / pitch) === idx || Math.abs(this.hLeft - left) < 2;
@@ -1613,7 +1622,10 @@
                 noteUserSwipe() {
                     this._userMoved = true;
                     window.calWeekUserMoved = true;
-                    if (!(window.calModal && window.calModal.open)) window.calViewRestore = null;
+                    if (!(window.calModal && window.calModal.open)) {
+                        window.calViewRestore = null;
+                        window.calWeekPin = null;
+                    }
                     this.setSwiping(true);
                 },
 
@@ -1905,27 +1917,59 @@
             } catch (_) {}
         };
 
+        window.calWeekApi = function () {
+            const shell = document.querySelector('.cal-week-shell');
+            if (!shell || !window.Alpine || typeof window.Alpine.$data !== 'function') return null;
+            try {
+                const data = window.Alpine.$data(shell);
+                if (!data || typeof data.leftDate !== 'function') return null;
+                return data;
+            } catch (_) {
+                return null;
+            }
+        };
+
+        window.calPinWeek = function () {
+            const shell = document.querySelector('.cal-week-shell');
+            if (!shell) return;
+            const pane = shell.querySelector('.cal-week-h-body') || shell.querySelector('.cal-week-h-head');
+            const cols = shell.querySelectorAll('.day-col-body[data-date]');
+            let date = '';
+            if (pane && cols.length) {
+                const edge = pane.getBoundingClientRect().left + 8;
+                for (let i = 0; i < cols.length; i++) {
+                    const rect = cols[i].getBoundingClientRect();
+                    if (rect.right > edge) {
+                        date = cols[i].getAttribute('data-date') || '';
+                        break;
+                    }
+                }
+            }
+            const data = window.calWeekApi ? window.calWeekApi() : null;
+            if (!date && data) date = data.leftDate();
+            if (!date) return;
+            const v = data && data.v ? data.v() : shell.querySelector('.cal-week-bottom');
+            window.calWeekPin = { date: date, vTop: v ? v.scrollTop : 0 };
+            window.calWeekForceToday = 0;
+            window.calWeekJumpDate = null;
+        };
+
         window.calRememberView = function () {
+            if (window.calPinWeek) window.calPinWeek();
             const shell = document.querySelector('.cal-week-shell');
             const prev = window.calWeekPos || {};
+            const data = window.calWeekApi ? window.calWeekApi() : null;
             let snap = null;
-            if (shell) {
-                const moved = shell.querySelector('.cal-week-track');
-                const day = window.calWeekDayW || 0;
-                const left = moved ? Math.abs(parseFloat(moved.style.left) || 0) : 0;
-                const v = shell.querySelector('.cal-week-bottom');
-                const cols = shell.querySelectorAll('.day-col-body[data-date]');
-                let date = '';
-                if (cols.length && day >= 40) {
-                    const idx = Math.max(0, Math.min(cols.length - 1, Math.round(left / day)));
-                    date = cols[idx].getAttribute('data-date') || '';
-                }
+            if (shell && data) {
+                const day = data.colWidth ? data.colWidth() : (window.calWeekDayW || 0);
+                const left = typeof data.hLeft === 'number' ? data.hLeft : 0;
+                const v = data.v ? data.v() : null;
                 snap = {
                     user: true,
                     hLeft: left,
                     hDays: day >= 40 ? left / day : (typeof prev.hDays === 'number' ? prev.hDays : null),
                     vTop: v ? v.scrollTop : (prev.vTop || 0),
-                    date: date,
+                    date: data.leftDate() || '',
                 };
                 window.calWeekPos = snap;
                 window.calWeekUserMoved = true;
@@ -1959,24 +2003,18 @@
                 if (!col || typeof savedAgenda[key] !== 'number') return;
                 if (Math.abs(col.scrollTop - savedAgenda[key]) > 1) col.scrollTop = savedAgenda[key];
             });
-            const shell = document.querySelector('.cal-week-shell');
-            if (!shell || typeof saved.hDays !== 'number') return;
-            const v = shell.querySelector('.cal-week-bottom');
-            if (v && typeof saved.vTop === 'number' && Math.abs(v.scrollTop - saved.vTop) > 1) {
-                v.scrollTop = saved.vTop;
+            const pin = window.calWeekPin;
+            const data = window.calWeekApi ? window.calWeekApi() : null;
+            if (!pin || !pin.date || !data || data._pinning || data.swiping) return;
+            if (data.leftDate() === pin.date) {
+                const v = data.v ? data.v() : null;
+                if (v && typeof pin.vTop === 'number' && Math.abs(v.scrollTop - pin.vTop) > 1) v.scrollTop = pin.vTop;
+                return;
             }
-            const day = window.calWeekDayW || 0;
-            if (!(day >= 40)) return;
-            const left = (-Math.round(Math.round(saved.hDays) * day)) + 'px';
-            shell.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
-                if (el.style.left !== left) el.style.left = left;
-            });
-            try {
-                const data = window.Alpine && window.Alpine.$data ? window.Alpine.$data(shell) : null;
-                if (data && Math.abs((data.hLeft || 0) - Math.abs(parseFloat(left) || 0)) > 1) {
-                    data.hLeft = Math.abs(parseFloat(left) || 0);
-                }
-            } catch (_) {}
+            data._pinning = true;
+            data.scrollToDate(pin.date, false);
+            if (typeof pin.vTop === 'number' && data.v && data.v()) data.v().scrollTop = pin.vTop;
+            data._pinning = false;
         };
 
         if (!window._calHoldPane) {
