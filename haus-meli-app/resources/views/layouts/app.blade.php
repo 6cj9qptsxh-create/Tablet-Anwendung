@@ -15,8 +15,8 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=121">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=95">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=96">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1385,7 +1385,7 @@
                     if (tr.width >= 8) ro.observe(track);
                 }
                 paintDayChips();
-                var heads = document.querySelectorAll('.shop-content .super-heading');
+                var heads = document.querySelectorAll('.shop-content .super-heading, .tour-main-heading');
                 for (var h = 0; h < heads.length; h++) {
                     var head = heads[h];
                     ro.observe(head);
