@@ -451,7 +451,7 @@
                  wire:key="week-{{ $weekEpoch }}"
                  x-data="calWeekScroll()"
                  x-init="init()"
-                 :class="{ 'is-swiping': swiping }"
+                 :class="{ 'is-swiping': swiping, 'is-placed': _placed }"
                  :style="weekShellStyle()"
                  @cal-scroll-today.window="if (window.calViewRestore || (window.calModal && window.calModal.open)) return; scrollToToday(true)"
                  @cal-scroll-date.window="if ($event.detail && $event.detail.date) scrollToDate($event.detail.date, false)">
@@ -1420,7 +1420,9 @@
                 columnPitch() {
                     const col = this.$el.querySelector('.day-col-body');
                     const day = this.measureDayWidth();
-                    const width = col && col.offsetWidth >= 20 ? col.offsetWidth : day;
+                    let width = col && col.offsetWidth >= 20 ? col.offsetWidth : day;
+                    const pane = this.h();
+                    if (pane && pane.clientWidth >= 120 && width > pane.clientWidth * 0.7 && day >= 20) width = day;
                     return width >= 20 ? width : 0;
                 },
 
