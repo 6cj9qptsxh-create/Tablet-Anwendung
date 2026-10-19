@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=102">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1027,6 +1027,7 @@
               const t = event.touches[0];
               sx = t ? t.clientX : 0;
               sy = t ? t.clientY : 0;
+              this._fromWeek = !!(event.target && event.target.closest && event.target.closest('.cal-week-shell'));
               carting = !!document.querySelector('#tab-order.cart-is-open');
               this._touching = true;
               this._fingerSnap = true;
@@ -1035,6 +1036,7 @@
               this.watchSnap();
             }, { passive: true });
             trackEl.addEventListener('touchmove', (event) => {
+              if (this._fromWeek) return;
               const t = event.touches[0];
               if (!t) return;
               const dx = t.clientX - sx;
@@ -1054,7 +1056,9 @@
             }, { passive: false, capture: true });
             const release = (event) => {
               const fromNav = this._navFrom;
+              const fromWeek = this._fromWeek;
               this._navFrom = null;
+              this._fromWeek = false;
               const before = this.currentTab;
               this._touching = false;
               const t = event.changedTouches && event.changedTouches[0];
@@ -1062,7 +1066,7 @@
               const dy = t ? t.clientY - sy : 0;
               const horizontal = Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy);
               if (horizontal) this._swipeDx = dx;
-              if (!carting && horizontal && dx > 0) this.followRetour(dx);
+              if (!carting && !fromWeek && horizontal && dx > 0) this.followRetour(dx);
               if (carting && horizontal && dx > 0) {
                 window.dispatchEvent(new CustomEvent('close-cart'));
               }
