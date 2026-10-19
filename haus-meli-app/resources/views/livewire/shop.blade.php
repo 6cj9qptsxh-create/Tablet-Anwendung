@@ -120,6 +120,9 @@
                 <div style="flex: 1;">
                     <div class="search-wrapper" style="position: relative;">
                         <input wire:model.live.debounce.300ms="search" type="text" id="search-input" placeholder="Artikel suchen..." autocomplete="off">
+                        <button type="button" class="search-clear-btn" wire:click="$set('search', '')"
+                            @click="var field = document.getElementById('search-input'); if (field) { field.value = ''; field.dispatchEvent(new Event('input', { bubbles: true })); field.focus(); }"
+                            aria-label="Suche löschen">×</button>
                     </div>
                 </div>
             </div>

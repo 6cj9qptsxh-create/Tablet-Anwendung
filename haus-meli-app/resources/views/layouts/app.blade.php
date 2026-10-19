@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=123">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,11 +197,16 @@
         };
     </script>
     <script>
-        /* Akzent pro Person. Gast hat eine Standardfarbe und verliert sie beim Zurückschalten. */
+        /* Akzent pro Person.
+           Familie bleibt lokal (Lukas / Meli).
+           Gäste starten bei #660000. Eine gespeicherte Person behält ihre Farbe
+           vom Anreise- bis zum Abreisetag, danach wieder die vordefinierte. */
         (function () {
             var GUEST = @json(! \App\Support\ClientNetwork::isFamily() || \App\Support\ClientNetwork::guestPreview());
             var STANDARD = '#660000';
             var PRESETS = ['#6c25b3', '#660000'];
+            var STAY = @json(\App\Support\GuestAccent::clientPayload());
+            var stayRefreshDay = '';
             window.hausMeliAccentGuest = GUEST;
 
             function hexOk(v) {
@@ -346,8 +351,60 @@
                 if (w === 'M') return 'Meli';
                 return '';
             };
+            function viennaToday() {
+                try {
+                    return new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'Europe/Vienna',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }).format(new Date());
+                } catch (e) {
+                    var d = new Date();
+                    var m = String(d.getMonth() + 1);
+                    var day = String(d.getDate());
+                    if (m.length < 2) m = '0' + m;
+                    if (day.length < 2) day = '0' + day;
+                    return d.getFullYear() + '-' + m + '-' + day;
+                }
+            }
+            /* guest-accent-js:start */
+            function stayHex(stay, today) {
+                if (!stay || !stay.active) return '';
+                var hex = String(stay.accent || '').toLowerCase();
+                if (!/^#[0-9a-f]{6}$/.test(hex)) return '';
+                if (!stay.from || !stay.until || today < stay.from || today > stay.until) return '';
+                return hex;
+            }
+            /* guest-accent-js:end */
+            function paintGuest() {
+                paint(stayHex(STAY, viennaToday()) || STANDARD);
+            }
+            function refreshStay() {
+                var today = viennaToday();
+                fetch(@json(url('/gast-farbe')), { headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (!data || typeof data !== 'object') return;
+                        STAY = data;
+                        stayRefreshDay = today;
+                        if (GUEST) paintGuest();
+                    })
+                    .catch(function () {});
+            }
+            function maybeRefreshStay() {
+                if (!GUEST) return;
+                var today = viennaToday();
+                if (STAY && STAY.active && STAY.until && today > STAY.until) paint(STANDARD);
+                if (today === stayRefreshDay) return;
+                refreshStay();
+            }
             window.hausMeliApplyAccent = function (code) {
-                if (!GUEST && (code === 'L' || code === 'M')) {
+                if (GUEST) {
+                    paintGuest();
+                    return;
+                }
+                if (code === 'L' || code === 'M') {
                     var own = read('hausMeliAccent' + code);
                     if (!own) {
                         var loose = read('hausMeliAccent');
@@ -362,17 +419,51 @@
                 }
                 paint(read(storageKey()) || STANDARD);
             };
+            var saveGen = 0;
             window.hausMeliSetAccent = function (hex) {
                 hex = norm(hex);
                 if (!hex) return;
+                if (GUEST) {
+                    var today = viennaToday();
+                    if (!STAY || !STAY.active || !STAY.writable) return;
+                    if (!STAY.from || !STAY.until || today < STAY.from || today > STAY.until) return;
+                    var previous = norm(document.documentElement.style.getPropertyValue('--accent').trim()) || STANDARD;
+                    paint(hex);
+                    var gen = ++saveGen;
+                    var token = document.querySelector('meta[name="csrf-token"]');
+                    fetch(@json(url('/gast-farbe')), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': token ? token.getAttribute('content') : ''
+                        },
+                        body: JSON.stringify({ accent: hex })
+                    }).then(function (r) {
+                        return r.json().then(function (data) {
+                            if (gen !== saveGen) return;
+                            if (data && typeof data === 'object') STAY = data;
+                            paint(stayHex(STAY, viennaToday()) || (r.ok ? hex : STANDARD));
+                        });
+                    }).catch(function () {
+                        if (gen !== saveGen) return;
+                        paint(previous);
+                    });
+                    return;
+                }
                 write(storageKey(), hex);
                 paint(hex);
             };
 
-            if (!GUEST) {
-                try { localStorage.removeItem('hausMeliAccentG'); } catch (e) {}
-            }
+            try { localStorage.removeItem('hausMeliAccentG'); } catch (e) {}
+            stayRefreshDay = viennaToday();
             window.hausMeliApplyAccent(who());
+            if (GUEST) {
+                document.addEventListener('visibilitychange', function () {
+                    if (!document.hidden) maybeRefreshStay();
+                });
+                setInterval(maybeRefreshStay, 60000);
+            }
 
             var holdTimer = 0;
             var holdBtn = null;
