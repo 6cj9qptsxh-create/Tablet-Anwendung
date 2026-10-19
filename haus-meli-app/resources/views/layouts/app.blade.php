@@ -16,7 +16,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=122">
-    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=101">
+    <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=102">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +40,10 @@
                 }
             };
             const apply = function () {
+                if (window.calModal && window.calModal.open) {
+                    const prev = parseFloat(root.style.getPropertyValue('--app-h')) || 0;
+                    if (prev && window.innerHeight < prev - 40) return;
+                }
                 let h = window.innerHeight;
                 if (standalone() && window.screen) {
                     const portrait = window.innerHeight >= window.innerWidth;

@@ -84,6 +84,10 @@
             window.calUiBlockUntil = Date.now() + 900;
             window.calModal = { open: false, busy: false, intent: null, showShifts: true };
             if (!window.calSaveKeepsView) window.calViewRestore = null;
+            clearTimeout(window._calLockTimer);
+            window._calLockTimer = setTimeout(() => {
+                if (!window.calModal || !window.calModal.open) window.calScrollLock = null;
+            }, 1800);
             document.body.classList.remove('cal-no-select');
             clearTimeout(this._closeT);
             this._closeT = setTimeout(() => {
@@ -461,7 +465,7 @@
                         <span style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.75rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase;">Ganztägig</span>
                     </div>
                     <div class="cal-week-h-head" x-ref="hHead">
-                        <div class="cal-week-head-track" :style="trackStyle()">
+                        <div class="cal-week-head-track">
                         @foreach($days as $day)
                             <div class="day-col-header {{ $day['date'] === $todayDate ? 'is-today' : '' }}" data-date="{{ $day['date'] }}">
                                 <div class="day-title">
@@ -504,7 +508,7 @@
                     </div>
 
                     <div class="cal-week-h-body" id="cal-scroll" x-ref="hBody">
-                            <div class="cal-week-track" :style="trackStyle()">
+                            <div class="cal-week-track">
                                 <div class="calendar-body-row">
                                     @foreach($days as $day)
                                         <div class="day-col-body {{ $day['date'] === $todayDate ? 'is-today' : '' }}"
@@ -1025,6 +1029,7 @@
                 _wantDate: '',
 
                 init() {
+                    this.restoreShiftNow();
                     this._onRemeasure = () => this.layoutWhenVisible();
                     this._onHash = () => this.queueOverflowHints();
                     window.addEventListener('cal-remeasure', this._onRemeasure);
@@ -1243,6 +1248,17 @@
                     const apply = () => {
                         const w = this.measureDayWidth();
                         if (w < 40) return false;
+                        const lock = window.calScrollLock;
+                        if (window.calModal && window.calModal.open && lock && typeof lock.hLeft === 'number') {
+                            this._userMoved = true;
+                            this.hLeft = lock.hLeft;
+                            this.applyShift();
+                            if (typeof lock.vTop === 'number' && this.v()) this.v().scrollTop = lock.vTop;
+                            this._wantDate = this.leftDate() || '';
+                            this.updateWeekTitle();
+                            this.markPlaced();
+                            return true;
+                        }
                         const jump = window.calWeekJumpDate;
                         const force = window.calWeekForceToday && (Date.now() - window.calWeekForceToday < 4000);
                         const held = window.calViewRestore;
@@ -1380,8 +1396,23 @@
                     return 'left:' + (-Math.round(this.hLeft)) + 'px';
                 },
 
+                restoreShiftNow() {
+                    if (window.calWeekForceToday && Date.now() - window.calWeekForceToday < 4000) return;
+                    const held = window.calViewRestore;
+                    const saved = window.calWeekPos;
+                    const lock = window.calScrollLock;
+                    let left = null;
+                    if (lock && typeof lock.hLeft === 'number') left = lock.hLeft;
+                    else if (held && typeof held.hLeft === 'number') left = held.hLeft;
+                    else if (saved && typeof saved.hLeft === 'number') left = saved.hLeft;
+                    if (left == null) return;
+                    this.hLeft = left;
+                    this.applyShift();
+                },
+
                 applyShift() {
                     const left = (-Math.round(this.hLeft)) + 'px';
+                    document.documentElement.style.setProperty('--cal-week-left', left);
                     this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
                         el.style.left = left;
                         el.style.transform = '';
@@ -1468,17 +1499,16 @@
                         }
                     }
                     if (idx < 0) return false;
-                    const pitch = cols[0].offsetWidth >= 20 ? cols[0].offsetWidth : day;
-                    if (pitch < 20) return false;
-                    const at = idx === 0 ? 0 : cols[idx].offsetLeft;
-                    const laidOut = idx === 0 || at >= pitch * 0.5;
-                    const left = laidOut ? at : idx * pitch;
+                    const maxIdx = Math.max(0, cols.length - 3);
+                    idx = Math.max(0, Math.min(maxIdx, idx));
+                    const edge = this.columnLeft(idx);
+                    const left = edge == null ? idx * day : edge;
                     if (smooth) this.snapTo(left);
                     else this.setH(left);
                     const shown = this.leftDate();
                     const wanted = date || cols[idx].getAttribute('data-date') || '';
                     if (wanted && shown === wanted) return true;
-                    return laidOut && Math.abs(this.hLeft - left) < 2;
+                    return Math.abs(this.hLeft - left) < 2;
                 },
 
                 withProgrammatic(fn, ms) {
@@ -1559,7 +1589,9 @@
                     }
                     idx = Math.max(0, Math.min(maxIdx, idx));
                     const edge = this.columnLeft(idx);
-                    this.snapTo(edge == null ? 0 : edge);
+                    const grid = idx * pitch;
+                    const target = (edge != null && Math.abs(edge - grid) <= Math.max(2, pitch * 0.2)) ? edge : grid;
+                    this.snapTo(target);
                 },
 
                 /**
@@ -1591,123 +1623,79 @@
 
                     const onMove = (clientX, clientY, e) => {
                         if (!this._bridging) return;
-                        if (document.body.classList.contains('cal-no-select')
-                            || grid.querySelector('.day-col-body.is-selecting')) {
-                            this._bridging = false;
-                            return;
-                        }
-
                         const dx = clientX - this._startX;
                         const dy = clientY - this._startY;
 
                         if (!this._axis) {
+                            if (document.body.classList.contains('cal-no-select')
+                                || grid.querySelector('.day-col-body.is-selecting')) {
+                                this._bridging = false;
+                                return;
+                            }
                             if (Math.abs(dx) < THRESH && Math.abs(dy) < THRESH) return;
                             this._axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
-                            if (this._axis === 'x') {
-                                this.clearCreates();
-                            }
+                            if (this._axis === 'x') this.clearCreates();
                         }
 
                         if (this._axis === 'x') {
+                            this._movedX = true;
                             this.noteUserSwipe();
                             this.setH(this._startLeft - dx);
                             this._lastX = clientX;
                             this._lastAt = Date.now();
+                            const track = document.querySelector('.tab-track');
+                            if (track) {
+                                if (this._tabLock == null) this._tabLock = track.scrollLeft;
+                                if (Math.abs(track.scrollLeft - this._tabLock) > 0) track.scrollLeft = this._tabLock;
+                            }
                             if (e && e.cancelable) e.preventDefault();
                         }
                     };
 
                     const onEnd = () => {
-                        if (!this._bridging) return;
-                        const wasX = this._axis === 'x';
+                        if (!this._bridging && !this._movedX) return;
+                        const wasX = this._axis === 'x' || this._movedX;
+                        const drifted = Math.abs(this.hLeft - this._startLeft) > 2;
                         const startLeft = this._startLeft;
                         const dx = this._lastX - this._startX;
                         const elapsed = Math.max(1, this._lastAt - this._startAt);
                         const velocity = Math.abs(dx) / elapsed;
-
                         this._bridging = false;
                         this._axis = null;
+                        this._movedX = false;
+                        this._tabLock = null;
                         this._extendCooldownUntil = Math.max(this._extendCooldownUntil, Date.now() + 280);
-
-                        if (!wasX || Math.abs(dx) < 8) {
+                        if (!wasX && !drifted) {
                             this.setSwiping(false);
                             this.queueOverflowHints();
                             return;
                         }
                         this.noteUserSwipe();
-                        this.snapH(startLeft, dx, velocity);
+                        this.snapH(startLeft, dx, Math.abs(dx) < 8 ? 0 : velocity);
                     };
 
-                    let moveNonPassive = null;
-
-                    grid.addEventListener('touchstart', (e) => {
-                        if (!e.touches[0]) return;
-                        if (!onStart(e, e.touches[0].clientX, e.touches[0].clientY)) return;
-
-                        const firstMove = (ev) => {
-                            if (!ev.touches[0] || !this._bridging) return;
-                            const dx = ev.touches[0].clientX - this._startX;
-                            const dy = ev.touches[0].clientY - this._startY;
-                            if (Math.abs(dx) < THRESH && Math.abs(dy) < THRESH) return;
-
-                            this._axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
-                            grid.removeEventListener('touchmove', firstMove);
-
-                            if (this._axis === 'y') {
-                                return;
-                            }
-
-                            this.clearCreates();
-                            this.noteUserSwipe();
-
-                            moveNonPassive = (ev2) => {
-                                if (!this._bridging || !ev2.touches[0]) return;
-                                onMove(ev2.touches[0].clientX, ev2.touches[0].clientY, ev2);
+                    const bindPan = (el) => {
+                        if (!el || el.dataset.calPan) return;
+                        el.dataset.calPan = '1';
+                        el.addEventListener('touchstart', (e) => {
+                            if (!e.touches[0]) return;
+                            if (!onStart(e, e.touches[0].clientX, e.touches[0].clientY)) return;
+                            const move = (ev) => {
+                                if (!ev.touches[0] || !this._bridging) return;
+                                onMove(ev.touches[0].clientX, ev.touches[0].clientY, ev);
                             };
-                            grid.addEventListener('touchmove', moveNonPassive, { passive: false });
-                            onMove(ev.touches[0].clientX, ev.touches[0].clientY, ev);
-                        };
-
-                        grid.addEventListener('touchmove', firstMove, { passive: true });
-                        const cleanup = () => {
-                            grid.removeEventListener('touchmove', firstMove);
-                            if (moveNonPassive) {
-                                grid.removeEventListener('touchmove', moveNonPassive);
-                                moveNonPassive = null;
-                            }
-                            onEnd();
-                        };
-                        grid.addEventListener('touchend', cleanup, { passive: true, once: true });
-                        grid.addEventListener('touchcancel', cleanup, { passive: true, once: true });
-                    }, { passive: true });
-
-                    // Header: gleicher Pager (kein eigener Scroll mehr)
-                    const head = this.head();
-                    if (head) {
-                        head.addEventListener('touchstart', (e) => {
-                            if (!e.touches[0] || this.loading) return;
-                            this._bridging = true;
-                            this._axis = 'x';
-                            this._startX = e.touches[0].clientX;
-                            this._startY = e.touches[0].clientY;
-                            this._lastX = this._startX;
-                            this._startLeft = this.hLeft;
-                            this._startAt = Date.now();
-                            this._lastAt = this._startAt;
+                            const cleanup = () => {
+                                el.removeEventListener('touchmove', move);
+                                onEnd();
+                            };
+                            el.addEventListener('touchmove', move, { passive: false });
+                            el.addEventListener('touchend', cleanup, { passive: true, once: true });
+                            el.addEventListener('touchcancel', cleanup, { passive: true, once: true });
                         }, { passive: true });
-                        head.addEventListener('touchmove', (e) => {
-                            if (!this._bridging || this._axis !== 'x' || !e.touches[0]) return;
-                            const x = e.touches[0].clientX;
-                            if (Math.abs(x - this._startX) > 8) this.noteUserSwipe();
-                            this.setH(this._startLeft - (x - this._startX));
-                            this._lastX = x;
-                            this._lastAt = Date.now();
-                            if (e.cancelable) e.preventDefault();
-                        }, { passive: false });
-                        const headEnd = () => onEnd();
-                        head.addEventListener('touchend', headEnd, { passive: true });
-                        head.addEventListener('touchcancel', headEnd, { passive: true });
-                    }
+                    };
+
+                    bindPan(grid);
+                    bindPan(this.head());
                 },
 
                 setSwiping(on) {
@@ -1745,7 +1733,12 @@
                     this._programmatic = true;
                     window.calWeekUserMoved = true;
                     window.calWeekJumpDate = anchor || null;
-                    window.calWeekPos = { user: true, vTop: vTop, hDays: null, hLeft: null };
+                    window.calWeekPos = {
+                        user: true,
+                        vTop: vTop,
+                        hLeft: this.hLeft,
+                        hDays: w ? this.hLeft / w : null,
+                    };
                     try {
                         if (atStart) await this.$wire.extendPast(14);
                         else await this.$wire.extendFuture(21);
@@ -2050,7 +2043,8 @@
             }
             if (!date) return;
             const v = data && data.v ? data.v() : shell.querySelector('.cal-week-bottom');
-            window.calWeekPin = { date: date, vTop: v ? v.scrollTop : 0 };
+            const hLeft = data && typeof data.hLeft === 'number' ? data.hLeft : 0;
+            window.calWeekPin = { date: date, vTop: v ? v.scrollTop : 0, hLeft: hLeft };
             window.calWeekJumpDate = date;
             window.calWeekForceToday = 0;
         };
@@ -2077,6 +2071,21 @@
                 window.calWeekForceToday = 0;
                 if (snap.date) window.calWeekJumpDate = snap.date;
             }
+            const track = document.querySelector('.tab-track');
+            const v = data && data.v ? data.v() : (shell ? shell.querySelector('.cal-week-bottom') : null);
+            let lockedLeft = null;
+            if (snap && typeof snap.hLeft === 'number') lockedLeft = snap.hLeft;
+            else if (data && typeof data.hLeft === 'number') lockedLeft = data.hLeft;
+            else {
+                const raw = getComputedStyle(document.documentElement).getPropertyValue('--cal-week-left');
+                const px = parseFloat(raw);
+                if (Number.isFinite(px)) lockedLeft = -px;
+            }
+            window.calScrollLock = {
+                trackLeft: track ? track.scrollLeft : 0,
+                vTop: v ? v.scrollTop : 0,
+            };
+            if (shell && lockedLeft != null) window.calScrollLock.hLeft = lockedLeft;
             const agenda = {};
             document.querySelectorAll('.agenda-pane, .agenda-list').forEach((el) => {
                 const col = el.classList.contains('agenda-list') ? el : el.querySelector('.agenda-col');
@@ -2090,12 +2099,28 @@
         };
 
         window.calHoldPane = function () {
+            const lock = window.calScrollLock;
             const track = document.querySelector('.tab-track');
             const pane = track && track.querySelector(':scope > [data-tab="events"]');
-            if (track && pane) {
+            if (track && lock && typeof lock.trackLeft === 'number') {
+                if (Math.abs(track.scrollLeft - lock.trackLeft) > 1) track.scrollLeft = lock.trackLeft;
+            } else if (track && pane) {
                 const delta = pane.getBoundingClientRect().left - track.getBoundingClientRect().left;
                 if (Math.abs(delta) > 1) track.scrollLeft += delta;
             }
+            const v = document.querySelector('.cal-week-shell .cal-week-bottom');
+            if (v && lock && typeof lock.vTop === 'number' && Math.abs(v.scrollTop - lock.vTop) > 1) {
+                v.scrollTop = lock.vTop;
+            }
+            if (lock && typeof lock.hLeft === 'number') {
+                const left = (-Math.round(lock.hLeft)) + 'px';
+                document.documentElement.style.setProperty('--cal-week-left', left);
+                document.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
+                    if (el.style.left !== left) el.style.left = left;
+                });
+            }
+            if (document.documentElement.scrollTop) document.documentElement.scrollTop = 0;
+            if (document.body.scrollTop) document.body.scrollTop = 0;
             const saved = window.calViewRestore || {};
             const savedAgenda = saved.agenda || window.calAgendaScroll || {};
             document.querySelectorAll('.agenda-pane, .agenda-list').forEach((el) => {
@@ -2108,22 +2133,25 @@
 
         if (!window._calHoldPane) {
             window._calHoldPane = true;
+            const calHoldWanted = function () {
+                return !!(window.calModal && window.calModal.open);
+            };
             document.addEventListener('scroll', function (e) {
-                if (!window.calModal || !window.calModal.open) return;
+                if (!calHoldWanted()) return;
                 const t = e.target;
                 if (t && t.closest && t.closest('.modal-card, .modal-backdrop, .cal-filter-menu')) return;
                 window.calHoldPane();
             }, true);
             document.addEventListener('focusin', function (e) {
-                if (!window.calModal || !window.calModal.open) return;
+                if (!calHoldWanted()) return;
                 if (!e.target || !e.target.closest || !e.target.closest('.modal-card')) return;
                 [0, 60, 180, 420, 800].forEach(function (ms) {
-                    setTimeout(function () { window.calHoldPane(); }, ms);
+                    setTimeout(function () { if (calHoldWanted()) window.calHoldPane(); }, ms);
                 });
             });
             if (window.visualViewport) {
                 const holdViewport = function () {
-                    if (!window.calModal || !window.calModal.open) return;
+                    if (!calHoldWanted()) return;
                     window.calHoldPane();
                 };
                 window.visualViewport.addEventListener('resize', holdViewport);
