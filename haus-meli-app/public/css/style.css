@@ -5682,6 +5682,21 @@ body.trip-detail-open {
     border-color: var(--accent-fg);
 }
 
+/* Rahmen zeigt denselben Strich wie die Wetterkarte, an der Stelle der Stunde.
+   --accent-span und --accent-x setzt dasselbe Skript wie bei der Tagesauswahl. */
+.wx-hour.is-now.accent-fit {
+    border-color: transparent;
+    background-color: var(--surface);
+    background-image:
+        linear-gradient(var(--surface), var(--surface)),
+        linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    background-repeat: no-repeat;
+    background-origin: padding-box, border-box;
+    background-clip: padding-box, border-box;
+    background-size: 100% 100%, var(--accent-span, 100%) 100%;
+    background-position: 0 0, var(--accent-x, 0px) center;
+}
+
 .wx-hour-time {
     color: var(--muted);
     font-size: 0.68rem;

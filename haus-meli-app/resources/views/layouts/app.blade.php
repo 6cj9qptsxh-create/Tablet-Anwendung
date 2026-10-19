@@ -1585,6 +1585,7 @@
                     if (tr.width >= 8) ro.observe(track);
                 }
                 paintDayChips();
+                paintHourFrames();
                 var heads = document.querySelectorAll('.shop-content .super-heading, .tour-main-heading');
                 for (var h = 0; h < heads.length; h++) {
                     var head = heads[h];
@@ -1620,11 +1621,38 @@
                     paintDayChips();
                 });
             }
+            /* Die Stundenleiste scrollt, der Strich der Wetterkarte nicht. */
+            function paintHourFrames() {
+                var strips = document.querySelectorAll('.wx-hours');
+                for (var s = 0; s < strips.length; s++) {
+                    var strip = strips[s];
+                    var card = strip.closest('.info-block.wx-board-wrap');
+                    if (!card) continue;
+                    ro.observe(strip);
+                    ro.observe(card);
+                    var tr = card.getBoundingClientRect();
+                    var hours = strip.querySelectorAll('.wx-hour.is-now');
+                    for (var h = 0; h < hours.length; h++) fitButton(hours[h], tr);
+                }
+            }
+
+            var hourQueued = false;
+            function scheduleHours() {
+                if (hourQueued || queued) return;
+                hourQueued = true;
+                requestAnimationFrame(function () {
+                    hourQueued = false;
+                    if (queued) return;
+                    paintHourFrames();
+                });
+            }
+
             /* Scroll bubbelt nicht. Die Leiste bewegt sich, der Strich bleibt. */
             document.addEventListener('scroll', function (e) {
                 var t = e.target;
-                if (!t || t.nodeType !== 1 || !t.classList.contains('delivery-day-picker')) return;
-                scheduleDays();
+                if (!t || t.nodeType !== 1) return;
+                if (t.classList.contains('delivery-day-picker')) scheduleDays();
+                if (t.classList.contains('wx-hours')) scheduleHours();
             }, true);
             var mo = new MutationObserver(function () { schedule(); });
             mo.observe(document.body, {
