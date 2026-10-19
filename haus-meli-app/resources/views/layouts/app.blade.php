@@ -1585,7 +1585,7 @@
                     if (tr.width >= 8) ro.observe(track);
                 }
                 paintDayChips();
-                paintHourFrames();
+                paintWeatherFrames();
                 var heads = document.querySelectorAll('.shop-content .super-heading, .tour-main-heading');
                 for (var h = 0; h < heads.length; h++) {
                     var head = heads[h];
@@ -1621,29 +1621,28 @@
                     paintDayChips();
                 });
             }
-            /* Die Stundenleiste scrollt, der Strich der Wetterkarte nicht. */
-            function paintHourFrames() {
-                var strips = document.querySelectorAll('.wx-hours');
-                for (var s = 0; s < strips.length; s++) {
-                    var strip = strips[s];
-                    var card = strip.closest('.info-block.wx-board-wrap');
-                    if (!card) continue;
-                    ro.observe(strip);
+            /* Tages- und Stundenleiste scrollen, der Strich der Wetterkarte nicht. */
+            function paintWeatherFrames() {
+                var cards = document.querySelectorAll('.info-block.wx-board-wrap');
+                for (var i = 0; i < cards.length; i++) {
+                    var card = cards[i];
                     ro.observe(card);
                     var tr = card.getBoundingClientRect();
-                    var hours = strip.querySelectorAll('.wx-hour.is-now');
-                    for (var h = 0; h < hours.length; h++) fitButton(hours[h], tr);
+                    var frames = card.querySelectorAll('.wx-col.is-on, .wx-hour.is-now');
+                    for (var f = 0; f < frames.length; f++) fitButton(frames[f], tr);
+                    var strips = card.querySelectorAll('.wx-board, .wx-hours');
+                    for (var s = 0; s < strips.length; s++) ro.observe(strips[s]);
                 }
             }
 
-            var hourQueued = false;
-            function scheduleHours() {
-                if (hourQueued || queued) return;
-                hourQueued = true;
+            var weatherQueued = false;
+            function scheduleWeather() {
+                if (weatherQueued || queued) return;
+                weatherQueued = true;
                 requestAnimationFrame(function () {
-                    hourQueued = false;
+                    weatherQueued = false;
                     if (queued) return;
-                    paintHourFrames();
+                    paintWeatherFrames();
                 });
             }
 
@@ -1652,7 +1651,7 @@
                 var t = e.target;
                 if (!t || t.nodeType !== 1) return;
                 if (t.classList.contains('delivery-day-picker')) scheduleDays();
-                if (t.classList.contains('wx-hours')) scheduleHours();
+                if (t.classList.contains('wx-board') || t.classList.contains('wx-hours')) scheduleWeather();
             }, true);
             var mo = new MutationObserver(function () { schedule(); });
             mo.observe(document.body, {

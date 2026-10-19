@@ -5531,6 +5531,34 @@ body.trip-detail-open {
     box-shadow: inset 0 0 0 1px var(--accent-soft);
 }
 
+/* Ausgewählter Tag: nur der Rahmen folgt dem Strich, die Fläche bleibt der Wash.
+   Ein halbtransparenter Verlauf als Füllung würde den Strich durchscheinen lassen. */
+.wx-col.is-on.accent-fit {
+    position: relative;
+    box-shadow: none;
+}
+
+.wx-col.is-on.accent-fit::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background-image: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+    background-repeat: no-repeat;
+    background-size: var(--accent-span, 100%) 100%;
+    background-position: var(--accent-x, 0px) center;
+    pointer-events: none;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+}
+
 .wx-col-name {
     width: 100%;
     color: var(--muted);
@@ -5679,6 +5707,7 @@ body.trip-detail-open {
 }
 
 .wx-hour.is-now {
+    border-width: 3px;
     border-color: var(--accent-fg);
 }
 
