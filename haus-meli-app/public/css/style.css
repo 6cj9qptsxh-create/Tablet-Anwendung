@@ -5543,7 +5543,10 @@ body.trip-detail-open {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    padding: 2px;
+    padding: 3px;
+    /* Liegt der Tag links vor dem Strich, bleibt der Rand in der Randfarbe,
+       statt dort auszufallen. */
+    background-color: var(--accent-soft);
     background-image: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
     background-repeat: no-repeat;
     background-size: var(--accent-span, 100%) 100%;
@@ -5715,7 +5718,9 @@ body.trip-detail-open {
    --accent-span und --accent-x setzt dasselbe Skript wie bei der Tagesauswahl. */
 .wx-hour.is-now.accent-fit {
     border-color: transparent;
-    background-color: var(--surface);
+    /* Randfarbe unter dem Verlauf, damit der linke Rand nicht ausfällt,
+       wenn die Stunde vor dem Strich steht. Die Fläche deckt das mit --surface zu. */
+    background-color: var(--accent-soft);
     background-image:
         linear-gradient(var(--surface), var(--surface)),
         linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
