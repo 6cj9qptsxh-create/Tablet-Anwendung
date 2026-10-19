@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=123">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=124">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,12 +198,12 @@
     </script>
     <script>
         /* Akzent pro Person.
-           Familie bleibt lokal (Lukas / Meli).
-           Gäste starten bei #660000. Eine gespeicherte Person behält ihre Farbe
-           vom Anreise- bis zum Abreisetag, danach wieder die vordefinierte. */
+           Familie bleibt lokal (Lukas / Meli), Standard #660000.
+           Gäste starten bei #d3e2ff. Während eines Aufenthalts gilt die gewählte Farbe.
+           Eine gespeicherte Person behält sie für den nächsten Besuch, andere nur bis zur Abreise. */
         (function () {
             var GUEST = @json(! \App\Support\ClientNetwork::isFamily() || \App\Support\ClientNetwork::guestPreview());
-            var STANDARD = '#660000';
+            var STANDARD = GUEST ? '#d3e2ff' : '#660000';
             var PRESETS = ['#6c25b3', '#660000'];
             var STAY = @json(\App\Support\GuestAccent::clientPayload());
             var stayRefreshDay = '';

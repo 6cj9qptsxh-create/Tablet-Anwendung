@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Oberflächenfarbe einer gespeicherten Person, solange ihr Aufenthalt läuft.
- * Außerhalb davon gilt die vordefinierte Farbe. Die Farbe liegt nicht in der
- * Buchungstabelle, sondern unter guest_surface_colors am Personen-Schlüssel.
+ * Oberflächenfarbe für den laufenden Aufenthalt.
+ * Gespeicherte Personen behalten ihre Farbe über den nächsten Besuch.
+ * Gäste ohne Personen-Eintrag behalten sie nur bis zur Abreise.
+ * Danach gilt für Gäste #d3e2ff. Die Farbe liegt in guest_surface_colors.
  */
 class GuestAccent
 {
-    public const STANDARD = '#660000';
+    public const GUEST_STANDARD = '#d3e2ff';
 
     /** @var list<string> */
     private const ID_COLUMNS = [
@@ -131,6 +132,33 @@ class GuestAccent
     }
 
     /**
+     * Schlüssel der Farbe für diesen Aufenthalt. Gespeicherte Person, sonst die Buchung.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  list<string>  $columns
+     */
+    public static function stayKey(array $row, array $columns): string
+    {
+        $person = self::personKey($row, $columns);
+        if ($person !== '') {
+            return $person;
+        }
+
+        $id = '';
+        foreach ($row as $key => $value) {
+            if (strtolower((string) $key) === 'id') {
+                $id = trim((string) $value);
+                break;
+            }
+        }
+        if ($id !== '' && $id !== '0') {
+            return self::clip('booking:'.$id);
+        }
+
+        return '';
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $rows
      * @param  list<string>  $columns
      * @return array{key: string, from: string, until: string}|null
@@ -146,8 +174,11 @@ class GuestAccent
             if (! self::coversDate($from, $until, $today)) {
                 continue;
             }
-            $key = self::personKey($row, $columns);
-            $rank = [$key !== '' ? 1 : 0, $from, (int) ($row['id'] ?? 0)];
+            $key = self::stayKey($row, $columns);
+            if ($key === '') {
+                continue;
+            }
+            $rank = [self::personKey($row, $columns) !== '' ? 1 : 0, $from, (int) ($row['id'] ?? 0)];
             if ($best === null || $rank > $bestRank) {
                 $best = ['key' => $key, 'from' => $from, 'until' => $until];
                 $bestRank = $rank;
@@ -161,7 +192,7 @@ class GuestAccent
      * @param  array{key: string, from: string, until: string}|null  $stay
      * @return array{active: bool, accent: ?string, from: ?string, until: ?string, writable: bool}
      */
-    public static function payloadFromStay(?array $stay, ?string $accent, bool $family): array
+    public static function payloadFromStay(?array $stay, ?string $accent, bool $writable): array
     {
         $empty = self::emptyPayload();
         if ($stay === null || ($stay['key'] ?? '') === '') {
@@ -174,7 +205,7 @@ class GuestAccent
             'accent' => $hex !== '' ? $hex : null,
             'from' => $stay['from'],
             'until' => $stay['until'],
-            'writable' => ! $family,
+            'writable' => $writable,
         ];
     }
 
@@ -198,7 +229,7 @@ class GuestAccent
                 $accent = null;
             }
 
-            return self::payloadFromStay($stay, $accent, ClientNetwork::isFamily());
+            return self::payloadFromStay($stay, $accent, true);
         } catch (Throwable $e) {
             return $empty;
         }
@@ -207,7 +238,7 @@ class GuestAccent
     public static function remember(string $hex): bool
     {
         $hex = self::normalizeHex($hex);
-        if ($hex === '' || ClientNetwork::isFamily()) {
+        if ($hex === '' || ! self::guestSurface()) {
             return false;
         }
 
