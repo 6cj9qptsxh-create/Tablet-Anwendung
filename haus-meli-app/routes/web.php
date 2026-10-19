@@ -76,3 +76,13 @@ Route::post('/gast-vorschau', function (\Illuminate\Http\Request $request) {
 
     return redirect()->away($location);
 });
+
+Route::get('/gast-farbe', function () {
+    return response()->json(\App\Support\GuestAccent::clientPayload());
+});
+
+Route::post('/gast-farbe', function (\Illuminate\Http\Request $request) {
+    $saved = \App\Support\GuestAccent::remember((string) $request->input('accent', ''));
+
+    return response()->json(\App\Support\GuestAccent::clientPayload(), $saved ? 200 : 422);
+});
