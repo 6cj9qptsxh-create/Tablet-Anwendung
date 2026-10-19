@@ -71,6 +71,10 @@ html {
     height: 100%;
     /* Verhindert Verzögerung bei Klicks auf Touch-Geräten */
     touch-action: manipulation;
+    /* iOS vergrößert die Schrift im Querformat und lässt sie so.
+       Die Seite wirkt danach gezoomt. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body {
@@ -3626,6 +3630,14 @@ body.is-cal-tab .shell-nav {
     }
 
     #weather-forecast-grid .forecast-day:nth-child(n+4) {
+        display: none !important;
+    }
+}
+
+/* Handy quer: die Breite liegt über 767px, die Höhe bleibt die kurze Seite.
+   Tablet im Querformat ist deutlich höher und behält Wetter und Uhr. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    #info-card.info-card-head {
         display: none !important;
     }
 }
