@@ -82,12 +82,21 @@
             if (this.available <= 0) return '#ff4d4d'; // Rot
             if (this.available <= 10) return '#ffa502'; // Orange/Gelb
             return '#2ed573'; // Grün
+        },
+        openInfo() {
+            const v = this.variants.find(v => v.id === this.selectedVid);
+            this.$dispatch('open-product-modal', {
+                title: this.pName,
+                img: this.pImg,
+                desc: (v && v.desc) || '',
+                allergens: (v && v.allergens) || ''
+            });
         }
      }"
      x-init="selectedVid = variants[0]?.id; selectedLabel = variants[0]?.label;"
      x-effect="if (qty > available) qty = Math.max(1, available)">
      
-    <div class="thumb" style="position: relative;">
+    <div class="thumb" style="position: relative; cursor: pointer;" title="Klicken für mehr Infos" @click="openInfo()">
         @if($isSale)
             <div style="position:absolute; top:5px; right:5px; background:var(--color-red-text, #ff4d4d); color:white; font-size:0.75rem; font-weight:bold; padding:3px 6px; border-radius:6px; z-index:10; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
                 -15%
@@ -102,7 +111,7 @@
             <div class="card-left-col">
                 <div class="card-text-row" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     <div class="title" style="cursor: pointer; text-decoration: underline dotted;" title="Klicken für mehr Infos"
-                         @click="$dispatch('open-product-modal', { title: pName, img: pImg, desc: variants.find(v => v.id === selectedVid)?.desc || '', allergens: variants.find(v => v.id === selectedVid)?.allergens || '' })">
+                         @click="openInfo()">
                         {{ $name }}
                     </div>
                     

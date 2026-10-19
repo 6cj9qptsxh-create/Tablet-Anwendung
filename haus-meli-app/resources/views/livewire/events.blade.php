@@ -1443,13 +1443,32 @@
                     this.applyShift();
                 },
 
+                tracks() {
+                    if (this._tracks && this._tracks.length) return this._tracks;
+                    this._tracks = this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track');
+                    return this._tracks;
+                },
+
+                paintShift(px, commit) {
+                    const left = (-Math.round(px)) + 'px';
+                    const tracks = this.tracks();
+                    for (let i = 0; i < tracks.length; i++) tracks[i].style.left = left;
+                    if (commit) document.documentElement.style.setProperty('--cal-week-left', left);
+                },
+
                 applyShift() {
-                    const left = (-Math.round(this.hLeft)) + 'px';
-                    document.documentElement.style.setProperty('--cal-week-left', left);
-                    this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track').forEach((el) => {
-                        el.style.left = left;
-                        el.style.transform = '';
-                    });
+                    this._tracks = null;
+                    this.paintShift(this.hLeft, true);
+                },
+
+                cachePan() {
+                    const cols = this.$el.querySelectorAll('.day-col-body');
+                    const pitch = this.columnPitch();
+                    const maxIdx = Math.max(0, cols.length - 3);
+                    const edge = cols.length ? this.columnLeft(maxIdx) : 0;
+                    const day = pitch || this.colWidth() || 0;
+                    this._panMax = edge == null ? Math.max(0, maxIdx * day) : edge;
+                    this._tracks = this.$el.querySelectorAll('.cal-week-head-track, .cal-week-track');
                 },
 
                 measureDayWidth() {
@@ -1577,7 +1596,8 @@
                     if (!this.columnPitch() || !cols.length) return;
                     const idx = Math.max(0, Math.min(cols.length - 1, this.indexAt(this.hLeft)));
                     const iso = cols[idx].getAttribute('data-date');
-                    if (!iso) return;
+                    if (!iso || iso === this._titleIso) return;
+                    this._titleIso = iso;
                     const d = new Date(iso + 'T12:00:00');
                     const label = d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
                     window.calSetMonthTitle(label);
@@ -1603,11 +1623,13 @@
                         const t = Math.min(1, (now - t0) / dur);
                         const ease = 1 - Math.pow(1 - t, 3);
                         this.hLeft = from + (target - from) * ease;
-                        this.applyShift();
+                        this.paintShift(this.hLeft, false);
                         if (t < 1) {
                             requestAnimationFrame(step);
                         } else {
+                            this.hLeft = target;
                             this.setSwiping(false);
+                            this.applyShift();
                             this.setH(target);
                             this._programmatic = false;
                         }
@@ -1650,6 +1672,8 @@
                             return false;
                         }
                         this._snapGen = (this._snapGen || 0) + 1;
+                        this._panReady = false;
+                        this._pendingLeft = null;
                         this._bridging = true;
                         this._axis = null;
                         this._startX = clientX;
@@ -1681,15 +1705,29 @@
                         }
 
                         if (this._axis === 'x') {
+                            if (!this._panReady) {
+                                this.cachePan();
+                                this.noteUserSwipe();
+                                this._panReady = true;
+                                const tab = document.querySelector('.tab-track');
+                                this._tabEl = tab || null;
+                                this._tabLock = tab ? tab.scrollLeft : null;
+                            }
                             this._movedX = true;
-                            this.noteUserSwipe();
-                            this.setH(this._startLeft - dx);
                             this._lastX = clientX;
                             this._lastAt = Date.now();
-                            const track = document.querySelector('.tab-track');
-                            if (track) {
-                                if (this._tabLock == null) this._tabLock = track.scrollLeft;
-                                if (Math.abs(track.scrollLeft - this._tabLock) > 0) track.scrollLeft = this._tabLock;
+                            let next = this._startLeft - dx;
+                            const max = this._panMax || 0;
+                            if (next < 0) next = 0;
+                            else if (next > max) next = max;
+                            this._pendingLeft = next;
+                            if (!this._moveFrame) {
+                                this._moveFrame = requestAnimationFrame(() => {
+                                    this._moveFrame = 0;
+                                    if (this._dead || this._pendingLeft == null) return;
+                                    this.hLeft = this._pendingLeft;
+                                    this.paintShift(this.hLeft, false);
+                                });
                             }
                             if (e && e.cancelable) e.preventDefault();
                         }
@@ -1697,6 +1735,15 @@
 
                     const onEnd = () => {
                         if (this._dead) return;
+                        if (this._moveFrame) {
+                            cancelAnimationFrame(this._moveFrame);
+                            this._moveFrame = 0;
+                        }
+                        if (this._pendingLeft != null) {
+                            this.hLeft = this._pendingLeft;
+                            this._pendingLeft = null;
+                            this.paintShift(this.hLeft, false);
+                        }
                         if (!this._bridging && !this._movedX) return;
                         const wasX = this._axis === 'x' || this._movedX;
                         const drifted = Math.abs(this.hLeft - this._startLeft) > 2;
@@ -1704,6 +1751,8 @@
                         const dx = this._lastX - this._startX;
                         const elapsed = Math.max(1, this._lastAt - this._startAt);
                         const velocity = Math.abs(dx) / elapsed;
+                        const tabEl = this._tabEl;
+                        const tabLock = this._tabLock;
                         this._bridging = false;
                         this._axis = null;
                         this._movedX = false;
@@ -1715,6 +1764,7 @@
                             return;
                         }
                         this.noteUserSwipe();
+                        if (tabEl && tabLock != null) tabEl.scrollLeft = tabLock;
                         this.snapH(startLeft, dx, Math.abs(dx) < 8 ? 0 : velocity);
                     };
 
@@ -1730,18 +1780,31 @@
                             if (this._dead || !e.touches[0]) return;
                             if (!onStart(e, e.touches[0].clientX, e.touches[0].clientY)) return;
                             let ended = false;
-                            const move = (ev) => {
-                                if (this._dead || !ev.touches[0] || !this._bridging) return;
-                                onMove(ev.touches[0].clientX, ev.touches[0].clientY, ev);
-                            };
-                            const cleanup = () => {
+                            let tracking = null;
+                            const finish = () => {
                                 if (ended) return;
                                 ended = true;
+                                el.removeEventListener('touchmove', probe);
+                                if (tracking) el.removeEventListener('touchmove', tracking);
                                 onEnd();
                             };
-                            el.addEventListener('touchmove', move, { passive: false, signal });
-                            el.addEventListener('touchend', cleanup, { passive: true, signal });
-                            el.addEventListener('touchcancel', cleanup, { passive: true, signal });
+                            const probe = (ev) => {
+                                if (this._dead || !ev.touches[0] || !this._bridging || tracking) return;
+                                onMove(ev.touches[0].clientX, ev.touches[0].clientY, null);
+                                if (this._axis === 'y') {
+                                    el.removeEventListener('touchmove', probe);
+                                    return;
+                                }
+                                if (this._axis !== 'x') return;
+                                tracking = (ev2) => {
+                                    if (this._dead || !ev2.touches[0] || !this._bridging) return;
+                                    onMove(ev2.touches[0].clientX, ev2.touches[0].clientY, ev2);
+                                };
+                                el.addEventListener('touchmove', tracking, { passive: false, signal });
+                            };
+                            el.addEventListener('touchmove', probe, { passive: true, signal });
+                            el.addEventListener('touchend', finish, { passive: true, signal });
+                            el.addEventListener('touchcancel', finish, { passive: true, signal });
                         }, { passive: true, signal });
                     };
 
