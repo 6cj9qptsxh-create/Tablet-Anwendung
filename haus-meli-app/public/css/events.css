@@ -1332,6 +1332,20 @@ body.cal-creating {
     padding: 4px;
 }
 
+/* Heute ist selbst der Standard-Button: Außenmaß = --input-height, Rand liegt im Maß. */
+.cal-toolbar-row .cal-today-wrap {
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border: none;
+    height: var(--input-height);
+    min-height: var(--input-height);
+    max-height: var(--input-height);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--border), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 .cal-toolbar-row .cal-view-switch {
     grid-column: span 3;
     background: var(--card);
@@ -1369,6 +1383,13 @@ body.cal-creating {
     text-align: center;
     font-size: 14px;
     font-weight: 700;
+}
+
+.cal-today-wrap .cal-chip {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    border-radius: inherit;
 }
 
 .cal-chip.active {

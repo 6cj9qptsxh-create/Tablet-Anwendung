@@ -104,6 +104,7 @@
             await new Promise(r => setTimeout(r, 700));
             try {
                 await this.$wire.savePrivateEvent();
+                window.dispatchEvent(new CustomEvent('cal-week-release'));
             } catch (_) {
                 window.calSaveKeepsView = false;
                 window.calViewRestore = null;
@@ -120,6 +121,7 @@
             await new Promise(r => setTimeout(r, 700));
             try {
                 await this.$wire.deletePrivateEvent();
+                window.dispatchEvent(new CustomEvent('cal-week-release'));
             } catch (_) {
                 window.calSaveKeepsView = false;
                 window.calViewRestore = null;
@@ -1029,11 +1031,18 @@
                 _wantDate: '',
 
                 init() {
+                    this._dead = false;
                     this.restoreShiftNow();
                     this._onRemeasure = () => this.layoutWhenVisible();
                     this._onHash = () => this.queueOverflowHints();
+                    if (this._onRelease) window.removeEventListener('cal-week-release', this._onRelease);
+                    this._onRelease = () => {
+                        if (this._dead || this.swiping || this._bridging) return;
+                        this.layoutWhenVisible();
+                    };
                     window.addEventListener('cal-remeasure', this._onRemeasure);
                     window.addEventListener('hashchange', this._onHash);
+                    window.addEventListener('cal-week-release', this._onRelease);
                     this.$nextTick(() => {
                         this.layoutWhenVisible();
                         this.bindHBridge();
@@ -1078,11 +1087,17 @@
                     const stillCurrent = document.querySelector('.cal-week-shell') === this.$el;
                     if (stillCurrent && !window.calViewRestore) this.saveWeekPos();
                     this._dead = true;
+                    this._snapGen = (this._snapGen || 0) + 1;
+                    if (this._panAbort) {
+                        this._panAbort.abort();
+                        this._panAbort = null;
+                    }
                     clearTimeout(this._giveUp);
                     clearTimeout(this._confirmTimer);
                     this.hideOverflowHints();
                     if (this._onRemeasure) window.removeEventListener('cal-remeasure', this._onRemeasure);
                     if (this._onHash) window.removeEventListener('hashchange', this._onHash);
+                    if (this._onRelease) window.removeEventListener('cal-week-release', this._onRelease);
                     this.unbindOverflowScroll();
                     if (window.calRefreshWeekHints) window.calRefreshWeekHints = null;
                 },
@@ -1196,9 +1211,23 @@
 
                 markPlaced() {
                     if (this._placed) return;
+                    this.settleColumn();
                     this._placed = true;
                     this.$el.classList.add('is-placed');
                     this.scheduleConfirm();
+                },
+
+                settleColumn() {
+                    if (this._dead || this.swiping || this._bridging) return;
+                    const cols = this.$el.querySelectorAll('.day-col-body[data-date]');
+                    if (!cols.length) return;
+                    const idx = this.indexAt(this.hLeft);
+                    const edge = this.columnLeft(idx);
+                    if (edge == null || Math.abs(this.hLeft - edge) <= 1) return;
+                    const shown = cols[idx] ? (cols[idx].getAttribute('data-date') || '') : '';
+                    if (this._wantDate && shown && shown !== this._wantDate) return;
+                    this.hLeft = this.clampH(edge);
+                    this.applyShift();
                 },
 
                 scheduleConfirm() {
@@ -1233,7 +1262,9 @@
                 },
 
                 layoutWhenVisible() {
-                    if (this.loading || this._dead) return;
+                    if (this.loading || this._dead || this.swiping || this._bridging) return;
+                    const forceSoon = window.calWeekForceToday && (Date.now() - window.calWeekForceToday < 4000);
+                    if (this._placed && this._userMoved && !forceSoon) return;
                     if (window.calModal && window.calModal.open && this._placed) return;
                     const pinPending = window.calWeekPin && window.calWeekPin.date && this.leftDate() !== window.calWeekPin.date;
                     if (this._placed
@@ -1289,6 +1320,8 @@
                             if (!this.scrollToDate(pin.date, false)) return false;
                             if (typeof pin.vTop === 'number' && this.v()) this.v().scrollTop = pin.vTop;
                             if (this.leftDate() === pin.date) window.calWeekPin = null;
+                            window.calViewRestore = null;
+                            window.calSaveKeepsView = false;
                         } else if (held && (held.date || typeof held.hDays === 'number')) {
                             const heldDate = held.date || '';
                             if (heldDate) {
@@ -1551,14 +1584,22 @@
                 },
 
                 snapTo(target) {
+                    if (this._dead) return;
                     target = this.clampH(target);
+                    const gen = (this._snapGen || 0) + 1;
+                    this._snapGen = gen;
+                    if (Math.abs(this.hLeft - target) <= 1) {
+                        this.setSwiping(false);
+                        this.setH(target);
+                        return;
+                    }
                     const from = this.hLeft;
                     const t0 = performance.now();
                     const dur = 240;
                     this._programmatic = true;
                     this.setSwiping(true);
                     const step = (now) => {
-                        if (this._dead) return;
+                        if (this._dead || this._snapGen !== gen) return;
                         const t = Math.min(1, (now - t0) / dur);
                         const ease = 1 - Math.pow(1 - t, 3);
                         this.hLeft = from + (target - from) * ease;
@@ -1575,6 +1616,7 @@
                 },
 
                 snapH(startLeft, dx, velocity) {
+                    if (this._dead) return;
                     const cols = this.$el.querySelectorAll('.day-col-body');
                     const pitch = this.columnPitch();
                     if (!pitch || !cols.length) return;
@@ -1589,9 +1631,7 @@
                     }
                     idx = Math.max(0, Math.min(maxIdx, idx));
                     const edge = this.columnLeft(idx);
-                    const grid = idx * pitch;
-                    const target = (edge != null && Math.abs(edge - grid) <= Math.max(2, pitch * 0.2)) ? edge : grid;
-                    this.snapTo(target);
+                    this.snapTo(edge == null ? idx * pitch : edge);
                 },
 
                 /**
@@ -1604,11 +1644,12 @@
                     const THRESH = 10;
 
                     const onStart = (e, clientX, clientY) => {
-                        if (this.loading) return false;
+                        if (this._dead || this.loading) return false;
                         if (e.target.closest('.cal-create-ghost, .event-resize-handle')) {
                             this._bridging = false;
                             return false;
                         }
+                        this._snapGen = (this._snapGen || 0) + 1;
                         this._bridging = true;
                         this._axis = null;
                         this._startX = clientX;
@@ -1622,13 +1663,15 @@
                     };
 
                     const onMove = (clientX, clientY, e) => {
-                        if (!this._bridging) return;
+                        if (this._dead || !this._bridging) return;
                         const dx = clientX - this._startX;
                         const dy = clientY - this._startY;
 
                         if (!this._axis) {
-                            if (document.body.classList.contains('cal-no-select')
-                                || grid.querySelector('.day-col-body.is-selecting')) {
+                            const selecting = !!grid.querySelector('.day-col-body.is-selecting');
+                            const modalBlocks = document.body.classList.contains('cal-no-select')
+                                && window.calModal && window.calModal.open;
+                            if (selecting || modalBlocks) {
                                 this._bridging = false;
                                 return;
                             }
@@ -1653,6 +1696,7 @@
                     };
 
                     const onEnd = () => {
+                        if (this._dead) return;
                         if (!this._bridging && !this._movedX) return;
                         const wasX = this._axis === 'x' || this._movedX;
                         const drifted = Math.abs(this.hLeft - this._startLeft) > 2;
@@ -1674,24 +1718,31 @@
                         this.snapH(startLeft, dx, Math.abs(dx) < 8 ? 0 : velocity);
                     };
 
+                    if (this._panAbort) this._panAbort.abort();
+                    const panAbort = new AbortController();
+                    this._panAbort = panAbort;
+                    const signal = panAbort.signal;
+
                     const bindPan = (el) => {
-                        if (!el || el.dataset.calPan) return;
-                        el.dataset.calPan = '1';
+                        if (!el) return;
+                        if (el.dataset) delete el.dataset.calPan;
                         el.addEventListener('touchstart', (e) => {
-                            if (!e.touches[0]) return;
+                            if (this._dead || !e.touches[0]) return;
                             if (!onStart(e, e.touches[0].clientX, e.touches[0].clientY)) return;
+                            let ended = false;
                             const move = (ev) => {
-                                if (!ev.touches[0] || !this._bridging) return;
+                                if (this._dead || !ev.touches[0] || !this._bridging) return;
                                 onMove(ev.touches[0].clientX, ev.touches[0].clientY, ev);
                             };
                             const cleanup = () => {
-                                el.removeEventListener('touchmove', move);
+                                if (ended) return;
+                                ended = true;
                                 onEnd();
                             };
-                            el.addEventListener('touchmove', move, { passive: false });
-                            el.addEventListener('touchend', cleanup, { passive: true, once: true });
-                            el.addEventListener('touchcancel', cleanup, { passive: true, once: true });
-                        }, { passive: true });
+                            el.addEventListener('touchmove', move, { passive: false, signal });
+                            el.addEventListener('touchend', cleanup, { passive: true, signal });
+                            el.addEventListener('touchcancel', cleanup, { passive: true, signal });
+                        }, { passive: true, signal });
                     };
 
                     bindPan(grid);
