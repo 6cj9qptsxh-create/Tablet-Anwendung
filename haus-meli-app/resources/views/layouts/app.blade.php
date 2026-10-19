@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=124">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=125">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,94 @@
             };
             apply();
             window.addEventListener('resize', apply);
-            window.addEventListener('orientationchange', function () { setTimeout(apply, 80); });
+
+            // iOS behält nach Querformat → Hochformat die größere Skalierung,
+            // weil maximum-scale die Seite dort einsperrt. Nur dann die Sperre
+            // kurz lösen und die aktuelle Breite neu setzen.
+            const meta = document.querySelector('meta[name="viewport"]');
+            const locked = meta ? meta.getAttribute('content') : '';
+            let fixingZoom = false;
+            const zoomed = function () {
+                const vv = window.visualViewport;
+                if (!vv) return false;
+                if (vv.scale > 1.02) return true;
+                const layout = window.innerWidth || 0;
+                return layout > 0 && vv.width > 0 && layout > vv.width * 1.15;
+            };
+            // Prozent-Basis an den Seiten bleibt auf iOS nach dem Drehen
+            // auf der Querformat-Breite stehen. Feste Pixel folgen dem Fenster.
+            const fitPanes = function () {
+                const track = document.querySelector('.tab-track');
+                if (!track) return 0;
+                const w = track.getBoundingClientRect().width;
+                if (w < 1) return 0;
+                track.querySelectorAll(':scope > .tab-pane').forEach(function (pane) {
+                    const cur = parseFloat(pane.style.flexBasis);
+                    if (!cur || Math.abs(cur - w) > 0.5) pane.style.flexBasis = w + 'px';
+                });
+                return w;
+            };
+            const realignTab = function () {
+                const track = document.querySelector('.tab-track');
+                if (!track) return;
+                let name = '';
+                try { name = localStorage.getItem('hausMeliTab') || ''; } catch (e) {}
+                if (!name) name = (location.hash || '').replace(/^#/, '');
+                name = name.replace(/[^a-z0-9_-]/gi, '') || 'order';
+                const target = track.querySelector(':scope > [data-tab="' + name + '"]');
+                if (!target) return;
+                const delta = target.getBoundingClientRect().left - track.getBoundingClientRect().left;
+                if (Math.abs(delta) > 1) track.scrollLeft += delta;
+            };
+            let paneW = 0;
+            const onPaneSize = function () {
+                const w = fitPanes();
+                if (!w) return;
+                if (paneW && Math.abs(w - paneW) > 40) realignTab();
+                paneW = w;
+            };
+            const bootPanes = function () {
+                onPaneSize();
+                const track = document.querySelector('.tab-track');
+                if (track && window.ResizeObserver) new ResizeObserver(onPaneSize).observe(track);
+            };
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootPanes);
+            else bootPanes();
+            const fixZoom = function () {
+                if (!meta || fixingZoom || !zoomed()) return;
+                fixingZoom = true;
+                // Ohne maximum-scale kann Safari die Skalierung auf 1 zurücksetzen.
+                meta.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover');
+                setTimeout(function () {
+                    meta.setAttribute('content', locked);
+                    fixingZoom = false;
+                    if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+                    apply();
+                    fitPanes();
+                    realignTab();
+                }, 280);
+            };
+            let orientTimer = 0;
+            const onOrient = function () {
+                clearTimeout(orientTimer);
+                apply();
+                orientTimer = setTimeout(function () {
+                    apply();
+                    fitPanes();
+                    realignTab();
+                    fixZoom();
+                    setTimeout(function () {
+                        apply();
+                        fitPanes();
+                        realignTab();
+                        fixZoom();
+                    }, 420);
+                }, 280);
+            };
+            window.addEventListener('orientationchange', onOrient);
+            if (window.screen && screen.orientation && screen.orientation.addEventListener) {
+                screen.orientation.addEventListener('change', onOrient);
+            }
         })();
         // Alpine-Ausdrücke dürfen kein try/catch — Helfer hier (echtes JS).
         window.HAUS_MELI_BUILD = {
