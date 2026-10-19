@@ -5737,6 +5737,14 @@ body.trip-detail-open {
     line-height: 1.2;
 }
 
+.wx-col-snow {
+    min-height: 1.2em;
+    color: #7eb6ff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 .wx-col-rain {
     margin-top: 6px;
 }
@@ -5800,7 +5808,8 @@ body.trip-detail-open {
 
     .wx-col-rain,
     .wx-col-wind,
-    .wx-col-sun {
+    .wx-col-sun,
+    .wx-col-snow {
         font-size: 0.92rem;
     }
 

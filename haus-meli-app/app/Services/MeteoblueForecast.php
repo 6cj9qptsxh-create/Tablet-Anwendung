@@ -12,6 +12,15 @@ class MeteoblueForecast
 {
     /** Volle Balkenhöhe, für jeden Tag und jede Stunde dieselbe Menge. Anzeige in L/m². */
     private const RAIN_FULL_MM = 10.0;
+
+    /** Schneefallgrenze nur zeigen, solange sie unter dieser Höhe liegt. */
+    private const SNOW_LINE_LIMIT_M = 3000;
+
+    /**
+     * meteoblue liefert die Nullgradgrenze. Die Schneefallgrenze liegt etwa
+     * 300 m darunter, weil die Flocken erst auf dem Weg nach unten schmelzen.
+     */
+    private const SNOW_LINE_BELOW_FREEZING_M = 300;
     /** @return array<string, array{label:string,zones:array<string,array{lat:float,lon:float,asl:int}>}> */
     public function orts(): array
     {
@@ -58,7 +67,7 @@ class MeteoblueForecast
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v6.%s.%s.%s.%d',
+            'weather.meteoblue.v7.%s.%s.%s.%d',
             $place['id'],
             $place['lat'],
             $place['lon'],
@@ -217,7 +226,7 @@ class MeteoblueForecast
     /** @param  array{id:string,label:string,lat:float,lon:float,asl:int}  $place */
     private function download(string $key, array $place): array
     {
-        $response = Http::timeout(20)->acceptJson()->get('https://my.meteoblue.com/packages/basic-1h_basic-day_clouds-day', [
+        $response = Http::timeout(20)->acceptJson()->get('https://my.meteoblue.com/packages/basic-1h_basic-day_clouds-day_air-day', [
             'lat' => $place['lat'],
             'lon' => $place['lon'],
             'asl' => $place['asl'],
@@ -303,6 +312,7 @@ class MeteoblueForecast
                 'wind_text' => $this->compass((float) ($days['winddirection'][$i] ?? 0)).' '.$this->beaufort($meanWind),
                 'sun_text' => $this->sunText($days['sunshine_time'][$i] ?? null),
                 'uv' => (int) round((float) ($days['uvindex'][$i] ?? 0)),
+                'snow_m' => $this->snowLine($days['freezinglevelheight_mean'][$i] ?? null),
                 'icon' => $look['icon'],
                 'label' => $halves['morning']['label'] === $halves['afternoon']['label']
                     ? $look['label']
@@ -354,6 +364,7 @@ class MeteoblueForecast
 
         $days = [];
         $current = null;
+        $showSnow = false;
         foreach ($data['days'] as $day) {
             $date = (string) ($day['date'] ?? '');
             if ($date !== '' && $date < $today) {
@@ -378,6 +389,9 @@ class MeteoblueForecast
             }
             $day['hours'] = $hours;
             $day['rain_slots'] = $this->rainSlots($hours);
+            if (($day['snow_m'] ?? null) !== null) {
+                $showSnow = true;
+            }
             $days[] = $day;
         }
 
@@ -396,8 +410,30 @@ class MeteoblueForecast
 
         $data['days'] = $days;
         $data['current'] = $current;
+        $data['show_snow'] = $showSnow;
 
         return $data;
+    }
+
+    /**
+     * Tages-Schneefallgrenze in Metern, auf 100 m gerundet.
+     * null, wenn sie fehlt oder bei 3000 m und darüber liegt.
+     */
+    private function snowLine(mixed $freezingLevel): ?int
+    {
+        if (! is_numeric($freezingLevel)) {
+            return null;
+        }
+
+        $meters = (int) (round((((float) $freezingLevel) - self::SNOW_LINE_BELOW_FREEZING_M) / 100) * 100);
+        if ($meters < 0) {
+            $meters = 0;
+        }
+        if ($meters >= self::SNOW_LINE_LIMIT_M) {
+            return null;
+        }
+
+        return $meters;
     }
 
     private function rainSlots(array $hours): array
