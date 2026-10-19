@@ -59,12 +59,29 @@ class GuestAccentTest extends TestCase
 
     public function test_blank_name_is_not_a_stored_person(): void
     {
-        $key = GuestAccent::personKey(
-            ['id' => 15, 'name' => '   '],
-            ['id', 'name', 'check_in', 'check_out']
-        );
+        $row = ['id' => 15, 'name' => '   ', 'check_in' => '2026-10-19', 'check_out' => '2026-10-22'];
+        $columns = ['id', 'name', 'check_in', 'check_out'];
 
-        $this->assertSame('', $key);
+        $this->assertSame('', GuestAccent::personKey($row, $columns));
+        $this->assertSame('booking:15', GuestAccent::stayKey($row, $columns));
+    }
+
+    public function test_unnamed_guest_keeps_color_only_for_this_booking(): void
+    {
+        $stay = GuestAccent::pickStay([
+            [
+                'id' => 15,
+                'name' => '',
+                'check_in' => '2026-10-19',
+                'check_out' => '2026-10-22',
+            ],
+        ], ['id', 'name', 'check_in', 'check_out'], '2026-10-19');
+
+        $this->assertSame([
+            'key' => 'booking:15',
+            'from' => '2026-10-19',
+            'until' => '2026-10-22',
+        ], $stay);
     }
 
     public function test_stay_is_inclusive_and_prefers_a_named_guest(): void
@@ -99,7 +116,7 @@ class GuestAccentTest extends TestCase
         $this->assertFalse(GuestAccent::coversDate('2026-10-19', '2026-10-22', '2026-10-23'));
     }
 
-    public function test_payload_keeps_standard_until_a_color_is_saved_and_blocks_family_writes(): void
+    public function test_payload_keeps_the_field_empty_until_a_color_is_saved(): void
     {
         $stay = ['key' => 'guest_id:7', 'from' => '2026-10-19', 'until' => '2026-10-22'];
 
@@ -108,13 +125,15 @@ class GuestAccentTest extends TestCase
             'accent' => null,
             'from' => '2026-10-19',
             'until' => '2026-10-22',
-            'writable' => false,
+            'writable' => true,
         ], GuestAccent::payloadFromStay($stay, null, true));
 
-        $this->assertSame('#660000', GuestAccent::payloadFromStay($stay, '#660000', false)['accent']);
-        $this->assertNull(GuestAccent::payloadFromStay($stay, 'rot', false)['accent']);
-        $this->assertTrue(GuestAccent::payloadFromStay($stay, 'rot', false)['active']);
-        $this->assertFalse(GuestAccent::payloadFromStay(['key' => '', 'from' => '2026-10-19', 'until' => '2026-10-22'], '#112233', false)['active']);
+        $this->assertFalse(GuestAccent::payloadFromStay($stay, null, false)['writable']);
+        $this->assertSame('#d3e2ff', GuestAccent::payloadFromStay($stay, '#D3E2FF', true)['accent']);
+        $this->assertNull(GuestAccent::payloadFromStay($stay, 'rot', true)['accent']);
+        $this->assertTrue(GuestAccent::payloadFromStay($stay, 'rot', true)['active']);
+        $this->assertFalse(GuestAccent::payloadFromStay(['key' => '', 'from' => '2026-10-19', 'until' => '2026-10-22'], '#112233', true)['active']);
+        $this->assertSame('#d3e2ff', GuestAccent::GUEST_STANDARD);
     }
 
     public function test_hex_must_be_six_digits(): void
