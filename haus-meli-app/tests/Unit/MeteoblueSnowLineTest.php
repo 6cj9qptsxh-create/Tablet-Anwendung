@@ -85,7 +85,7 @@ class MeteoblueSnowLineTest extends TestCase
             ['rain' => 5, 'freeze_m' => 2500],
             ['rain' => 1, 'freeze_m' => 3100],
             ['rain' => 0, 'freeze_m' => 1500],
-        ], 4000);
+        ]);
 
         $this->assertSame(2300, $snow['snow_m']);
         $this->assertTrue($snow['weighted']);
@@ -96,7 +96,7 @@ class MeteoblueSnowLineTest extends TestCase
         $snow = $this->dayLine([
             ['rain' => 10, 'freeze_m' => 2000],
             ['rain' => 1, 'freeze_m' => 4000],
-        ], 4000);
+        ]);
 
         $this->assertSame(1900, $snow['snow_m']);
         $this->assertTrue($snow['weighted']);
@@ -106,20 +106,20 @@ class MeteoblueSnowLineTest extends TestCase
     {
         $snow = $this->dayLine([
             ['rain' => 8, 'freeze_m' => 4200],
-        ], 2500);
+        ]);
 
         $this->assertNull($snow['snow_m']);
         $this->assertTrue($snow['weighted']);
     }
 
-    public function test_dry_day_keeps_the_time_mean(): void
+    public function test_dry_day_hides_the_snow_line(): void
     {
         $snow = $this->dayLine([
             ['rain' => 0, 'freeze_m' => 1800],
             ['rain' => 2, 'freeze_m' => null],
-        ], 2500);
+        ]);
 
-        $this->assertSame(2200, $snow['snow_m']);
+        $this->assertNull($snow['snow_m']);
         $this->assertFalse($snow['weighted']);
     }
 
@@ -138,11 +138,11 @@ class MeteoblueSnowLineTest extends TestCase
      * @param  list<array{rain: float|int, freeze_m: mixed}>  $hours
      * @return array{snow_m: ?int, weighted: bool}
      */
-    private function dayLine(array $hours, mixed $dailyMean): array
+    private function dayLine(array $hours): array
     {
         $method = new \ReflectionMethod(MeteoblueForecast::class, 'snowLineForDay');
         $method->setAccessible(true);
 
-        return $method->invoke(new MeteoblueForecast(), $hours, $dailyMean);
+        return $method->invoke(new MeteoblueForecast(), $hours);
     }
 }
