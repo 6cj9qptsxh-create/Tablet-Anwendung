@@ -285,7 +285,7 @@ class MeteoblueForecast
                 $snowWeights[] = ['rain' => $mm, 'freeze_m' => $freeze];
                 $hourRows[] = [
                     'time' => substr($stamp, 11, 5),
-                    'snow_m' => $this->snowLine($freeze),
+                    'snow_m' => $mm > 0 ? $this->snowLine($freeze) : null,
                     'temp' => (int) round((float) ($hours['temperature'][$h] ?? 0)),
                     'feel' => (int) round((float) ($hours['felttemperature'][$h] ?? 0)),
                     'rain' => $mm,
@@ -301,7 +301,7 @@ class MeteoblueForecast
                 ];
             }
 
-            $snow = $this->snowLineForDay($snowWeights, $days['freezinglevelheight_mean'][$i] ?? null);
+            $snow = $this->snowLineForDay($snowWeights);
             $look = $this->dayLook($hourRows, $rain, $days['sunshine_time'][$i] ?? null, $dayCode);
             $halves = $this->dayHalves($hourRows, $days['sunshine_time'][$i] ?? null, $look);
             $when = new \DateTimeImmutable($date, $tz);
@@ -389,6 +389,9 @@ class MeteoblueForecast
                 $mm = (float) ($hour['rain'] ?? 0);
                 $hours[$h]['rain_height'] = $this->rainHeight($mm);
                 $hours[$h]['rain_text'] = $this->rainText($mm);
+                if ($mm <= 0) {
+                    $hours[$h]['snow_m'] = null;
+                }
                 $stamp = $date.' '.substr((string) ($hour['time'] ?? ''), 0, 2);
                 $hours[$h]['is_now'] = $stamp === $nowKey;
                 if ($hours[$h]['is_now']) {
@@ -400,6 +403,9 @@ class MeteoblueForecast
             }
             $day['hours'] = $hours;
             $day['rain_slots'] = $this->rainSlots($hours);
+            if (empty($day['snow_weighted'])) {
+                $day['snow_m'] = null;
+            }
             if (($day['snow_m'] ?? null) !== null) {
                 $showSnow = true;
             }
@@ -483,13 +489,13 @@ class MeteoblueForecast
     }
 
     /**
-     * Tageswert. Fällt Niederschlag, zählt jede Stunde mit ihrem Literanteil.
-     * Ein trockener Tag bleibt das zeitliche Mittel der Nullgradgrenze.
+     * Tageswert nur, wenn Niederschlag fällt. Jede nasse Stunde zählt mit
+     * ihrem Literanteil. Ein trockener Tag bleibt leer.
      *
      * @param  list<array{rain: float|int, freeze_m: mixed}>  $hours
      * @return array{snow_m: ?int, weighted: bool}
      */
-    private function snowLineForDay(array $hours, mixed $dailyMean): array
+    private function snowLineForDay(array $hours): array
     {
         $sum = 0.0;
         $weight = 0.0;
@@ -503,7 +509,7 @@ class MeteoblueForecast
             $weight += $mm;
         }
         if ($weight <= 0) {
-            return ['snow_m' => $this->snowLine($dailyMean), 'weighted' => false];
+            return ['snow_m' => null, 'weighted' => false];
         }
 
         return ['snow_m' => $this->snowLine($sum / $weight), 'weighted' => true];
