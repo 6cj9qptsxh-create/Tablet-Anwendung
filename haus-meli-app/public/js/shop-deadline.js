@@ -13,14 +13,22 @@
         var cover = 0;
         var lastY = shop.scrollTop || 0;
         var navH = 40;
+        var navTravel = 40;
         var stickEngage = 0;
         var phone = window.matchMedia('(max-width: 767px)');
 
         function readNavH() {
             var nav = document.querySelector('.shell-nav');
-            if (!nav) return;
-            var h = nav.offsetHeight;
-            if (h > 0) navH = h;
+            var safe = 0;
+            if (nav) {
+                var h = nav.offsetHeight;
+                if (h > 0) navH = h;
+                /* Berechnete Pixel. Der Text von env() ist keine Zahl,
+                   sonst bleibt die Leiste unter der Statusleiste stehen. */
+                var top = parseFloat(getComputedStyle(nav).top);
+                if (isFinite(top) && top > 0) safe = top;
+            }
+            navTravel = safe + navH;
         }
 
         function px(name, value) {
@@ -85,9 +93,16 @@
             var y = shop.scrollTop || 0;
             if (y < 0) y = 0;
             px('--nav-cover', cover);
-            var need = y + cover - stickEngage;
+            /* Die ersten Pixel der Leiste liegen in der Statusleiste.
+               Der Kopf klebt schon darunter und rückt erst mit, wenn die
+               Leiste ihn berührt. Ohne Statusleiste ist das die ganze Strecke. */
+            var safe = navTravel - navH;
+            if (safe < 0) safe = 0;
+            var follow = cover - safe;
+            if (follow < 0) follow = 0;
+            var need = y + cover - safe - stickEngage;
             var headerCover = 0;
-            if (need > 0) headerCover = need < cover ? need : cover;
+            if (need > 0) headerCover = need < follow ? need : follow;
             px('--header-cover', headerCover);
         }
 
@@ -153,10 +168,10 @@
             lastY = y;
             if (!phone.matches) return;
             if (linked()) {
-                if (y <= navH) cover = 0;
+                if (y <= navTravel) cover = 0;
                 else cover -= delta;
                 if (cover < 0) cover = 0;
-                if (cover > navH) cover = navH;
+                if (cover > navTravel) cover = navTravel;
                 applyCovers();
                 return;
             }
