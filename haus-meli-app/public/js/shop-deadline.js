@@ -1,11 +1,10 @@
-/* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll.
-   Der Hinweis gleitet nur beim Runterscrollen weg, mit halber
-   Finger-Geschwindigkeit, und kommt erst ganz oben wieder.
-   Die Navigation ist das Gegenteil: sie kommt sofort zurück,
-   sobald nach oben gescrollt wird.
+/* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll 1:1.
+   Der Hinweis gleitet nur beim Runterscrollen weg und kommt erst ganz oben wieder.
+   Die Navigation kommt beim Hochscrollen zurück und schiebt den Shop-Kopf
+   mit nach unten, auch mitten in der Liste.
    scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
-    var SPEED = 0.5;
+    var SPEED = 1;
 
     function start() {
         var shop = document.querySelector('.tab-pane[data-tab="order"]');
