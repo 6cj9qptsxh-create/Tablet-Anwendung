@@ -6153,10 +6153,18 @@ body.trip-detail-open {
         height: var(--nav-h);
         min-height: 0;
         background: rgb(32, 33, 38);
-        translate: 0 var(--nav-cover);
         animation: shop-nav-with-finger linear both;
         animation-timeline: --shop-y;
         animation-range: 0px var(--nav-travel);
+    }
+
+    /* Weiter unten hängt die Zeitlinie fest am Ende. Ein zweites translate
+       bewegt die Leiste dort nicht mit, der Hinweis rutscht allein halb ins Bild.
+       Ab hier ist die Verschiebung selbst die Position. */
+    body.page-content[data-nav-reveal] .shell-nav {
+        animation: none;
+        translate: none;
+        transform: translateY(calc(var(--nav-cover, 0px) - var(--nav-travel, 40px)));
     }
 
     /* Zeitlinie hängt nicht: die Leiste folgt dem Skript. */
@@ -6193,6 +6201,12 @@ body.trip-detail-open {
            --header-cover schiebt den Kopf erst mit, wenn die Leiste ihn erreicht. */
         top: calc(0px - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-h));
         translate: 0 var(--header-cover);
+    }
+
+    /* Der Hinweis bleibt weg, solange die Leiste von unten zurückkommt.
+       Sonst schiebt die Verschiebung genau diese Zeile wieder ins Bild. */
+    body.page-content[data-nav-reveal] .tab-pane .shop-header-wrap {
+        clip-path: inset(var(--deadline-stick, 0px) 0 0 0);
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
