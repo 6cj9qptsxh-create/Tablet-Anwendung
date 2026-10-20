@@ -1,7 +1,7 @@
 /* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll 1:1.
-   Der Hinweis gleitet nur beim Runterscrollen weg und kommt erst ganz oben wieder.
-   Die Navigation kommt beim Hochscrollen zurück und schiebt den Shop-Kopf
-   mit nach unten, auch mitten in der Liste.
+   Der Hinweis gleitet nur per Verschieben weg. Der Platz schließt und
+   öffnet sich je einmal, oben langsam. Hochscrollen allein holt ihn nicht.
+   Die Navigation kommt beim Hochscrollen zurück und schiebt den Shop-Kopf mit.
    scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
     var SPEED = 1;
@@ -17,18 +17,29 @@
         var box = 0;
         var gap = 0;
         var navH = 40;
+        var away = false;
+        var opening = false;
         var phone = window.matchMedia('(max-width: 767px)');
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
         var quiet = false;
 
         function clip() {
             return shop.querySelector('.deadline-clip');
         }
 
-        function clearMotion() {
-            shop.style.removeProperty('--deadline-hide');
-            shop.style.removeProperty('--deadline-shift');
-            shop.style.removeProperty('--deadline-clip-h');
-            shop.removeAttribute('data-deadline-hidden');
+        function setShift(px) {
+            if (px <= 0.2) shop.style.removeProperty('--deadline-shift');
+            else shop.style.setProperty('--deadline-shift', px.toFixed(2) + 'px');
+        }
+
+        function setBox(px) {
+            if (px > 0) shop.style.setProperty('--deadline-box', px.toFixed(2) + 'px');
+            else shop.style.removeProperty('--deadline-box');
+        }
+
+        function setFlag(name, on) {
+            if (on) shop.setAttribute(name, '');
+            else shop.removeAttribute(name);
         }
 
         function readNavH() {
@@ -63,26 +74,95 @@
             applyNav(false);
         };
 
-        function apply() {
-            var el = clip();
-            var range = box;
-            if (!el || range <= 0) {
+        function finishClose() {
+            if (!away) return;
+            setFlag('data-deadline-gone', true);
+            setFlag('data-deadline-closing', false);
+            setFlag('data-deadline-sliding', false);
+        }
+
+        function finishOpen() {
+            opening = false;
+            away = false;
+            hide = 0;
+            setShift(0);
+            setFlag('data-deadline-hidden', false);
+            setFlag('data-deadline-gone', false);
+            setFlag('data-deadline-opening', false);
+            setFlag('data-deadline-closing', false);
+            setFlag('data-deadline-sliding', false);
+        }
+
+        function beginClose() {
+            if (away || box <= 0) return;
+            away = true;
+            opening = false;
+            hide = box;
+            setShift(box);
+            setFlag('data-deadline-sliding', false);
+            setFlag('data-deadline-opening', false);
+            setFlag('data-deadline-closing', true);
+            setFlag('data-deadline-hidden', true);
+            if (reduced.matches) finishClose();
+        }
+
+        function beginOpen() {
+            if (opening) return;
+            if (!away && hide <= 0.2 && !shop.hasAttribute('data-deadline-hidden')) {
                 hide = 0;
-                clearMotion();
+                setShift(0);
                 return;
             }
-            if (hide < 0) hide = 0;
-            if (hide > range) hide = range;
-            if (hide <= 0.2) {
+            opening = true;
+            away = false;
+            setFlag('data-deadline-gone', false);
+            setFlag('data-deadline-closing', false);
+            setFlag('data-deadline-sliding', false);
+            setFlag('data-deadline-opening', true);
+            if (!shop.hasAttribute('data-deadline-hidden')) {
                 hide = 0;
-                clearMotion();
+                setShift(0);
+                if (reduced.matches) finishOpen();
                 return;
             }
-            shop.style.setProperty('--deadline-hide', hide.toFixed(2) + 'px');
-            shop.style.setProperty('--deadline-shift', hide.toFixed(2) + 'px');
-            shop.style.setProperty('--deadline-clip-h', Math.max(0, box - hide).toFixed(2) + 'px');
-            if (hide >= range - 0.4) shop.setAttribute('data-deadline-hidden', '');
-            else shop.removeAttribute('data-deadline-hidden');
+            if (reduced.matches) {
+                hide = 0;
+                setShift(0);
+                finishOpen();
+                return;
+            }
+            /* Ein Frame auf Höhe 0 lassen, sonst springt die Zeile statt zu wachsen. */
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    if (!opening) return;
+                    hide = 0;
+                    setShift(0);
+                    setFlag('data-deadline-hidden', false);
+                });
+            });
+        }
+
+        function restoreAfterMeasure() {
+            setBox(box);
+            if (away) {
+                hide = box;
+                setShift(box);
+                setFlag('data-deadline-sliding', false);
+                setFlag('data-deadline-opening', false);
+                setFlag('data-deadline-closing', false);
+                setFlag('data-deadline-hidden', true);
+                setFlag('data-deadline-gone', true);
+                return;
+            }
+            if (hide > 0.2) {
+                if (hide > box) hide = box;
+                setShift(hide);
+                setFlag('data-deadline-sliding', true);
+                setFlag('data-deadline-hidden', false);
+                setFlag('data-deadline-gone', false);
+                return;
+            }
+            finishOpen();
         }
 
         function measure() {
@@ -91,9 +171,16 @@
             quiet = true;
             if (!el || !banner) {
                 box = 0;
-                gap = 0;
                 hide = 0;
-                clearMotion();
+                away = false;
+                opening = false;
+                setBox(0);
+                setShift(0);
+                setFlag('data-deadline-hidden', false);
+                setFlag('data-deadline-gone', false);
+                setFlag('data-deadline-closing', false);
+                setFlag('data-deadline-opening', false);
+                setFlag('data-deadline-sliding', false);
                 quiet = false;
                 lastY = shop.scrollTop;
                 return;
@@ -102,8 +189,12 @@
             var n = parseFloat(raw);
             gap = isFinite(n) ? n : 0;
             shop.style.setProperty('--deadline-row-gap', gap.toFixed(2) + 'px');
-            shop.removeAttribute('data-deadline-hidden');
-            shop.style.removeProperty('--deadline-clip-h');
+            setFlag('data-deadline-gone', false);
+            setFlag('data-deadline-hidden', false);
+            setFlag('data-deadline-closing', false);
+            setFlag('data-deadline-opening', false);
+            setFlag('data-deadline-sliding', false);
+            shop.style.removeProperty('--deadline-box');
             shop.style.removeProperty('--deadline-shift');
             var cs = getComputedStyle(banner);
             var mt = parseFloat(cs.marginTop) || 0;
@@ -111,10 +202,10 @@
             box = banner.offsetHeight + mt + mb + gap;
             if (box <= 0) {
                 hide = 0;
-                clearMotion();
+                away = false;
+                setBox(0);
             } else {
-                if (hide > box) hide = box;
-                apply();
+                restoreAfterMeasure();
             }
             quiet = false;
             lastY = shop.scrollTop;
@@ -137,25 +228,32 @@
                 applyNav(false);
             }
 
-            /* Ganz oben: Hinweis wieder zeigen. Hochscrollen allein reicht nicht. */
+            /* Ganz oben langsam aufklappen. Hochscrollen allein reicht nicht. */
             if (y <= 0) {
-                if (hide !== 0) {
-                    hide = 0;
-                    apply();
-                }
+                beginOpen();
                 return;
             }
-            if (delta <= 0) return;
+            if (delta <= 0 || away) return;
             if (box <= 0) measure();
-            if (box <= 0) return;
+            if (box <= 0 || away) return;
             var next = hide + delta * SPEED;
             if (next > box) next = box;
-            if (next === hide) return;
-            hide = next;
-            apply();
+            if (next !== hide) {
+                hide = next;
+                setFlag('data-deadline-sliding', true);
+                setShift(hide);
+            }
+            if (hide >= box - 0.4) beginClose();
         }
 
         shop.addEventListener('scroll', onScroll, { passive: true });
+        shop.addEventListener('transitionend', function (e) {
+            var el = clip();
+            if (!el || (e.target !== el && !el.contains(e.target))) return;
+            if (e.propertyName !== 'height' && e.propertyName !== 'opacity' && e.propertyName !== 'transform') return;
+            if (away) finishClose();
+            else if (opening) finishOpen();
+        });
         readNavH();
         measure();
         applyNav(true);

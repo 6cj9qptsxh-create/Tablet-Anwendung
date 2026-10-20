@@ -1725,9 +1725,10 @@ body.is-cal-tab .shell-nav {
 }
 
 /* --- DEADLINE INFO (Infozeile zum gewählten Tag) --- */
-/* Der Clip schneidet die Zeile beim Wegscrollen ab. Höhe und Versatz
+/* Der Clip schneidet die Zeile beim Wegscrollen ab. Versatz und Höhe
    setzt shop-deadline.js über Variablen am Tab, damit Livewire sie
-   beim Neuzeichnen nicht verwirft. */
+   beim Neuzeichnen nicht verwirft. Die Höhe ändert sich nicht bei jedem
+   Pixel, nur einmal beim Zu- und Aufklappen. */
 .deadline-clip {
     flex: 0 0 auto;
     width: 100%;
@@ -1737,7 +1738,8 @@ body.is-cal-tab .shell-nav {
        stehen, wenn die Zeile weg ist. Er wird in den Clip gezogen und
        schrumpft mit. */
     margin-top: calc(-1 * var(--deadline-row-gap, 0px));
-    height: var(--deadline-clip-h, auto);
+    height: var(--deadline-box, auto);
+    opacity: 1;
 }
 
 .deadline-clip::before {
@@ -1746,8 +1748,31 @@ body.is-cal-tab .shell-nav {
     height: var(--deadline-row-gap, 0px);
 }
 
+.tab-pane[data-deadline-closing] .deadline-clip {
+    transition: height 0.22s ease, opacity 0.22s ease;
+}
+
+.tab-pane[data-deadline-opening] .deadline-clip {
+    transition: height 0.32s ease-out, opacity 0.32s ease-out;
+}
+
+.tab-pane[data-deadline-opening] .deadline-info {
+    transition: transform 0.32s ease-out;
+}
+
+.tab-pane[data-deadline-sliding] .deadline-clip,
+.tab-pane[data-deadline-sliding] .deadline-info {
+    transition: none;
+}
+
 .tab-pane[data-deadline-hidden] .deadline-clip {
-    /* Höhe 0 lässt den Flex-Abstand zurückkommen. Ganz weg nimmt ihn mit. */
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tab-pane[data-deadline-gone] .deadline-clip {
+    /* Erst nach dem Zuklappen, sonst läuft die Transition nicht. */
     display: none;
 }
 
@@ -5998,7 +6023,10 @@ body.trip-detail-open {
     .info-switch-btn,
     .cal-chip,
     .shell-nav-side,
-    .cal-icon-btn {
+    .cal-icon-btn,
+    .tab-pane[data-deadline-closing] .deadline-clip,
+    .tab-pane[data-deadline-opening] .deadline-clip,
+    .tab-pane[data-deadline-opening] .deadline-info {
         transition: none;
     }
 }
