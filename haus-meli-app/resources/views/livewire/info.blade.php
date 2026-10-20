@@ -246,7 +246,7 @@
                             <span class="wx-col-sun {{ !empty($day['sun_text']) ? 'is-on' : '' }}">{{ $day['sun_text'] ?? '–' }}</span>
                             <span class="wx-col-wind">{{ $day['wind_text'] }}</span>
                             @if(!empty($forecast['show_snow']))
-                                <span class="wx-col-snow" @if(($day['snow_m'] ?? null) !== null) title="Schneefallgrenze, Mittel über den Tag" @endif>{{ ($day['snow_m'] ?? null) !== null ? $day['snow_m'].' m' : '' }}</span>
+                                <span class="wx-col-snow" @if(($day['snow_m'] ?? null) !== null) title="{{ !empty($day['snow_weighted']) ? 'Schneefallgrenze, gewichtet nach Niederschlag' : 'Schneefallgrenze, Mittel über den Tag' }}" @endif>{{ ($day['snow_m'] ?? null) !== null ? $day['snow_m'].' m' : '' }}</span>
                             @endif
                         </button>
                     @endforeach

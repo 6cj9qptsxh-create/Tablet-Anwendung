@@ -79,6 +79,50 @@ class MeteoblueSnowLineTest extends TestCase
         $this->assertSame([], $this->levels([]));
     }
 
+    public function test_day_snow_line_weights_hours_by_precipitation(): void
+    {
+        $snow = $this->dayLine([
+            ['rain' => 5, 'freeze_m' => 2500],
+            ['rain' => 1, 'freeze_m' => 3100],
+            ['rain' => 0, 'freeze_m' => 1500],
+        ], 4000);
+
+        $this->assertSame(2300, $snow['snow_m']);
+        $this->assertTrue($snow['weighted']);
+    }
+
+    public function test_heavier_precipitation_pulls_the_day_snow_line(): void
+    {
+        $snow = $this->dayLine([
+            ['rain' => 10, 'freeze_m' => 2000],
+            ['rain' => 1, 'freeze_m' => 4000],
+        ], 4000);
+
+        $this->assertSame(1900, $snow['snow_m']);
+        $this->assertTrue($snow['weighted']);
+    }
+
+    public function test_precipitation_above_the_limit_hides_the_day_snow_line(): void
+    {
+        $snow = $this->dayLine([
+            ['rain' => 8, 'freeze_m' => 4200],
+        ], 2500);
+
+        $this->assertNull($snow['snow_m']);
+        $this->assertTrue($snow['weighted']);
+    }
+
+    public function test_dry_day_keeps_the_time_mean(): void
+    {
+        $snow = $this->dayLine([
+            ['rain' => 0, 'freeze_m' => 1800],
+            ['rain' => 2, 'freeze_m' => null],
+        ], 2500);
+
+        $this->assertSame(2200, $snow['snow_m']);
+        $this->assertFalse($snow['weighted']);
+    }
+
     /** @param  array<string, mixed>  $data3h
      * @return array<string, ?int>
      */
@@ -88,5 +132,17 @@ class MeteoblueSnowLineTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke(new MeteoblueForecast(), $data3h);
+    }
+
+    /**
+     * @param  list<array{rain: float|int, freeze_m: mixed}>  $hours
+     * @return array{snow_m: ?int, weighted: bool}
+     */
+    private function dayLine(array $hours, mixed $dailyMean): array
+    {
+        $method = new \ReflectionMethod(MeteoblueForecast::class, 'snowLineForDay');
+        $method->setAccessible(true);
+
+        return $method->invoke(new MeteoblueForecast(), $hours, $dailyMean);
     }
 }
