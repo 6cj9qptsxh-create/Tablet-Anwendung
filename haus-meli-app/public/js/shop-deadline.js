@@ -1,7 +1,8 @@
 /* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll 1:1.
-   Der Hinweis gleitet nur per Verschieben weg. Der Platz schließt und
-   öffnet sich je einmal, oben langsam. Hochscrollen allein holt ihn nicht.
-   Die Navigation kommt beim Hochscrollen zurück und schiebt den Shop-Kopf mit.
+   Der Hinweis gleitet nur per Verschiebung und Deckkraft. Der Platz
+   darunter wechselt in einem Frame, sonst ruckelt die Produktliste.
+   Hochscrollen allein holt ihn nicht. Die Navigation kommt beim
+   Hochscrollen zurück und schiebt den Shop-Kopf mit.
    scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
     var SPEED = 1;
@@ -19,6 +20,7 @@
         var navH = 40;
         var away = false;
         var opening = false;
+        var motionToken = 0;
         var phone = window.matchMedia('(max-width: 767px)');
         var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
         var quiet = false;
@@ -28,8 +30,8 @@
         }
 
         function setShift(px) {
-            if (px <= 0.2) shop.style.removeProperty('--deadline-shift');
-            else shop.style.setProperty('--deadline-shift', px.toFixed(2) + 'px');
+            var value = px <= 0.2 ? 0 : px;
+            shop.style.setProperty('--deadline-shift', value.toFixed(2) + 'px');
         }
 
         function setBox(px) {
@@ -78,6 +80,7 @@
             if (!away) return;
             setFlag('data-deadline-gone', true);
             setFlag('data-deadline-closing', false);
+            setFlag('data-deadline-reveal', false);
             setFlag('data-deadline-sliding', false);
         }
 
@@ -88,6 +91,7 @@
             setShift(0);
             setFlag('data-deadline-hidden', false);
             setFlag('data-deadline-gone', false);
+            setFlag('data-deadline-reveal', false);
             setFlag('data-deadline-opening', false);
             setFlag('data-deadline-closing', false);
             setFlag('data-deadline-sliding', false);
@@ -97,49 +101,72 @@
             if (away || box <= 0) return;
             away = true;
             opening = false;
+            motionToken++;
             hide = box;
             setShift(box);
             setFlag('data-deadline-sliding', false);
             setFlag('data-deadline-opening', false);
-            setFlag('data-deadline-closing', true);
+            setFlag('data-deadline-reveal', false);
+            setFlag('data-deadline-closing', false);
             setFlag('data-deadline-hidden', true);
-            if (reduced.matches) finishClose();
+            /* Zeile ist schon aus dem Bild. Platz in diesem Frame weg. */
+            finishClose();
         }
 
         function beginOpen() {
             if (opening) return;
-            if (!away && hide <= 0.2 && !shop.hasAttribute('data-deadline-hidden')) {
+            var parked = away || shop.hasAttribute('data-deadline-hidden') || shop.hasAttribute('data-deadline-gone');
+            if (!parked && hide <= 0.2) {
                 hide = 0;
                 setShift(0);
                 return;
             }
             opening = true;
             away = false;
-            setFlag('data-deadline-gone', false);
+            var token = ++motionToken;
             setFlag('data-deadline-closing', false);
             setFlag('data-deadline-sliding', false);
             setFlag('data-deadline-opening', true);
-            if (!shop.hasAttribute('data-deadline-hidden')) {
-                hide = 0;
-                setShift(0);
-                if (reduced.matches) finishOpen();
+            if (!parked) {
+                /* Platz ist noch da. Nur die Zeile gleitet zurück. */
+                setFlag('data-deadline-reveal', true);
+                if (reduced.matches) {
+                    finishOpen();
+                    return;
+                }
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        if (token !== motionToken || !opening) return;
+                        hide = 0;
+                        setShift(0);
+                    });
+                });
+                setTimeout(function () {
+                    if (token === motionToken && opening) finishOpen();
+                }, 420);
                 return;
             }
+            /* Platz sofort auf. Die Zeile startet darüber und gleitet herein. */
+            setFlag('data-deadline-gone', false);
+            setFlag('data-deadline-hidden', false);
+            setFlag('data-deadline-reveal', false);
+            hide = box;
+            setShift(box);
             if (reduced.matches) {
-                hide = 0;
-                setShift(0);
                 finishOpen();
                 return;
             }
-            /* Ein Frame auf Höhe 0 lassen, sonst springt die Zeile statt zu wachsen. */
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    if (!opening) return;
+                    if (token !== motionToken || !opening) return;
                     hide = 0;
                     setShift(0);
-                    setFlag('data-deadline-hidden', false);
+                    setFlag('data-deadline-reveal', true);
                 });
             });
+            setTimeout(function () {
+                if (token === motionToken && opening) finishOpen();
+            }, 420);
         }
 
         function restoreAfterMeasure() {
@@ -149,6 +176,7 @@
                 setShift(box);
                 setFlag('data-deadline-sliding', false);
                 setFlag('data-deadline-opening', false);
+                setFlag('data-deadline-reveal', false);
                 setFlag('data-deadline-closing', false);
                 setFlag('data-deadline-hidden', true);
                 setFlag('data-deadline-gone', true);
@@ -158,6 +186,7 @@
                 if (hide > box) hide = box;
                 setShift(hide);
                 setFlag('data-deadline-sliding', true);
+                setFlag('data-deadline-reveal', false);
                 setFlag('data-deadline-hidden', false);
                 setFlag('data-deadline-gone', false);
                 return;
@@ -169,6 +198,8 @@
             var el = clip();
             var banner = el && el.querySelector('.deadline-info');
             quiet = true;
+            opening = false;
+            motionToken++;
             if (!el || !banner) {
                 box = 0;
                 hide = 0;
@@ -180,6 +211,7 @@
                 shop.style.removeProperty('--deadline-row-gap');
                 setFlag('data-deadline-hidden', false);
                 setFlag('data-deadline-gone', false);
+                setFlag('data-deadline-reveal', false);
                 setFlag('data-deadline-closing', false);
                 setFlag('data-deadline-opening', false);
                 setFlag('data-deadline-sliding', false);
@@ -203,6 +235,7 @@
             shop.style.setProperty('--deadline-outer-gap', outer.toFixed(2) + 'px');
             setFlag('data-deadline-gone', false);
             setFlag('data-deadline-hidden', false);
+            setFlag('data-deadline-reveal', false);
             setFlag('data-deadline-closing', false);
             setFlag('data-deadline-opening', false);
             setFlag('data-deadline-sliding', false);
@@ -240,10 +273,16 @@
                 applyNav(false);
             }
 
-            /* Ganz oben langsam aufklappen. Hochscrollen allein reicht nicht. */
+            /* Ganz oben gleitet die Zeile herein. Hochscrollen allein reicht nicht. */
             if (y <= 0) {
                 beginOpen();
                 return;
+            }
+            if (opening && delta > 0) {
+                opening = false;
+                motionToken++;
+                setFlag('data-deadline-opening', false);
+                setFlag('data-deadline-reveal', false);
             }
             if (delta <= 0 || away) return;
             if (box <= 0) measure();
@@ -261,10 +300,9 @@
         shop.addEventListener('scroll', onScroll, { passive: true });
         shop.addEventListener('transitionend', function (e) {
             var el = clip();
-            if (!el || (e.target !== el && !el.contains(e.target))) return;
-            if (e.propertyName !== 'height' && e.propertyName !== 'opacity' && e.propertyName !== 'transform') return;
-            if (away) finishClose();
-            else if (opening) finishOpen();
+            if (!el || !el.contains(e.target)) return;
+            if (e.propertyName !== 'opacity' && e.propertyName !== 'transform') return;
+            if (opening) finishOpen();
         });
         readNavH();
         measure();
