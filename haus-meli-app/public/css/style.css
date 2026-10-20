@@ -290,7 +290,9 @@ body {
 .shop-header-wrap {
     position: sticky;
     position: -webkit-sticky;
-    top: 0;
+    /* --deadline-stick ist die Höhe der obersten Zeile. Negativ lässt der
+       Browser genau diese Scheibe wegscrollen, der Rest bleibt kleben. */
+    top: calc(-1 * var(--deadline-stick, 0px));
     z-index: 1000;
     background: var(--bg);
     margin: calc(-1 * var(--safe-top)) calc(-1 * var(--spacing)) 0;
@@ -1725,60 +1727,13 @@ body.is-cal-tab .shell-nav {
 }
 
 /* --- DEADLINE INFO (Infozeile zum gewählten Tag) --- */
-/* Der Clip schneidet die Zeile beim Wegscrollen ab. Der Versatz liegt
-   auf einer registrierten Länge, damit das Mitgleiten kein Layout anstößt.
-   shop-deadline.js setzt die Variablen am Tab, damit Livewire sie beim
-   Neuzeichnen nicht verwirft. Die Höhe springt einmal, die Zeile selbst
-   gleitet nur per Verschiebung und Deckkraft. */
-@property --deadline-shift {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 0px;
-}
-
+/* Oberste Zeile der Karte. shop-deadline.js misst ihre Höhe als
+   --deadline-stick am Tab. Der klebende Kopf rückt um genau diese
+   Höhe nach oben, der Browser scrollt die Zeile mit dem Finger weg. */
 .deadline-clip {
     flex: 0 0 auto;
     width: 100%;
-    min-height: 0;
-    overflow: hidden;
-    /* Der Flex-Abstand der Kopfzeile liegt sonst ausserhalb und bleibt
-       stehen, wenn die Zeile weg ist. Er wird in den Clip gezogen und
-       schrumpft mit. */
-    margin-top: calc(-1 * var(--deadline-outer-gap, 0px));
-    height: var(--deadline-box, auto);
-    opacity: 1;
-}
-
-.deadline-clip::before {
-    content: '';
-    display: block;
-    height: var(--deadline-row-gap, 0px);
-}
-
-/* Platz ist schon offen. Die Zeile startet geschoben und durchsichtig
-   und gleitet dann an ihren Platz. Höhe läuft dabei nicht mit. */
-.tab-pane[data-deadline-opening] .deadline-info {
-    transition: transform 0.32s ease-out, opacity 0.32s ease-out;
-}
-
-.tab-pane[data-deadline-opening]:not([data-deadline-reveal]) .deadline-info {
-    opacity: 0;
-}
-
-.tab-pane[data-deadline-sliding] .deadline-clip,
-.tab-pane[data-deadline-sliding] .deadline-info {
-    transition: none;
-}
-
-.tab-pane[data-deadline-hidden] .deadline-clip {
-    height: 0;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.tab-pane[data-deadline-gone] .deadline-clip {
-    /* Platz zu, in dem Frame in dem die Zeile ganz draußen ist. */
-    display: none;
+    min-width: 0;
 }
 
 .deadline-info {
@@ -1788,9 +1743,7 @@ body.is-cal-tab .shell-nav {
     font-weight: 700;
     font-size: 13px;
     text-align: center;
-    display: none;
-    margin-top: 8px;
-    transform: translateY(calc(-1 * var(--deadline-shift, 0px)));
+    margin: 0;
 }
 
 /* Ampel-Farben */
@@ -1882,28 +1835,27 @@ body.is-cal-tab .shell-nav {
         grid-template-columns: minmax(0, 1fr) auto;
         column-gap: var(--spacing);
         align-items: center;
-        /* Kein row-gap vor dem Hinweis. Der bliebe bei Höhe 0 als Sprung
-           stehen. Der Abstand über der Suche ist Margin, der über dem
-           Hinweis liegt im Clip und klappt mit zu. */
+        /* Abstand zwischen den Zeilen kommt von Margin, nicht von row-gap.
+           Sonst bleibt unter dem wegscrollenden Hinweis ein leerer Streifen. */
         row-gap: 0;
     }
 
-    /* 1. Suche & Dropdown (Links) */
+    /* 1. Suche & Dropdown (Links), unter der Tageswahl */
     .header-row {
         order: 1;
         grid-column: 1;
-        grid-row: 2;
+        grid-row: 3;
         flex: 1;
         min-width: 0;
         margin-top: var(--spacing);
         margin-bottom: 0;
     }
 
-    /* 2. Buttons (Rechts) */
+    /* 2. Buttons (Rechts), gleiche Zeile wie die Suche */
     .header-top {
         order: 2;
         grid-column: 2;
-        grid-row: 2;
+        grid-row: 3;
         width: auto;
         margin-top: var(--spacing);
         margin-bottom: 0;
@@ -1916,21 +1868,20 @@ body.is-cal-tab .shell-nav {
 
     .delivery-day-picker {
         grid-column: 1 / -1;
-        grid-row: 1;
+        grid-row: 2;
     }
 
-    /* 3. Deadline (Ganz unten, volle Breite) */
+    /* Hinweis ganz oben, volle Breite. Der Abstand darunter scrollt mit weg. */
     .deadline-clip {
-        order: 3;
         grid-column: 1 / -1;
-        grid-row: 3;
+        grid-row: 1;
         width: auto;
+        margin-bottom: var(--spacing);
     }
 
     .deadline-info {
-        order: 3;
         width: 100%;
-        margin-top: 5px;
+        margin: 0;
     }
 }
 
@@ -3603,13 +3554,19 @@ body.is-cal-tab .shell-nav {
         gap: 10px !important;
     }
 
-    /* Reihenfolge im Header ändern */
+    /* Hinweis ist die erste Zeile. */
+    .deadline-clip {
+        order: -2;
+        margin-bottom: 0;
+    }
+
+    /* Buttons unter dem Hinweis */
     .header-top {
         order: -1;
         margin-bottom: 0;
     }
 
-    /* Buttons ganz oben */
+    /* Suche darunter */
     .header-row {
         order: 0;
         margin: 0;
@@ -3920,7 +3877,7 @@ body.page-content {
     padding-top: 0;
 }
 
-/* Schrumpfen des Lieferhinweises darf die Scrollposition nicht nachziehen. */
+/* Der wegscrollende Hinweis darf die Scrollposition nicht nachziehen. */
 .tab-pane[data-tab="order"] {
     overflow-anchor: none;
 }
@@ -6057,9 +6014,7 @@ body.trip-detail-open {
     .info-switch-btn,
     .cal-chip,
     .shell-nav-side,
-    .cal-icon-btn,
-    .tab-pane[data-deadline-opening] .deadline-info,
-    body.page-content[data-nav-reveal] .shell-nav {
+    .cal-icon-btn {
         transition: none;
     }
 }
@@ -6163,9 +6118,9 @@ body.trip-detail-open {
 
 
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
-   Im Shop verschwindet sie beim Runterscrollen. Zurück kommt sie erst,
-   wenn der Lieferhinweis ganz oben fertig eingefahren ist. Dann schiebt
-   sie den Shop-Kopf mit (--nav-shift setzt shop-deadline.js). */
+   Im Shop verschwindet sie beim Runterscrollen und ist beim Hochscrollen
+   sofort wieder da. Sie schiebt den Shop-Kopf mit, zusätzlich zur Höhe
+   des Lieferhinweises (--nav-shift setzt shop-deadline.js). */
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
@@ -6184,10 +6139,6 @@ body.trip-detail-open {
         clip-path: inset(var(--nav-shift) 0 0 0);
     }
 
-    body.page-content[data-nav-reveal] .shell-nav {
-        transition: transform 0.28s ease-out;
-    }
-
     body.page-content .tab-pane,
     body.page-content .tab-pane-events {
         padding-top: calc(var(--nav-h) + var(--spacing));
@@ -6195,8 +6146,10 @@ body.trip-detail-open {
 
     body.page-content .tab-pane .shop-header-wrap {
         /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding).
-           Sichtbare Leiste (nav-h minus nav-shift) schiebt den Kopf nach unten. */
-        top: calc(-1 * (var(--spacing) + var(--nav-shift)));
+           Sichtbare Leiste schiebt den Kopf nach unten. Die Hinweis-Höhe
+           kommt dazu, damit die Leiste die Tage und die Suche nicht zudeckt
+           und der Hinweis trotzdem oben wegscrollt. */
+        top: calc(-1 * (var(--deadline-stick, 0px) + var(--spacing) + var(--nav-shift)));
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
