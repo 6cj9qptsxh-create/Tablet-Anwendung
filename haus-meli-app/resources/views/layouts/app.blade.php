@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=125">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=126">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1437,6 +1437,7 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
+    <script src="{{ asset('js/shop-deadline.js') }}?v=1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var track = document.querySelector('.tab-track');
@@ -1451,7 +1452,10 @@
                     return;
                 }
                 var navH = nav.offsetHeight;
-                var shift = Math.min(Math.max(shop.scrollTop, 0), navH);
+                /* Der Lieferhinweis verbraucht einen Teil des Scrolls. Die Leiste
+                   folgt dem sichtbaren Weg, nicht der verkürzten scrollTop-Zahl. */
+                var consumed = parseFloat(shop.style.getPropertyValue('--deadline-hide')) || 0;
+                var shift = Math.min(Math.max(shop.scrollTop, 0) + consumed, navH);
                 root.setProperty('--nav-shift', shift + 'px');
             }
             var away = false;

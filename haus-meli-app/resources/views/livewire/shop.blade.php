@@ -154,8 +154,11 @@
                 </div>
 
                 @if($this->selectedDayInfo)
-                    <div class="deadline-info {{ $this->selectedDayInfo['class'] }}" style="display: block;">
-                        {{ $this->selectedDayInfo['text'] }}
+                    {{-- Gleitet beim Scrollen mit halber Geschwindigkeit weg (shop-deadline.js) --}}
+                    <div class="deadline-clip">
+                        <div class="deadline-info {{ $this->selectedDayInfo['class'] }}" style="display: block;">
+                            {{ $this->selectedDayInfo['text'] }}
+                        </div>
                     </div>
                 @endif
             @endif

@@ -1724,6 +1724,32 @@ body.is-cal-tab .shell-nav {
 }
 
 /* --- DEADLINE INFO (Infozeile zum gewählten Tag) --- */
+/* Der Clip schneidet die Zeile beim Wegscrollen ab. Höhe und Versatz
+   setzt shop-deadline.js über Variablen am Tab, damit Livewire sie
+   beim Neuzeichnen nicht verwirft. */
+.deadline-clip {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    /* Der Flex-Abstand der Kopfzeile liegt sonst ausserhalb und bleibt
+       stehen, wenn die Zeile weg ist. Er wird in den Clip gezogen und
+       schrumpft mit. */
+    margin-top: calc(-1 * var(--deadline-row-gap, 0px));
+    height: var(--deadline-clip-h, auto);
+}
+
+.deadline-clip::before {
+    content: '';
+    display: block;
+    height: var(--deadline-row-gap, 0px);
+}
+
+.tab-pane[data-deadline-hidden] .deadline-clip {
+    /* Höhe 0 lässt den Flex-Abstand zurückkommen. Ganz weg nimmt ihn mit. */
+    display: none;
+}
+
 .deadline-info {
     width: 100%;
     padding: 10px;
@@ -1733,6 +1759,7 @@ body.is-cal-tab .shell-nav {
     text-align: center;
     display: none;
     margin-top: 8px;
+    transform: translateY(calc(-1 * var(--deadline-shift, 0px)));
 }
 
 /* Ampel-Farben */
@@ -1851,6 +1878,10 @@ body.is-cal-tab .shell-nav {
     }
 
     /* 3. Deadline (Ganz unten, volle Breite) */
+    .deadline-clip {
+        order: 3;
+    }
+
     .deadline-info {
         order: 3;
         width: 100%;
