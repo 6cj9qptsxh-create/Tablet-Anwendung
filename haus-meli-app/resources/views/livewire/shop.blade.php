@@ -154,7 +154,7 @@
                 </div>
 
                 @if($this->selectedDayInfo)
-                    {{-- Gleitet beim Scrollen mit halber Geschwindigkeit weg (shop-deadline.js) --}}
+                    {{-- Gleitet nur beim Runterscrollen weg und kommt erst ganz oben zurück (shop-deadline.js) --}}
                     <div class="deadline-clip">
                         <div class="deadline-info {{ $this->selectedDayInfo['class'] }}" style="display: block;">
                             {{ $this->selectedDayInfo['text'] }}

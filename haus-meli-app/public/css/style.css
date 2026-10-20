@@ -295,6 +295,7 @@ body {
     background: var(--bg);
     margin: calc(-1 * var(--safe-top)) calc(-1 * var(--spacing)) 0;
     padding: var(--safe-top) var(--spacing) var(--spacing);
+    overflow-anchor: none;
 }
 
 /* Produktbereich + Warenkorb nebeneinander (nur Desktop + offen) */
@@ -3874,6 +3875,11 @@ body.page-content {
     padding-top: 0;
 }
 
+/* Schrumpfen des Lieferhinweises darf die Scrollposition nicht nachziehen. */
+.tab-pane[data-tab="order"] {
+    overflow-anchor: none;
+}
+
 .tab-pane .leaflet-container {
     touch-action: none;
 }
@@ -6091,7 +6097,8 @@ body.trip-detail-open {
 
 
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
-   Im Shop scrollt sie mit dem Inhalt nach oben weg (--nav-shift setzt das Skript). */
+   Im Shop verschwindet sie beim Runterscrollen und kommt beim Hochscrollen
+   sofort zurück (--nav-shift setzt shop-deadline.js). */
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
