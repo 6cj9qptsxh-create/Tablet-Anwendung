@@ -291,8 +291,9 @@ body {
     position: sticky;
     position: -webkit-sticky;
     /* --deadline-stick ist die Höhe der obersten Zeile. Negativ lässt der
-       Browser genau diese Scheibe wegscrollen, der Rest bleibt kleben. */
-    top: calc(-1 * var(--deadline-stick, 0px));
+       Browser genau diese Scheibe wegscrollen, der Rest bleibt kleben.
+       safe-top hält den klebenden Rest unter der Statusleiste. */
+    top: calc(var(--safe-top) - var(--deadline-stick, 0px));
     z-index: 1000;
     background: var(--bg);
     margin: calc(-1 * var(--safe-top)) calc(-1 * var(--spacing)) 0;
@@ -3551,7 +3552,7 @@ body.is-cal-tab .shell-nav {
         flex-direction: column !important;
         align-items: stretch !important;
         height: auto !important;
-        gap: 10px !important;
+        gap: var(--spacing) !important;
     }
 
     /* Hinweis ist die erste Zeile. */
@@ -6117,14 +6118,28 @@ body.trip-detail-open {
 }
 
 
+@keyframes shop-nav-with-finger {
+    from { transform: translateY(0); }
+    to { transform: translateY(-40px); }
+}
+
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
-   Im Shop verschwindet sie beim Runterscrollen und ist beim Hochscrollen
-   sofort wieder da. Sie schiebt den Shop-Kopf mit, zusätzlich zur Höhe
-   des Lieferhinweises (--nav-shift setzt shop-deadline.js). */
+   Weg beim Runterscrollen, sofort zurück beim Hochscrollen.
+   Die ersten Pixel hängen an der Scroll-Zeitlinie des Shops, damit
+   Leiste und Kopf im selben Bild laufen. Weiter unten schiebt
+   --nav-cover beide gemeinsam. */
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
         --nav-shift: 0px;
+        --nav-cover: 0px;
+        --header-cover: 0px;
+        timeline-scope: --shop-y;
+    }
+
+    .tab-pane[data-tab="order"] {
+        scroll-timeline-name: --shop-y;
+        scroll-timeline-axis: y;
     }
 
     body.page-content .shell-nav {
@@ -6135,8 +6150,26 @@ body.trip-detail-open {
         height: var(--nav-h);
         min-height: 0;
         background: rgb(32, 33, 38);
+        translate: 0 var(--nav-cover);
+        animation: shop-nav-with-finger linear both;
+        animation-timeline: --shop-y;
+        animation-range: 0px 40px;
+    }
+
+    /* Zeitlinie hängt nicht: die Leiste folgt dem Skript. */
+    body.page-content[data-nav-fallback] .shell-nav {
+        animation: none;
+        translate: none;
         transform: translateY(calc(-1 * var(--nav-shift)));
         clip-path: inset(var(--nav-shift) 0 0 0);
+    }
+
+    /* Andere Tabs: Leiste steht, unabhängig vom Shop-Scroll. */
+    body.page-content[data-nav-hold] .shell-nav {
+        animation: none;
+        transform: none;
+        translate: none;
+        clip-path: none;
     }
 
     body.page-content .tab-pane,
@@ -6146,10 +6179,16 @@ body.trip-detail-open {
 
     body.page-content .tab-pane .shop-header-wrap {
         /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding).
-           Sichtbare Leiste schiebt den Kopf nach unten. Die Hinweis-Höhe
-           kommt dazu, damit die Leiste die Tage und die Suche nicht zudeckt
-           und der Hinweis trotzdem oben wegscrollt. */
-        top: calc(-1 * (var(--deadline-stick, 0px) + var(--spacing) + var(--nav-shift)));
+           Ohne gekoppelte Leiste schiebt --nav-shift den Kopf mit. */
+        top: calc(var(--safe-top) - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-shift));
+    }
+
+    body.page-content[data-nav-linked] .tab-pane .shop-header-wrap {
+        /* Klebelinie steht fest, dort wo die Leiste ganz weg ist.
+           --header-cover schiebt den Kopf mit der Leiste zurück,
+           dieselbe Strecke, im selben Bild. */
+        top: calc(var(--safe-top) - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-h));
+        translate: 0 var(--header-cover);
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
