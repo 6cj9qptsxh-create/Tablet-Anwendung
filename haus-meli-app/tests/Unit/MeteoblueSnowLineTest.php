@@ -45,4 +45,48 @@ class MeteoblueSnowLineTest extends TestCase
         $this->assertNull($this->line(null));
         $this->assertNull($this->line(''));
     }
+
+    public function test_three_hour_level_fills_the_following_hours(): void
+    {
+        $levels = $this->levels([
+            'time' => ['2026-10-20 00:00', '2026-10-20 03:00', '2026-10-20 21:00'],
+            'freezinglevelheight' => [2500, 2800, 3300],
+        ]);
+
+        $this->assertSame(2200, $levels['2026-10-20 00']);
+        $this->assertSame(2200, $levels['2026-10-20 01']);
+        $this->assertSame(2200, $levels['2026-10-20 02']);
+        $this->assertSame(2500, $levels['2026-10-20 03']);
+        $this->assertSame(2500, $levels['2026-10-20 05']);
+        $this->assertNull($levels['2026-10-20 21']);
+        $this->assertNull($levels['2026-10-20 23']);
+        $this->assertArrayNotHasKey('2026-10-20 06', $levels);
+    }
+
+    public function test_three_hour_level_crosses_midnight(): void
+    {
+        $levels = $this->levels([
+            'time' => ['2026-10-20 22:00'],
+            'freezinglevelheight' => [2500],
+        ]);
+
+        $this->assertSame(2200, $levels['2026-10-20 23']);
+        $this->assertSame(2200, $levels['2026-10-21 00']);
+    }
+
+    public function test_missing_three_hour_package_stays_empty(): void
+    {
+        $this->assertSame([], $this->levels([]));
+    }
+
+    /** @param  array<string, mixed>  $data3h
+     * @return array<string, ?int>
+     */
+    private function levels(array $data3h): array
+    {
+        $method = new \ReflectionMethod(MeteoblueForecast::class, 'snowLevelsByHour');
+        $method->setAccessible(true);
+
+        return $method->invoke(new MeteoblueForecast(), $data3h);
+    }
 }

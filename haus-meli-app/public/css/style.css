@@ -5804,6 +5804,15 @@ body.trip-detail-open {
     font-size: 0.82rem;
 }
 
+.wx-hour-snow {
+    min-height: 0.85rem;
+    color: #7eb6ff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
 .wx-hour-track {
     width: 12px;
     height: 28px;
@@ -5932,6 +5941,11 @@ body.trip-detail-open {
 
     .wx-hour strong {
         font-size: 1rem;
+    }
+
+    .wx-hour-snow {
+        min-height: 1rem;
+        font-size: 0.72rem;
     }
 
     .wx-hour-track {

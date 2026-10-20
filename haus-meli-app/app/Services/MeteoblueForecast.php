@@ -67,7 +67,7 @@ class MeteoblueForecast
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v7.%s.%s.%s.%d',
+            'weather.meteoblue.v8.%s.%s.%s.%d',
             $place['id'],
             $place['lat'],
             $place['lon'],
@@ -226,7 +226,7 @@ class MeteoblueForecast
     /** @param  array{id:string,label:string,lat:float,lon:float,asl:int}  $place */
     private function download(string $key, array $place): array
     {
-        $response = Http::timeout(20)->acceptJson()->get('https://my.meteoblue.com/packages/basic-1h_basic-day_clouds-day_air-day', [
+        $response = Http::timeout(20)->acceptJson()->get('https://my.meteoblue.com/packages/basic-1h_basic-day_clouds-day_air-day_air-3h', [
             'lat' => $place['lat'],
             'lon' => $place['lon'],
             'asl' => $place['asl'],
@@ -252,6 +252,7 @@ class MeteoblueForecast
         $hours = $raw['data_1h'] ?? [];
         $days = $raw['data_day'] ?? [];
         $meta = $raw['metadata'] ?? [];
+        $snowByHour = $this->snowLevelsByHour($raw['data_3h'] ?? []);
         $tz = new \DateTimeZone((string) config('weather.timezone'));
         $now = new \DateTimeImmutable('now', $tz);
         $nowKey = $now->format('Y-m-d H');
@@ -280,6 +281,7 @@ class MeteoblueForecast
                 }
                 $hourRows[] = [
                     'time' => substr($stamp, 11, 5),
+                    'snow_m' => $snowByHour[substr($stamp, 0, 13)] ?? null,
                     'temp' => (int) round((float) ($hours['temperature'][$h] ?? 0)),
                     'feel' => (int) round((float) ($hours['felttemperature'][$h] ?? 0)),
                     'rain' => round((float) ($hours['precipitation'][$h] ?? 0), 1),
@@ -386,6 +388,9 @@ class MeteoblueForecast
                 if ($hours[$h]['is_now']) {
                     $current = $hours[$h];
                 }
+                if (($hours[$h]['snow_m'] ?? null) !== null) {
+                    $showSnow = true;
+                }
             }
             $day['hours'] = $hours;
             $day['rain_slots'] = $this->rainSlots($hours);
@@ -416,7 +421,45 @@ class MeteoblueForecast
     }
 
     /**
-     * Tages-Schneefallgrenze in Metern, auf 100 m gerundet.
+     * Schneefallgrenze je Stunde. Die freie Schnittstelle liefert die
+     * Nullgradgrenze alle drei Stunden. Dieselbe Höhe gilt für diese Stunde
+     * und die zwei folgenden.
+     *
+     * @param  array<string, mixed>  $data3h
+     * @return array<string, ?int> Schlüssel „Y-m-d H“
+     */
+    private function snowLevelsByHour(array $data3h): array
+    {
+        $times = $data3h['time'] ?? [];
+        $levels = $data3h['freezinglevelheight'] ?? [];
+        if (! is_array($times) || ! is_array($levels)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($times as $i => $stamp) {
+            if (! preg_match('/^(\d{4}-\d{2}-\d{2}) (\d{2})/', (string) $stamp, $match)) {
+                continue;
+            }
+            $line = $this->snowLine($levels[$i] ?? null);
+            $day = $match[1];
+            $hour = (int) $match[2];
+            for ($step = 0; $step < 3; $step++) {
+                $slot = $hour + $step;
+                $date = $day;
+                if ($slot >= 24) {
+                    $slot -= 24;
+                    $date = (new \DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d');
+                }
+                $out[sprintf('%s %02d', $date, $slot)] = $line;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Schneefallgrenze in Metern, auf 100 m gerundet.
      * null, wenn sie fehlt oder bei 3000 m und darüber liegt.
      */
     private function snowLine(mixed $freezingLevel): ?int

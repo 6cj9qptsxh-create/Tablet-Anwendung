@@ -246,7 +246,7 @@
                             <span class="wx-col-sun {{ !empty($day['sun_text']) ? 'is-on' : '' }}">{{ $day['sun_text'] ?? '–' }}</span>
                             <span class="wx-col-wind">{{ $day['wind_text'] }}</span>
                             @if(!empty($forecast['show_snow']))
-                                <span class="wx-col-snow" @if(($day['snow_m'] ?? null) !== null) title="Schneefallgrenze" @endif>{{ ($day['snow_m'] ?? null) !== null ? $day['snow_m'].' m' : '' }}</span>
+                                <span class="wx-col-snow" @if(($day['snow_m'] ?? null) !== null) title="Schneefallgrenze, Mittel über den Tag" @endif>{{ ($day['snow_m'] ?? null) !== null ? $day['snow_m'].' m' : '' }}</span>
                             @endif
                         </button>
                     @endforeach
@@ -258,6 +258,9 @@
                                 <span class="wx-hour-time">{{ $hour['time'] }}</span>
                                 <span class="material-symbols-rounded wx-hour-icon is-{{ $hour['icon'] }}">{{ $hour['icon'] }}</span>
                                 <strong>{{ $hour['temp'] }}°</strong>
+                                @if(!empty($forecast['show_snow']))
+                                    <span class="wx-hour-snow" @if(($hour['snow_m'] ?? null) !== null) title="Schneefallgrenze" @endif>{{ ($hour['snow_m'] ?? null) !== null ? $hour['snow_m'].' m' : '' }}</span>
+                                @endif
                                 <span class="wx-hour-track">
                                     @if(($hour['rain_height'] ?? 0) > 0)
                                         <span class="wx-hour-bar" style="height: {{ $hour['rain_height'] }}%"></span>
