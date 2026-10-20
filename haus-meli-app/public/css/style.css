@@ -6120,7 +6120,7 @@ body.trip-detail-open {
 
 @keyframes shop-nav-with-finger {
     from { transform: translateY(0); }
-    to { transform: translateY(-40px); }
+    to { transform: translateY(calc(-1 * var(--nav-travel, 40px))); }
 }
 
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
@@ -6131,6 +6131,9 @@ body.trip-detail-open {
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
+        /* Bis die Unterkante der Leiste oben aus dem Bild ist,
+           inklusive der Statusleiste. Sonst bleibt sie auf halbem Weg stehen. */
+        --nav-travel: calc(var(--safe-top) + var(--nav-h));
         --nav-shift: 0px;
         --nav-cover: 0px;
         --header-cover: 0px;
@@ -6153,7 +6156,7 @@ body.trip-detail-open {
         translate: 0 var(--nav-cover);
         animation: shop-nav-with-finger linear both;
         animation-timeline: --shop-y;
-        animation-range: 0px 40px;
+        animation-range: 0px var(--nav-travel);
     }
 
     /* Zeitlinie hängt nicht: die Leiste folgt dem Skript. */
@@ -6179,15 +6182,16 @@ body.trip-detail-open {
 
     body.page-content .tab-pane .shop-header-wrap {
         /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding).
+           Die Seite selbst liegt schon unter der Statusleiste (padding-top).
+           --safe-top hier noch einmal würde den Kopf eine Leistenhöhe zu tief kleben.
            Ohne gekoppelte Leiste schiebt --nav-shift den Kopf mit. */
-        top: calc(var(--safe-top) - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-shift));
+        top: calc(0px - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-shift));
     }
 
     body.page-content[data-nav-linked] .tab-pane .shop-header-wrap {
-        /* Klebelinie steht fest, dort wo die Leiste ganz weg ist.
-           --header-cover schiebt den Kopf mit der Leiste zurück,
-           dieselbe Strecke, im selben Bild. */
-        top: calc(var(--safe-top) - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-h));
+        /* Klebelinie: Unterkante des Hinweises direkt unter der Statusleiste.
+           --header-cover schiebt den Kopf erst mit, wenn die Leiste ihn erreicht. */
+        top: calc(0px - var(--deadline-stick, 0px) - var(--spacing) - var(--nav-h));
         translate: 0 var(--header-cover);
     }
 
