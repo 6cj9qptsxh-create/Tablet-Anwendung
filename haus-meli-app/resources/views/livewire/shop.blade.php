@@ -64,7 +64,7 @@
         <div class="shop-header-wrap">
         <div class="card header shop-header">
             @if($this->selectedDayInfo)
-                {{-- Oberste Zeile. Der Browser scrollt sie weg, Tage und Suche bleiben kleben. --}}
+                {{-- Läuft mit der Navigation weg und kommt erst ganz oben zurück. --}}
                 <div class="deadline-clip">
                     <div class="deadline-info {{ $this->selectedDayInfo['class'] }}">
                         {{ $this->selectedDayInfo['text'] }}
