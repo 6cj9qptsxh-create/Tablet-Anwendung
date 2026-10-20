@@ -109,6 +109,7 @@
         function applyNav(forceShow) {
             if (!phone.matches) {
                 document.body.style.removeProperty('--nav-shift');
+                document.body.removeAttribute('data-nav-reveal');
                 px('--nav-cover', 0);
                 px('--header-cover', 0);
                 return;
@@ -116,6 +117,7 @@
             if (forceShow) {
                 navHide = 0;
                 cover = 0;
+                document.body.removeAttribute('data-nav-reveal');
             }
             if (navHide < 0) navHide = 0;
             if (navHide > navH) navHide = navH;
@@ -128,12 +130,14 @@
             if (!phone.matches) {
                 document.body.style.removeProperty('--nav-shift');
                 document.body.removeAttribute('data-nav-hold');
+                document.body.removeAttribute('data-nav-reveal');
                 px('--nav-cover', 0);
                 px('--header-cover', 0);
                 return;
             }
             if (!onShop) {
                 document.body.setAttribute('data-nav-hold', '');
+                document.body.removeAttribute('data-nav-reveal');
                 document.body.style.setProperty('--nav-shift', '0px');
                 px('--nav-cover', 0);
                 px('--header-cover', 0);
@@ -172,6 +176,10 @@
                 else cover -= delta;
                 if (cover < 0) cover = 0;
                 if (cover > navTravel) cover = navTravel;
+                /* Nur solange die Leiste wirklich zurückfährt. Sonst bleibt
+                   die Zeitlinie dran, das Runterscrollen läuft unverändert. */
+                if (cover > 0) document.body.setAttribute('data-nav-reveal', '');
+                else document.body.removeAttribute('data-nav-reveal');
                 applyCovers();
                 return;
             }
