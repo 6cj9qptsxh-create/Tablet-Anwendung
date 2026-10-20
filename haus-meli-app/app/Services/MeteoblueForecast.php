@@ -67,7 +67,7 @@ class MeteoblueForecast
         }
 
         $cacheKey = sprintf(
-            'weather.meteoblue.v8.%s.%s.%s.%d',
+            'weather.meteoblue.v9.%s.%s.%s.%d',
             $place['id'],
             $place['lat'],
             $place['lon'],
@@ -252,7 +252,7 @@ class MeteoblueForecast
         $hours = $raw['data_1h'] ?? [];
         $days = $raw['data_day'] ?? [];
         $meta = $raw['metadata'] ?? [];
-        $snowByHour = $this->snowLevelsByHour($raw['data_3h'] ?? []);
+        $freezeByHour = $this->freezeLevelsByHour($raw['data_3h'] ?? []);
         $tz = new \DateTimeZone((string) config('weather.timezone'));
         $now = new \DateTimeImmutable('now', $tz);
         $nowKey = $now->format('Y-m-d H');
@@ -271,6 +271,7 @@ class MeteoblueForecast
             $meanWind = (float) ($days['windspeed_mean'][$i] ?? $days['windspeed_max'][$i] ?? 0);
 
             $hourRows = [];
+            $snowWeights = [];
             for ($h = $start; $h <= $end; $h++) {
                 $stamp = (string) ($hours['time'][$h] ?? '');
                 $code = (int) ($hours['pictocode'][$h] ?? $dayCode);
@@ -279,12 +280,15 @@ class MeteoblueForecast
                 if ($isDay === false) {
                     $hourLook['icon'] = $this->nightSymbol($hourLook['icon']);
                 }
+                $mm = round((float) ($hours['precipitation'][$h] ?? 0), 1);
+                $freeze = $freezeByHour[substr($stamp, 0, 13)] ?? null;
+                $snowWeights[] = ['rain' => $mm, 'freeze_m' => $freeze];
                 $hourRows[] = [
                     'time' => substr($stamp, 11, 5),
-                    'snow_m' => $snowByHour[substr($stamp, 0, 13)] ?? null,
+                    'snow_m' => $this->snowLine($freeze),
                     'temp' => (int) round((float) ($hours['temperature'][$h] ?? 0)),
                     'feel' => (int) round((float) ($hours['felttemperature'][$h] ?? 0)),
-                    'rain' => round((float) ($hours['precipitation'][$h] ?? 0), 1),
+                    'rain' => $mm,
                     'pop' => (int) round((float) ($hours['precipitation_probability'][$h] ?? 0)),
                     'wind' => (int) round((float) ($hours['windspeed'][$h] ?? 0)),
                     'wind_dir' => $this->compass((float) ($hours['winddirection'][$h] ?? 0)),
@@ -297,6 +301,7 @@ class MeteoblueForecast
                 ];
             }
 
+            $snow = $this->snowLineForDay($snowWeights, $days['freezinglevelheight_mean'][$i] ?? null);
             $look = $this->dayLook($hourRows, $rain, $days['sunshine_time'][$i] ?? null, $dayCode);
             $halves = $this->dayHalves($hourRows, $days['sunshine_time'][$i] ?? null, $look);
             $when = new \DateTimeImmutable($date, $tz);
@@ -314,7 +319,8 @@ class MeteoblueForecast
                 'wind_text' => $this->compass((float) ($days['winddirection'][$i] ?? 0)).' '.$this->beaufort($meanWind),
                 'sun_text' => $this->sunText($days['sunshine_time'][$i] ?? null),
                 'uv' => (int) round((float) ($days['uvindex'][$i] ?? 0)),
-                'snow_m' => $this->snowLine($days['freezinglevelheight_mean'][$i] ?? null),
+                'snow_m' => $snow['snow_m'],
+                'snow_weighted' => $snow['weighted'],
                 'icon' => $look['icon'],
                 'label' => $halves['morning']['label'] === $halves['afternoon']['label']
                     ? $look['label']
@@ -430,6 +436,23 @@ class MeteoblueForecast
      */
     private function snowLevelsByHour(array $data3h): array
     {
+        $out = [];
+        foreach ($this->freezeLevelsByHour($data3h) as $key => $level) {
+            $out[$key] = $this->snowLine($level);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Nullgradgrenze je Stunde, in Metern. Dieselbe Höhe gilt für die
+     * gemeldete Stunde und die zwei folgenden.
+     *
+     * @param  array<string, mixed>  $data3h
+     * @return array<string, ?float> Schlüssel „Y-m-d H“
+     */
+    private function freezeLevelsByHour(array $data3h): array
+    {
         $times = $data3h['time'] ?? [];
         $levels = $data3h['freezinglevelheight'] ?? [];
         if (! is_array($times) || ! is_array($levels)) {
@@ -441,7 +464,8 @@ class MeteoblueForecast
             if (! preg_match('/^(\d{4}-\d{2}-\d{2}) (\d{2})/', (string) $stamp, $match)) {
                 continue;
             }
-            $line = $this->snowLine($levels[$i] ?? null);
+            $level = $levels[$i] ?? null;
+            $stored = is_numeric($level) ? (float) $level : null;
             $day = $match[1];
             $hour = (int) $match[2];
             for ($step = 0; $step < 3; $step++) {
@@ -451,11 +475,38 @@ class MeteoblueForecast
                     $slot -= 24;
                     $date = (new \DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d');
                 }
-                $out[sprintf('%s %02d', $date, $slot)] = $line;
+                $out[sprintf('%s %02d', $date, $slot)] = $stored;
             }
         }
 
         return $out;
+    }
+
+    /**
+     * Tageswert. Fällt Niederschlag, zählt jede Stunde mit ihrem Literanteil.
+     * Ein trockener Tag bleibt das zeitliche Mittel der Nullgradgrenze.
+     *
+     * @param  list<array{rain: float|int, freeze_m: mixed}>  $hours
+     * @return array{snow_m: ?int, weighted: bool}
+     */
+    private function snowLineForDay(array $hours, mixed $dailyMean): array
+    {
+        $sum = 0.0;
+        $weight = 0.0;
+        foreach ($hours as $hour) {
+            $mm = (float) ($hour['rain'] ?? 0);
+            $level = $hour['freeze_m'] ?? null;
+            if ($mm <= 0 || ! is_numeric($level)) {
+                continue;
+            }
+            $sum += (float) $level * $mm;
+            $weight += $mm;
+        }
+        if ($weight <= 0) {
+            return ['snow_m' => $this->snowLine($dailyMean), 'weighted' => false];
+        }
+
+        return ['snow_m' => $this->snowLine($sum / $weight), 'weighted' => true];
     }
 
     /**
