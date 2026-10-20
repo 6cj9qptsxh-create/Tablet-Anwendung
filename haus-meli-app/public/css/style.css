@@ -6203,9 +6203,9 @@ body.trip-detail-open {
         translate: 0 var(--header-cover);
     }
 
-    /* Der Hinweis bleibt weg, solange die Leiste von unten zurückkommt.
-       Sonst schiebt die Verschiebung genau diese Zeile wieder ins Bild. */
-    body.page-content[data-nav-reveal] .tab-pane .shop-header-wrap {
+    /* Der Hinweis bleibt weg, solange der Kopf unter die Leiste geschoben wird.
+       Sobald der Versatz auf 0 ist, gleitet er mit dem Finger zurück. */
+    body.page-content[data-nav-clip] .tab-pane .shop-header-wrap {
         clip-path: inset(var(--deadline-stick, 0px) 0 0 0);
     }
 
