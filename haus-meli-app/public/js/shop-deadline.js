@@ -1,8 +1,7 @@
-/* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll 1:1.
+/* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll.
    Der Hinweis gleitet nur per Verschiebung und Deckkraft. Der Platz
-   darunter wechselt in einem Frame, sonst ruckelt die Produktliste.
-   Hochscrollen allein holt ihn nicht. Die Navigation kommt beim
-   Hochscrollen zurück und schiebt den Shop-Kopf mit.
+   darunter wechselt in einem Frame. Die Navigation kommt erst, wenn
+   der Hinweis ganz oben fertig eingefahren ist.
    scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
     var SPEED = 1;
@@ -21,6 +20,7 @@
         var away = false;
         var opening = false;
         var motionToken = 0;
+        var navToken = 0;
         var phone = window.matchMedia('(max-width: 767px)');
         var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
         var quiet = false;
@@ -62,8 +62,34 @@
             document.body.style.setProperty('--nav-shift', navHide.toFixed(2) + 'px');
         }
 
-        /* Andere Tabs zeigen die Leiste. Zurück im Shop gilt der letzte Stand. */
+        /* Andere Tabs zeigen die Leiste. Zurück im Shop gilt der letzte Stand.
+           Die Leiste fährt erst ein, wenn der Hinweis oben fertig ist. */
+        function revealNav() {
+            if (!phone.matches) {
+                document.body.style.removeProperty('--nav-shift');
+                document.body.removeAttribute('data-nav-reveal');
+                return;
+            }
+            var token = ++navToken;
+            if (reduced.matches || navHide <= 0.2) {
+                navHide = 0;
+                document.body.removeAttribute('data-nav-reveal');
+                applyNav(false);
+                return;
+            }
+            document.body.setAttribute('data-nav-reveal', '');
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    if (token !== navToken) return;
+                    navHide = 0;
+                    applyNav(false);
+                });
+            });
+        }
+
         window.hausMeliShopNav = function (onShop) {
+            navToken++;
+            document.body.removeAttribute('data-nav-reveal');
             if (!phone.matches) {
                 document.body.style.removeProperty('--nav-shift');
                 return;
@@ -85,6 +111,7 @@
         }
 
         function finishOpen() {
+            var wasOpening = opening;
             opening = false;
             away = false;
             hide = 0;
@@ -95,6 +122,7 @@
             setFlag('data-deadline-opening', false);
             setFlag('data-deadline-closing', false);
             setFlag('data-deadline-sliding', false);
+            if (wasOpening) revealNav();
         }
 
         function beginClose() {
@@ -119,6 +147,7 @@
             if (!parked && hide <= 0.2) {
                 hide = 0;
                 setShift(0);
+                revealNav();
                 return;
             }
             opening = true;
@@ -266,10 +295,10 @@
             var delta = y - lastY;
             lastY = y;
 
-            if (phone.matches) {
-                if (y <= 0) navHide = 0;
-                else if (delta > 0) navHide += delta;
-                else if (delta < 0) navHide += delta;
+            if (phone.matches && y > 0 && delta > 0) {
+                navToken++;
+                document.body.removeAttribute('data-nav-reveal');
+                navHide += delta;
                 applyNav(false);
             }
 

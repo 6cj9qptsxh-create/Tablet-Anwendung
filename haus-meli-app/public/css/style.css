@@ -6058,7 +6058,8 @@ body.trip-detail-open {
     .cal-chip,
     .shell-nav-side,
     .cal-icon-btn,
-    .tab-pane[data-deadline-opening] .deadline-info {
+    .tab-pane[data-deadline-opening] .deadline-info,
+    body.page-content[data-nav-reveal] .shell-nav {
         transition: none;
     }
 }
@@ -6162,9 +6163,9 @@ body.trip-detail-open {
 
 
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
-   Im Shop verschwindet sie beim Runterscrollen und kommt beim Hochscrollen
-   zurück. Der Shop-Kopf sitzt dabei immer direkt unter dem sichtbaren Teil
-   der Leiste und wird mit nach unten gedrückt (--nav-shift setzt shop-deadline.js). */
+   Im Shop verschwindet sie beim Runterscrollen. Zurück kommt sie erst,
+   wenn der Lieferhinweis ganz oben fertig eingefahren ist. Dann schiebt
+   sie den Shop-Kopf mit (--nav-shift setzt shop-deadline.js). */
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
@@ -6181,6 +6182,10 @@ body.trip-detail-open {
         background: rgb(32, 33, 38);
         transform: translateY(calc(-1 * var(--nav-shift)));
         clip-path: inset(var(--nav-shift) 0 0 0);
+    }
+
+    body.page-content[data-nav-reveal] .shell-nav {
+        transition: transform 0.28s ease-out;
     }
 
     body.page-content .tab-pane,
