@@ -63,6 +63,14 @@
         {{-- Die Sticky-Platte: eckig, seitlich breiter, endet bündig an der Warenkorb-Oberkante --}}
         <div class="shop-header-wrap">
         <div class="card header shop-header">
+            @if($this->selectedDayInfo)
+                {{-- Oberste Zeile. Der Browser scrollt sie weg, Tage und Suche bleiben kleben. --}}
+                <div class="deadline-clip">
+                    <div class="deadline-info {{ $this->selectedDayInfo['class'] }}">
+                        {{ $this->selectedDayInfo['text'] }}
+                    </div>
+                </div>
+            @endif
             <div class="header-top">
                 <button id="history-open-btn" @click="$dispatch('open-history')" class="add-btn" style="position: relative; padding: 8px 12px; border-radius: 10px; display: flex; align-items: center; gap: 6px; background: var(--soft); color: var(--text);">
                     <span style="font-size: 1.2rem; line-height: 1;">🧾</span>
@@ -153,14 +161,6 @@
                     @endforeach
                 </div>
 
-                @if($this->selectedDayInfo)
-                    {{-- Gleitet nur beim Runterscrollen weg und kommt erst ganz oben zurück (shop-deadline.js) --}}
-                    <div class="deadline-clip">
-                        <div class="deadline-info {{ $this->selectedDayInfo['class'] }}" style="display: block;">
-                            {{ $this->selectedDayInfo['text'] }}
-                        </div>
-                    </div>
-                @endif
             @endif
         </div>
         </div>
