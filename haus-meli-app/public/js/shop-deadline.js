@@ -1,8 +1,9 @@
-/* Lieferhinweis im Shop: beim Scrollen weggleiten, mit halber Geschwindigkeit.
-   Wie bei YouTube wandert die Leiste nur halb so weit wie der Finger.
-   Der frei gewordene Platz wird aus dem Scroll herausgerechnet, damit die
-   Produkte weiterhin 1:1 mit dem Finger laufen. Hochscrollen holt die
-   Zeile auf demselben Weg zurück. */
+/* Lieferhinweis und Handy-Navigation folgen dem Shop-Scroll.
+   Der Hinweis gleitet nur beim Runterscrollen weg, mit halber
+   Finger-Geschwindigkeit, und kommt erst ganz oben wieder.
+   Die Navigation ist das Gegenteil: sie kommt sofort zurück,
+   sobald nach oben gescrollt wird.
+   scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
     var SPEED = 0.5;
 
@@ -12,11 +13,13 @@
         shop.dataset.deadlineBound = '1';
 
         var hide = 0;
+        var navHide = 0;
         var lastY = shop.scrollTop || 0;
         var box = 0;
         var gap = 0;
-        var lock = false;
+        var navH = 40;
         var phone = window.matchMedia('(max-width: 767px)');
+        var quiet = false;
 
         function clip() {
             return shop.querySelector('.deadline-clip');
@@ -29,15 +32,37 @@
             shop.removeAttribute('data-deadline-hidden');
         }
 
-        function syncNav() {
-            if (!phone.matches) return;
+        function readNavH() {
             var nav = document.querySelector('.shell-nav');
             if (!nav) return;
-            var navH = nav.offsetHeight;
-            var consumed = parseFloat(shop.style.getPropertyValue('--deadline-hide')) || 0;
-            var shift = Math.min(Math.max(shop.scrollTop, 0) + consumed, navH);
-            document.body.style.setProperty('--nav-shift', shift + 'px');
+            var h = nav.offsetHeight;
+            if (h > 0) navH = h;
         }
+
+        function applyNav(forceShow) {
+            if (!phone.matches) {
+                document.body.style.removeProperty('--nav-shift');
+                return;
+            }
+            if (forceShow) navHide = 0;
+            if (navHide < 0) navHide = 0;
+            if (navHide > navH) navHide = navH;
+            document.body.style.setProperty('--nav-shift', navHide.toFixed(2) + 'px');
+        }
+
+        /* Andere Tabs zeigen die Leiste. Zurück im Shop gilt der letzte Stand. */
+        window.hausMeliShopNav = function (onShop) {
+            if (!phone.matches) {
+                document.body.style.removeProperty('--nav-shift');
+                return;
+            }
+            if (!onShop) {
+                document.body.style.setProperty('--nav-shift', '0px');
+                return;
+            }
+            readNavH();
+            applyNav(false);
+        };
 
         function apply() {
             var el = clip();
@@ -64,19 +89,20 @@
         function measure() {
             var el = clip();
             var banner = el && el.querySelector('.deadline-info');
+            quiet = true;
             if (!el || !banner) {
                 box = 0;
                 gap = 0;
                 hide = 0;
                 clearMotion();
+                quiet = false;
+                lastY = shop.scrollTop;
                 return;
             }
-            var kept = shop.scrollTop;
             var raw = el.parentElement ? getComputedStyle(el.parentElement).rowGap : '0';
             var n = parseFloat(raw);
             gap = isFinite(n) ? n : 0;
             shop.style.setProperty('--deadline-row-gap', gap.toFixed(2) + 'px');
-            /* Zum Messen kurz aufklappen, sonst ist die Zeile bei display:none 0 hoch. */
             shop.removeAttribute('data-deadline-hidden');
             shop.style.removeProperty('--deadline-clip-h');
             shop.style.removeProperty('--deadline-shift');
@@ -87,65 +113,60 @@
             if (box <= 0) {
                 hide = 0;
                 clearMotion();
-                return;
+            } else {
+                if (hide > box) hide = box;
+                apply();
             }
-            if (hide > box) hide = box;
-            apply();
-            if (Math.abs(shop.scrollTop - kept) > 0.5) {
-                lock = true;
-                shop.scrollTop = kept;
-                lock = false;
-            }
+            quiet = false;
+            lastY = shop.scrollTop;
         }
 
         function onScroll() {
-            if (lock) return;
+            if (quiet) {
+                lastY = shop.scrollTop;
+                return;
+            }
             var y = shop.scrollTop;
+            if (y < 0) y = 0;
+            var delta = y - lastY;
+            lastY = y;
+
+            if (phone.matches) {
+                if (y <= 0) navHide = 0;
+                else if (delta > 0) navHide += delta;
+                else if (delta < 0) navHide += delta;
+                applyNav(false);
+            }
+
+            /* Ganz oben: Hinweis wieder zeigen. Hochscrollen allein reicht nicht. */
             if (y <= 0) {
-                lastY = 0;
                 if (hide !== 0) {
                     hide = 0;
                     apply();
-                    syncNav();
                 }
                 return;
             }
+            if (delta <= 0) return;
             if (box <= 0) measure();
-            var delta = y - lastY;
-            lastY = y;
-            if (delta === 0) return;
-            var range = box;
-            if (range <= 0) return;
+            if (box <= 0) return;
             var next = hide + delta * SPEED;
-            if (next < 0) next = 0;
-            if (next > range) next = range;
-            var applied = next - hide;
-            if (applied === 0) return;
-            var headerEl = clip() ? clip().parentElement : null;
-            var beforeH = headerEl ? headerEl.offsetHeight : 0;
+            if (next > box) next = box;
+            if (next === hide) return;
             hide = next;
             apply();
-            var shrunk = headerEl ? beforeH - headerEl.offsetHeight : applied;
-            var target = y - shrunk;
-            if (Math.abs(shop.scrollTop - target) > 0.2) {
-                lock = true;
-                shop.scrollTop = target;
-                lastY = shop.scrollTop;
-                lock = false;
-            } else {
-                lastY = shop.scrollTop;
-            }
-            syncNav();
         }
 
         shop.addEventListener('scroll', onScroll, { passive: true });
+        readNavH();
         measure();
+        applyNav(true);
         lastY = shop.scrollTop;
 
         window.addEventListener('resize', function () {
+            readNavH();
             measure();
+            applyNav(false);
             lastY = shop.scrollTop;
-            syncNav();
         });
 
         if (document.fonts && document.fonts.ready) {

@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=126">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=127">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1437,7 +1437,7 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
-    <script src="{{ asset('js/shop-deadline.js') }}?v=1"></script>
+    <script src="{{ asset('js/shop-deadline.js') }}?v=2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var track = document.querySelector('.tab-track');
@@ -1445,19 +1445,8 @@
             var nav = document.querySelector('.shell-nav');
             var phone = window.matchMedia('(max-width: 767px)');
             if (!track || !shop || !nav) return;
-            function update() {
-                var root = document.body.style;
-                if (!phone.matches) {
-                    root.removeProperty('--nav-shift');
-                    return;
-                }
-                var navH = nav.offsetHeight;
-                /* Der Lieferhinweis verbraucht einen Teil des Scrolls. Die Leiste
-                   folgt dem sichtbaren Weg, nicht der verkürzten scrollTop-Zahl. */
-                var consumed = parseFloat(shop.style.getPropertyValue('--deadline-hide')) || 0;
-                var shift = Math.min(Math.max(shop.scrollTop, 0) + consumed, navH);
-                root.setProperty('--nav-shift', shift + 'px');
-            }
+            /* Die Leiste selbst steuert shop-deadline.js: weg beim Runterscrollen,
+               sofort wieder da beim Hochscrollen. Hier nur der Tab-Wechsel. */
             var away = false;
             function syncNav() {
                 if (!phone.matches) {
@@ -1468,16 +1457,13 @@
                 var width = Math.max(track.clientWidth, 1);
                 if (track.scrollLeft < width * 0.5) {
                     away = false;
-                    update();
+                    if (window.hausMeliShopNav) window.hausMeliShopNav(true);
                     return;
                 }
                 if (away) return;
                 away = true;
                 document.body.style.setProperty('--nav-shift', '0px');
             }
-            shop.addEventListener('scroll', function () {
-                if (track.scrollLeft < 6) update();
-            }, { passive: true });
             /* Erst wenn die Seite steht. Mitten in der Bewegung reißt
                transform/clip-path das Einrasten ab (Shop bleibt halb stehen). */
             var finger = false;
@@ -1495,7 +1481,7 @@
                 navTimer = setTimeout(syncNav, 70);
             }, { passive: true });
             window.addEventListener('resize', syncNav);
-            update();
+            syncNav();
         });
     </script>
     <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
