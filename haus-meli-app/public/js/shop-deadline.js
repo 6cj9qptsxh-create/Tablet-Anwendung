@@ -176,6 +176,8 @@
                 opening = false;
                 setBox(0);
                 setShift(0);
+                shop.style.removeProperty('--deadline-outer-gap');
+                shop.style.removeProperty('--deadline-row-gap');
                 setFlag('data-deadline-hidden', false);
                 setFlag('data-deadline-gone', false);
                 setFlag('data-deadline-closing', false);
@@ -187,8 +189,18 @@
             }
             var raw = el.parentElement ? getComputedStyle(el.parentElement).rowGap : '0';
             var n = parseFloat(raw);
-            gap = isFinite(n) ? n : 0;
+            var rowGap = isFinite(n) ? n : 0;
+            /* Am Desktop ist der Zeilenabstand 0, sonst bleibt er bei Höhe 0
+               als Sprung stehen. Der sichtbare Abstand liegt dann im Clip. */
+            var outer = rowGap;
+            gap = rowGap;
+            if (rowGap <= 0) {
+                var spacing = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spacing'));
+                if (isFinite(spacing) && spacing > 0) gap = spacing;
+                outer = 0;
+            }
             shop.style.setProperty('--deadline-row-gap', gap.toFixed(2) + 'px');
+            shop.style.setProperty('--deadline-outer-gap', outer.toFixed(2) + 'px');
             setFlag('data-deadline-gone', false);
             setFlag('data-deadline-hidden', false);
             setFlag('data-deadline-closing', false);

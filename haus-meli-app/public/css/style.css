@@ -1737,7 +1737,7 @@ body.is-cal-tab .shell-nav {
     /* Der Flex-Abstand der Kopfzeile liegt sonst ausserhalb und bleibt
        stehen, wenn die Zeile weg ist. Er wird in den Clip gezogen und
        schrumpft mit. */
-    margin-top: calc(-1 * var(--deadline-row-gap, 0px));
+    margin-top: calc(-1 * var(--deadline-outer-gap, 0px));
     height: var(--deadline-box, auto);
     opacity: 1;
 }
@@ -1873,39 +1873,53 @@ body.is-cal-tab .shell-nav {
 /* Hier schalten wir den Header von "untereinander" auf "nebeneinander" um */
 @media (min-width: 768px) {
     #tab-order .header {
-        flex-direction: row;
-        /* Alles in eine Zeile */
-        flex-wrap: wrap;
-        /* Umbruch erlaubt (für Deadline) */
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: var(--spacing);
         align-items: center;
-        justify-content: space-between;
+        /* Kein row-gap vor dem Hinweis. Der bliebe bei Höhe 0 als Sprung
+           stehen. Der Abstand über der Suche ist Margin, der über dem
+           Hinweis liegt im Clip und klappt mit zu. */
+        row-gap: 0;
     }
 
     /* 1. Suche & Dropdown (Links) */
     .header-row {
         order: 1;
+        grid-column: 1;
+        grid-row: 2;
         flex: 1;
-        /* Nimmt den meisten Platz in der Mitte */
+        min-width: 0;
+        margin-top: var(--spacing);
         margin-bottom: 0;
     }
 
     /* 2. Buttons (Rechts) */
     .header-top {
         order: 2;
+        grid-column: 2;
+        grid-row: 2;
         width: auto;
-        /* Nur so breit wie nötig */
+        margin-top: var(--spacing);
         margin-bottom: 0;
     }
 
     .header-top>* {
         flex: initial;
-        /* Buttons wachsen nicht unnötig */
         width: auto;
+    }
+
+    .delivery-day-picker {
+        grid-column: 1 / -1;
+        grid-row: 1;
     }
 
     /* 3. Deadline (Ganz unten, volle Breite) */
     .deadline-clip {
         order: 3;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        width: auto;
     }
 
     .deadline-info {
@@ -3707,10 +3721,11 @@ body.is-cal-tab .shell-nav {
 
     /* 1. Header Layout: Alles in einer Zeile */
     #tab-order .header {
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: var(--spacing);
+        row-gap: 0;
         align-items: center;
-        justify-content: space-between;
     }
 
     /* Links: Suche & Dropdown (nimmt den meisten Platz) */
