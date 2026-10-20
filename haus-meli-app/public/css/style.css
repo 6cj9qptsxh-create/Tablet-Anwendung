@@ -6103,7 +6103,8 @@ body.trip-detail-open {
 
 /* --- HANDY: Navigationsleiste schwebt über den Seiten ---
    Im Shop verschwindet sie beim Runterscrollen und kommt beim Hochscrollen
-   sofort zurück (--nav-shift setzt shop-deadline.js). */
+   zurück. Der Shop-Kopf sitzt dabei immer direkt unter dem sichtbaren Teil
+   der Leiste und wird mit nach unten gedrückt (--nav-shift setzt shop-deadline.js). */
 @media (max-width: 767px) {
     body.page-content {
         --nav-h: 40px;
@@ -6128,8 +6129,9 @@ body.trip-detail-open {
     }
 
     body.page-content .tab-pane .shop-header-wrap {
-        /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding) */
-        top: calc(-1 * (var(--nav-h) + var(--spacing)));
+        /* Chrome/Safari messen sticky ab der Innenkante (nach dem Padding).
+           Sichtbare Leiste (nav-h minus nav-shift) schiebt den Kopf nach unten. */
+        top: calc(-1 * (var(--spacing) + var(--nav-shift)));
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
