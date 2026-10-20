@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=136">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=137">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1437,7 +1437,7 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
-    <script src="{{ asset('js/shop-deadline.js') }}?v=11"></script>
+    <script src="{{ asset('js/shop-deadline.js') }}?v=12"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var track = document.querySelector('.tab-track');

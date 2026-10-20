@@ -14,6 +14,7 @@
         var lastY = shop.scrollTop || 0;
         var navH = 40;
         var navTravel = 40;
+        var spacing = 12;
         var stickEngage = 0;
         var phone = window.matchMedia('(max-width: 767px)');
 
@@ -29,6 +30,8 @@
                 if (isFinite(top) && top > 0) safe = top;
             }
             navTravel = safe + navH;
+            var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spacing'));
+            if (isFinite(gap) && gap > 0) spacing = gap;
         }
 
         function px(name, value) {
@@ -88,6 +91,7 @@
             if (!phone.matches || !linked()) {
                 px('--nav-cover', 0);
                 px('--header-cover', 0);
+                document.body.removeAttribute('data-nav-clip');
                 return;
             }
             var y = shop.scrollTop || 0;
@@ -100,10 +104,19 @@
             if (safe < 0) safe = 0;
             var follow = cover - safe;
             if (follow < 0) follow = 0;
+            if (follow > navH) follow = navH;
+            /* Anteilig derselbe Abstand wie unter der ruhenden Leiste.
+               Sonst klebt die Karte an der Leiste, solange der Hinweis weg ist. */
+            var gap = navH > 0 ? spacing * (follow / navH) : 0;
+            var push = follow + gap;
             var need = y + cover - safe - stickEngage;
             var headerCover = 0;
-            if (need > 0) headerCover = need < follow ? need : follow;
+            if (need > 0) headerCover = need < push ? need : push;
             px('--header-cover', headerCover);
+            /* Nur solange der Kopf geschoben wird. Danach gleitet der Hinweis
+               von allein ins Bild, die Leiste bleibt stehen. */
+            if (headerCover > 0.5) document.body.setAttribute('data-nav-clip', '');
+            else document.body.removeAttribute('data-nav-clip');
         }
 
         function applyNav(forceShow) {
@@ -118,6 +131,7 @@
                 navHide = 0;
                 cover = 0;
                 document.body.removeAttribute('data-nav-reveal');
+                document.body.removeAttribute('data-nav-clip');
             }
             if (navHide < 0) navHide = 0;
             if (navHide > navH) navHide = navH;
@@ -138,6 +152,7 @@
             if (!onShop) {
                 document.body.setAttribute('data-nav-hold', '');
                 document.body.removeAttribute('data-nav-reveal');
+                document.body.removeAttribute('data-nav-clip');
                 document.body.style.setProperty('--nav-shift', '0px');
                 px('--nav-cover', 0);
                 px('--header-cover', 0);
@@ -172,14 +187,24 @@
             lastY = y;
             if (!phone.matches) return;
             if (linked()) {
-                if (y <= navTravel) cover = 0;
-                else cover -= delta;
+                /* cover, bei dem die Reveal-Verschiebung gleich der Zeitlinie ist.
+                   Ganz oben ist das die Ruheposition, weiter unten die versteckte. */
+                var timelineCover = y >= navTravel ? 0 : navTravel - y;
+                if (y <= 0) cover = 0;
+                else if (delta < 0) {
+                    cover -= delta;
+                    if (cover > navTravel) cover = navTravel;
+                } else {
+                    cover -= delta;
+                    if (cover < timelineCover) cover = timelineCover;
+                }
                 if (cover < 0) cover = 0;
                 if (cover > navTravel) cover = navTravel;
-                /* Nur solange die Leiste wirklich zurückfährt. Sonst bleibt
-                   die Zeitlinie dran, das Runterscrollen läuft unverändert. */
-                if (cover > 0) document.body.setAttribute('data-nav-reveal', '');
-                else document.body.removeAttribute('data-nav-reveal');
+                /* Erst lösen, wenn beide dieselbe Stelle zeichnen.
+                   Sonst springt die Leiste nach oben, sobald der Hinweis kommt. */
+                var same = Math.abs(cover - timelineCover) <= 0.5;
+                if (y <= 0 || same) document.body.removeAttribute('data-nav-reveal');
+                else document.body.setAttribute('data-nav-reveal', '');
                 applyCovers();
                 return;
             }
