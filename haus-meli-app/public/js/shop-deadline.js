@@ -1,9 +1,9 @@
 /* Lieferhinweis und Handy-Navigation bewegen sich gleich:
    beide nur mit dem Scrollen, beide erst ganz oben wieder da.
+   Der Hinweis steht unter den Tagen. Bestellungen und Warenkorb kleben.
    Die Leiste hängt an der Scroll-Zeitlinie über die ganze Strecke,
    damit sie im selben Bild läuft. Ohne Zeitlinie setzt das Skript
-   dieselbe Strecke. Bestellungen und Warenkorb kleben per CSS.
-   Am Desktop bleibt der Hinweis die wegscrollende oberste Zeile.
+   dieselbe Strecke. Am Desktop klebt der ganze Kopf.
    scrollTop wird nie angefasst, sonst hängt die Seite. */
 (function () {
     function start() {
@@ -40,24 +40,11 @@
             else document.body.removeAttribute('data-nav-linked');
         }
 
-        /* Abstand vom Kopf der Platte bis unter den Hinweis.
-           Nur der Desktop nutzt das, um genau diese Zeile wegzulassen. */
+        /* Der Hinweis ist nicht mehr die oberste Zeile. Die Platte klebt ganz. */
         function measure() {
             linked();
             publishSpan();
-            if (phone.matches) {
-                shop.style.removeProperty('--deadline-stick');
-                return;
-            }
-            var wrap = shop.querySelector('.shop-header-wrap');
-            var el = shop.querySelector('.deadline-clip');
-            if (!wrap || !el) {
-                shop.style.removeProperty('--deadline-stick');
-                return;
-            }
-            var stick = el.getBoundingClientRect().bottom - wrap.getBoundingClientRect().top;
-            if (stick < 1) shop.style.removeProperty('--deadline-stick');
-            else shop.style.setProperty('--deadline-stick', stick.toFixed(2) + 'px');
+            shop.style.removeProperty('--deadline-stick');
         }
 
         /* Dieselbe Strecke wie der Inhalt, falls die Zeitlinie fehlt. */
