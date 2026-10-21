@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=143">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=144">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1527,15 +1527,16 @@
                 requestAnimationFrame(paint);
             }
 
-            function fitButton(btn, tr) {
+            function fitButton(btn, tr, inset) {
                 ro.observe(btn);
                 var br = btn.getBoundingClientRect();
                 if (tr.width < 8 || br.width < 2) {
                     btn.classList.remove('accent-fit');
                     return;
                 }
-                var span = Math.max(0, tr.width - INSET * 2);
-                var x = (tr.left + INSET) - br.left;
+                var edge = inset == null ? INSET : inset;
+                var span = Math.max(0, tr.width - edge * 2);
+                var x = (tr.left + edge) - br.left;
                 btn.style.setProperty('--accent-span', span.toFixed(2) + 'px');
                 btn.style.setProperty('--accent-x', x.toFixed(2) + 'px');
                 if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
@@ -1568,7 +1569,8 @@
                     var tr = card.getBoundingClientRect();
                     ro.observe(card);
                     var chips = picker.querySelectorAll(BTN);
-                    for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr);
+                    var edge = card.classList.contains('shop-sticky') ? 0 : INSET;
+                    for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr, edge);
                 }
             }
 
@@ -1585,6 +1587,7 @@
                     if (!box || getComputedStyle(box).display === 'contents') continue;
                     var tr = box.getBoundingClientRect();
                     if (tr.width < 8) continue;
+                    var edge = box.classList.contains('shop-sticky') ? 0 : INSET;
                     var buttons = heads[h].querySelectorAll(BTN);
                     for (var b = 0; b < buttons.length; b++) {
                         var btn = buttons[b];
@@ -1592,7 +1595,7 @@
                             btn.classList.remove('accent-fit');
                             continue;
                         }
-                        fitButton(btn, tr);
+                        fitButton(btn, tr, edge);
                     }
                 }
             }
