@@ -56,9 +56,9 @@
         function tickPull() {
             if (performance.now() - lastMove > 70) target *= 0.9;
             var diff = target - shown;
-            var step = diff * 0.28;
-            if (step > 1.4) step = 1.4;
-            if (step < -1.4) step = -1.4;
+            var step = diff * 0.32;
+            if (step > 2) step = 2;
+            if (step < -2) step = -2;
             shown += step;
             if (Math.abs(shown) < 0.2 && Math.abs(target) < 0.2) {
                 shown = 0;
@@ -81,7 +81,7 @@
             }
             if (!delta) return;
             lastMove = performance.now();
-            var next = clampPull(-delta * 0.45, -10, 6);
+            var next = clampPull(-delta * 0.7, -16, 8);
             var keep = (next > 0 && target < 0) || (next < 0 && target > 0) ? 0.2 : 0.45;
             target = target * keep + next * (1 - keep);
             if (!pullFrame) pullFrame = requestAnimationFrame(tickPull);
