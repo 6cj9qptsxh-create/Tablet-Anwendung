@@ -13,11 +13,11 @@
         var phone = window.matchMedia('(max-width: 767px)');
         var anchor = shop.scrollTop || 0;
         var away = false;
-        var pull = 0;
-        var velocity = 0;
+        var shown = 0;
+        var target = 0;
         var pullY = shop.scrollTop || 0;
         var pullFrame = 0;
-        var pullTimer = 0;
+        var lastMove = 0;
 
         function motionOk() {
             try {
@@ -36,64 +36,55 @@
         function applyPull() {
             var topBtn = shop.querySelector('.shop-to-top');
             if (!topBtn) return;
-            var y = motionOk() ? pull : 0;
-            topBtn.style.setProperty('--shop-top-pull', y.toFixed(1) + 'px');
+            var y = motionOk() ? shown : 0;
+            topBtn.style.setProperty('--shop-top-pull', y.toFixed(2) + 'px');
         }
 
-        function restPull() {
-            if (pullTimer) {
-                clearTimeout(pullTimer);
-                pullTimer = 0;
-            }
+        function stopPull() {
             if (pullFrame) {
                 cancelAnimationFrame(pullFrame);
                 pullFrame = 0;
             }
-            pull = 0;
-            velocity = 0;
+            shown = 0;
+            target = 0;
             pullY = shop.scrollTop || 0;
             applyPull();
         }
 
-        function releasePull() {
-            pull *= 0.88;
-            if (Math.abs(pull) < 0.4) {
-                pull = 0;
-                velocity = 0;
+        /* Ziel kommt aus dem Scrollen. Die sichtbare Lage holt es Bild für Bild
+           ein, höchstens ein kleines Stück pro Frame, und gleitet danach zurück. */
+        function tickPull() {
+            if (performance.now() - lastMove > 70) target *= 0.9;
+            var diff = target - shown;
+            var step = diff * 0.28;
+            if (step > 1.4) step = 1.4;
+            if (step < -1.4) step = -1.4;
+            shown += step;
+            if (Math.abs(shown) < 0.2 && Math.abs(target) < 0.2) {
+                shown = 0;
+                target = 0;
                 pullFrame = 0;
                 applyPull();
                 return;
             }
             applyPull();
-            pullFrame = requestAnimationFrame(releasePull);
+            pullFrame = requestAnimationFrame(tickPull);
         }
 
-        /* Der Inhalt zieht den Pfeil ein Stück mit. Danach gleitet er zurück. */
         function tug() {
             var y = shop.scrollTop || 0;
             var delta = y - pullY;
             pullY = y;
             if (!motionOk()) {
-                if (pull) restPull();
+                if (shown || target) stopPull();
                 return;
             }
             if (!delta) return;
-            if (pullFrame) {
-                cancelAnimationFrame(pullFrame);
-                pullFrame = 0;
-            }
-            if (pullTimer) {
-                clearTimeout(pullTimer);
-                pullTimer = 0;
-            }
-            velocity = velocity * 0.35 + delta * 0.65;
-            pull = clampPull(-velocity * 0.55, -10, 6);
-            applyPull();
-            pullTimer = setTimeout(function () {
-                pullTimer = 0;
-                velocity = 0;
-                if (!pullFrame) pullFrame = requestAnimationFrame(releasePull);
-            }, 80);
+            lastMove = performance.now();
+            var next = clampPull(-delta * 0.45, -10, 6);
+            var keep = (next > 0 && target < 0) || (next < 0 && target > 0) ? 0.2 : 0.45;
+            target = target * keep + next * (1 - keep);
+            if (!pullFrame) pullFrame = requestAnimationFrame(tickPull);
         }
 
         function syncTop() {
@@ -101,7 +92,7 @@
             if (!topBtn) return;
             var y = shop.scrollTop || 0;
             topBtn.hidden = !(y > 48 && !document.body.hasAttribute('data-nav-hold'));
-            if (topBtn.hidden) restPull();
+            if (topBtn.hidden) stopPull();
         }
 
         function paint() {
