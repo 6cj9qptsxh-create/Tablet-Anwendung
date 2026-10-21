@@ -1,7 +1,8 @@
 /* Handy-Navigation folgt der Scrollrichtung: nach unten weg,
    nach oben sofort wieder da. Ganz oben ist sie immer sichtbar.
    Der Lieferhinweis scrollt mit den Produkten, das Skript fasst ihn nicht an.
-   Der Pfeil springt einmal an den Anfang der Shop-Fläche.
+   Der Pfeil springt einmal an den Anfang der Shop-Fläche und wird beim
+   Scrollen kurz mitgezogen, damit er auffällt.
    scrollTop wird im Scroll-Listener nie geschrieben, sonst hängt die Seite. */
 (function () {
     function start() {
@@ -12,12 +13,95 @@
         var phone = window.matchMedia('(max-width: 767px)');
         var anchor = shop.scrollTop || 0;
         var away = false;
+        var pull = 0;
+        var velocity = 0;
+        var pullY = shop.scrollTop || 0;
+        var pullFrame = 0;
+        var pullTimer = 0;
+
+        function motionOk() {
+            try {
+                return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function clampPull(n, min, max) {
+            if (n < min) return min;
+            if (n > max) return max;
+            return n;
+        }
+
+        function applyPull() {
+            var topBtn = shop.querySelector('.shop-to-top');
+            if (!topBtn) return;
+            var y = motionOk() ? pull : 0;
+            topBtn.style.setProperty('--shop-top-pull', y.toFixed(1) + 'px');
+        }
+
+        function restPull() {
+            if (pullTimer) {
+                clearTimeout(pullTimer);
+                pullTimer = 0;
+            }
+            if (pullFrame) {
+                cancelAnimationFrame(pullFrame);
+                pullFrame = 0;
+            }
+            pull = 0;
+            velocity = 0;
+            pullY = shop.scrollTop || 0;
+            applyPull();
+        }
+
+        function releasePull() {
+            pull *= 0.88;
+            if (Math.abs(pull) < 0.4) {
+                pull = 0;
+                velocity = 0;
+                pullFrame = 0;
+                applyPull();
+                return;
+            }
+            applyPull();
+            pullFrame = requestAnimationFrame(releasePull);
+        }
+
+        /* Der Inhalt zieht den Pfeil ein Stück mit. Danach gleitet er zurück. */
+        function tug() {
+            var y = shop.scrollTop || 0;
+            var delta = y - pullY;
+            pullY = y;
+            if (!motionOk()) {
+                if (pull) restPull();
+                return;
+            }
+            if (!delta) return;
+            if (pullFrame) {
+                cancelAnimationFrame(pullFrame);
+                pullFrame = 0;
+            }
+            if (pullTimer) {
+                clearTimeout(pullTimer);
+                pullTimer = 0;
+            }
+            velocity = velocity * 0.35 + delta * 0.65;
+            pull = clampPull(-velocity * 0.55, -10, 6);
+            applyPull();
+            pullTimer = setTimeout(function () {
+                pullTimer = 0;
+                velocity = 0;
+                if (!pullFrame) pullFrame = requestAnimationFrame(releasePull);
+            }, 80);
+        }
 
         function syncTop() {
             var topBtn = shop.querySelector('.shop-to-top');
             if (!topBtn) return;
             var y = shop.scrollTop || 0;
             topBtn.hidden = !(y > 48 && !document.body.hasAttribute('data-nav-hold'));
+            if (topBtn.hidden) restPull();
         }
 
         function paint() {
@@ -52,6 +136,7 @@
 
         /* Kleine Schritte sammeln, damit ein kurzes Hochscrollen reicht. */
         function onScroll() {
+            tug();
             if (!phone.matches || document.body.hasAttribute('data-nav-hold')) {
                 syncTop();
                 return;
