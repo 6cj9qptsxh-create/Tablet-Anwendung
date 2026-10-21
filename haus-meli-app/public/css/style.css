@@ -290,10 +290,9 @@ body {
 .shop-header-wrap {
     position: sticky;
     position: -webkit-sticky;
-    /* --deadline-stick ist die Höhe der obersten Zeile. Negativ lässt der
-       Browser genau diese Scheibe wegscrollen, der Rest bleibt kleben.
-       safe-top hält den klebenden Rest unter der Statusleiste. */
-    top: calc(var(--safe-top) - var(--deadline-stick, 0px));
+    /* Der ganze Kopf klebt. safe-top hält ihn unter der Statusleiste.
+       Auf dem Handy ist die Platte aufgelöst, dort kleben nur die Knöpfe. */
+    top: var(--safe-top);
     z-index: 1000;
     background: var(--bg);
     margin: calc(-1 * var(--safe-top)) calc(-1 * var(--spacing)) 0;
@@ -1728,9 +1727,7 @@ body.is-cal-tab .shell-nav {
 }
 
 /* --- DEADLINE INFO (Infozeile zum gewählten Tag) --- */
-/* Oberste Zeile der Karte. shop-deadline.js misst ihre Höhe als
-   --deadline-stick am Tab. Der klebende Kopf rückt um genau diese
-   Höhe nach oben, der Browser scrollt die Zeile mit dem Finger weg. */
+/* Steht unter der Tageswahl. Auf dem Handy läuft sie mit der Navigation weg. */
 .deadline-clip {
     flex: 0 0 auto;
     width: 100%;
@@ -1841,11 +1838,16 @@ body.is-cal-tab .shell-nav {
         row-gap: 0;
     }
 
+    /* Suche und Knöpfe liegen im Raster der Karte, nicht in der Hülle. */
+    .shop-head-rest {
+        display: contents;
+    }
+
     /* 1. Suche & Dropdown (Links), unter der Tageswahl */
     .header-row {
         order: 1;
         grid-column: 1;
-        grid-row: 3;
+        grid-row: 2;
         flex: 1;
         min-width: 0;
         margin-top: var(--spacing);
@@ -1856,7 +1858,7 @@ body.is-cal-tab .shell-nav {
     .header-top {
         order: 2;
         grid-column: 2;
-        grid-row: 3;
+        grid-row: 2;
         width: auto;
         margin-top: var(--spacing);
         margin-bottom: 0;
@@ -1869,20 +1871,20 @@ body.is-cal-tab .shell-nav {
 
     .delivery-day-picker {
         grid-column: 1 / -1;
-        grid-row: 2;
+        grid-row: 1;
     }
 
-    /* Hinweis ganz oben, volle Breite. Der Abstand darunter scrollt mit weg. */
+    /* Hinweis unter den Tagen, volle Breite. */
     .deadline-clip {
         grid-column: 1 / -1;
-        grid-row: 1;
+        grid-row: 3;
         width: auto;
-        margin-bottom: var(--spacing);
+        margin-bottom: 0;
     }
 
     .deadline-info {
         width: 100%;
-        margin: 0;
+        margin: 5px 0 0;
     }
 }
 
@@ -3555,9 +3557,8 @@ body.is-cal-tab .shell-nav {
         gap: var(--spacing) !important;
     }
 
-    /* Hinweis ist die erste Zeile. */
+    /* Hinweis steht unter den Tagen, in der Quellenreihenfolge. */
     .deadline-clip {
-        order: -2;
         margin-bottom: 0;
     }
 
@@ -6169,22 +6170,11 @@ body.trip-detail-open {
         padding-top: calc(var(--nav-h) + var(--spacing));
     }
 
-    /* Die Karte selbst klebt nicht. Ihre Kinder liegen direkt in der
-       Shop-Region, damit nur die Knopfzeile über die Produktliste klebt. */
+    /* Die Karte selbst klebt nicht. Nur die Knopfzeile bleibt über der Liste.
+       Suche, Tage und Hinweis bleiben eine echte Karte mit dem Verlaufsstrich. */
     body.page-content .tab-pane .shop-header-wrap,
     body.page-content #tab-order .header.shop-header {
         display: contents;
-    }
-
-    body.page-content #tab-order .shop-header > .deadline-clip,
-    body.page-content #tab-order .shop-header > .header-row,
-    body.page-content #tab-order .shop-header > .delivery-day-picker {
-        background: var(--card);
-    }
-
-    body.page-content #tab-order .shop-header > .deadline-clip {
-        padding: var(--spacing) var(--spacing) 0;
-        border-radius: 16px 16px 0 0;
     }
 
     body.page-content #tab-order .header-top {
@@ -6196,17 +6186,33 @@ body.trip-detail-open {
         margin: 0;
         padding: var(--spacing);
         background: var(--card);
+        border-radius: 16px 16px 0 0;
         box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
     }
 
-    body.page-content #tab-order .shop-header > .header-row {
-        padding: 0 var(--spacing) var(--spacing);
-    }
-
-    body.page-content #tab-order .shop-header > :last-child {
+    body.page-content #tab-order .shop-head-rest {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing);
+        position: relative;
+        background: var(--card);
         border-radius: 0 0 16px 16px;
         border-bottom: var(--border-th) solid var(--accent-soft);
+        padding: var(--spacing);
         margin-bottom: var(--spacing);
+    }
+
+    /* Derselbe hell–dunkel–hell-Strich wie an jeder Karte.
+       Die Tagesfarbe misst diese Kante. */
+    body.page-content #tab-order .shop-head-rest::after {
+        content: '';
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: -3px;
+        height: var(--border-th);
+        background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+        z-index: 2;
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
