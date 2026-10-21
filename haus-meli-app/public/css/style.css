@@ -6189,9 +6189,10 @@ body.trip-detail-open {
 
     body.page-content #tab-order .shop-sticky {
         position: sticky;
-        /* Leiste sichtbar: top 0 klebt 12px unter der Leiste.
-           Leiste weg: --nav-h hebt das auf, --spacing bleibt als Abstand oben. */
-        top: 0;
+        /* Immer 12px unter dem Rand andocken. Die Navigation schiebt die
+           Karte nur nach unten, wenn sie schon klebt. Sonst springt der
+           Abstand zur Lieferinfo beim ersten Runterscrollen. */
+        top: calc(-1 * var(--nav-h));
         z-index: 1001;
         transition: top 0.18s ease;
         display: flex;
@@ -6200,15 +6201,16 @@ body.trip-detail-open {
         margin: 0;
         padding: var(--spacing);
         background: var(--card);
-        /* Oben eckig, sonst blitzt der Inhalt in den Rundungen durch. */
-        border-radius: 0;
+        /* Oben eckig, sonst blitzt der Inhalt durch. Unten wie die übrigen Karten. */
+        border-radius: 0 0 16px 16px;
         box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.2),
             0 10px 18px rgba(0, 0, 0, 0.28);
     }
 
-    body.page-content[data-nav-away] #tab-order .shop-sticky {
-        top: calc(-1 * var(--nav-h));
+    /* Navigation offen und Karte klebt schon: 12px unter der Leiste. */
+    body.page-content[data-bar-drop] #tab-order .shop-sticky {
+        top: 0;
     }
 
     /* Deckt den Abstand über der Leiste ab, in Seitenfarbe. */
@@ -6234,7 +6236,8 @@ body.trip-detail-open {
         z-index: 2;
     }
 
-    body.page-content #tab-order .shop-content > .deadline-clip {
+    /* Ein Abstand unter der Karte. Der Hinweis bringt keinen zweiten mit. */
+    body.page-content #tab-order .shop-layout {
         margin-top: var(--spacing);
     }
 
@@ -6246,7 +6249,7 @@ body.trip-detail-open {
     }
 
     body.page-content #tab-order .shop-sticky:last-child {
-        margin-bottom: var(--spacing);
+        margin-bottom: 0;
     }
 
     /* Touren: Karte kleiner, damit die gespeicherten Touren darunter zu ahnen sind */
