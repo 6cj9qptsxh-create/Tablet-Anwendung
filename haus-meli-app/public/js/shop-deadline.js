@@ -1,10 +1,8 @@
-/* Lieferhinweis und Handy-Navigation bewegen sich gleich:
-   beide nur mit dem Scrollen, beide erst ganz oben wieder da.
-   Der Hinweis steht unter den Tagen. Bestellungen und Warenkorb kleben.
-   Die Leiste hängt an der Scroll-Zeitlinie über die ganze Strecke,
-   damit sie im selben Bild läuft. Ohne Zeitlinie setzt das Skript
-   dieselbe Strecke. Am Desktop klebt der ganze Kopf.
-   scrollTop wird nie angefasst, sonst hängt die Seite. */
+/* Handy-Navigation folgt der Scrollrichtung: nach unten weg,
+   nach oben sofort wieder da. Ganz oben ist sie immer sichtbar.
+   Der Lieferhinweis scrollt mit den Produkten, das Skript fasst ihn nicht an.
+   Der Pfeil springt einmal an den Anfang der Shop-Fläche.
+   scrollTop wird im Scroll-Listener nie geschrieben, sonst hängt die Seite. */
 (function () {
     function start() {
         var shop = document.querySelector('.tab-pane[data-tab="order"]');
@@ -12,93 +10,90 @@
         shop.dataset.deadlineBound = '1';
 
         var phone = window.matchMedia('(max-width: 767px)');
-        var timeline = false;
-        try {
-            timeline = window.CSS && CSS.supports('animation-timeline: scroll()');
-        } catch (e) {
-            timeline = false;
-        }
-        var lastSpan = -1;
+        var anchor = shop.scrollTop || 0;
+        var away = false;
 
-        function px(name, value) {
-            if (value <= 0.2) document.body.style.removeProperty(name);
-            else document.body.style.setProperty(name, value.toFixed(2) + 'px');
+        function syncTop() {
+            var topBtn = shop.querySelector('.shop-to-top');
+            if (!topBtn) return;
+            var y = shop.scrollTop || 0;
+            topBtn.hidden = !(y > 48 && !document.body.hasAttribute('data-nav-hold'));
         }
 
-        /* Ganze Scrollstrecke. Die Zeitlinie rechnet daraus genau -scrollTop. */
-        function publishSpan() {
-            var max = 0;
-            if (phone.matches) max = Math.max(0, shop.scrollHeight - shop.clientHeight);
-            if (Math.abs(max - lastSpan) < 0.4) return;
-            lastSpan = max;
-            if (max <= 0.2) document.body.style.removeProperty('--nav-span');
-            else document.body.style.setProperty('--nav-span', max.toFixed(2));
+        function paint() {
+            if (away && phone.matches && !document.body.hasAttribute('data-nav-hold')) {
+                document.body.setAttribute('data-nav-away', '');
+            } else {
+                document.body.removeAttribute('data-nav-away');
+            }
+            syncTop();
         }
 
-        function linked() {
-            if (phone.matches && timeline) document.body.setAttribute('data-nav-linked', '');
-            else document.body.removeAttribute('data-nav-linked');
-        }
-
-        /* Der Hinweis ist nicht mehr die oberste Zeile. Die Platte klebt ganz. */
-        function measure() {
-            linked();
-            publishSpan();
-            shop.style.removeProperty('--deadline-stick');
-        }
-
-        /* Dieselbe Strecke wie der Inhalt, falls die Zeitlinie fehlt. */
-        function applyNav() {
-            publishSpan();
-            if (!phone.matches || document.body.hasAttribute('data-nav-hold') || document.body.hasAttribute('data-nav-linked')) {
-                px('--nav-shift', 0);
+        /* Kleine Schritte sammeln, damit ein kurzes Hochscrollen reicht. */
+        function onScroll() {
+            if (!phone.matches || document.body.hasAttribute('data-nav-hold')) {
+                syncTop();
                 return;
             }
             var y = shop.scrollTop || 0;
             if (y < 0) y = 0;
-            px('--nav-shift', y);
+            if (y <= 4) {
+                away = false;
+                anchor = y;
+            } else {
+                var delta = y - anchor;
+                if (delta > 6) {
+                    away = true;
+                    anchor = y;
+                } else if (delta < -6) {
+                    away = false;
+                    anchor = y;
+                }
+            }
+            paint();
         }
 
         window.hausMeliShopNav = function (onShop) {
-            if (!phone.matches) {
-                document.body.removeAttribute('data-nav-hold');
-                px('--nav-shift', 0);
-                return;
-            }
             if (!onShop) {
                 document.body.setAttribute('data-nav-hold', '');
-                px('--nav-shift', 0);
+                away = false;
+                paint();
                 return;
             }
             document.body.removeAttribute('data-nav-hold');
-            applyNav();
+            var y = shop.scrollTop || 0;
+            away = phone.matches && y > 4;
+            anchor = y;
+            paint();
         };
 
-        shop.addEventListener('scroll', applyNav, { passive: true });
-        measure();
-        applyNav();
+        shop.addEventListener('click', function (event) {
+            var hit = event.target && event.target.closest ? event.target.closest('.shop-to-top') : null;
+            if (!hit || !shop.contains(hit)) return;
+            var reduce = false;
+            try {
+                reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            } catch (e) {
+                reduce = false;
+            }
+            shop.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+        });
+
+        shop.addEventListener('scroll', onScroll, { passive: true });
+        shop.style.removeProperty('--deadline-stick');
+        window.hausMeliShopNav(true);
 
         window.addEventListener('resize', function () {
-            lastSpan = -1;
-            measure();
-            applyNav();
+            anchor = shop.scrollTop || 0;
+            if (!phone.matches) away = false;
+            paint();
         });
 
         if (window.ResizeObserver) {
             var world = shop.querySelector('.world') || shop;
             new ResizeObserver(function () {
-                lastSpan = -1;
-                measure();
-                applyNav();
+                shop.style.removeProperty('--deadline-stick');
             }).observe(world);
-        }
-
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(function () {
-                lastSpan = -1;
-                measure();
-                applyNav();
-            });
         }
 
         var hooked = false;
@@ -106,9 +101,8 @@
             if (hooked || typeof Livewire === 'undefined' || !Livewire.hook) return;
             hooked = true;
             Livewire.hook('morph.updated', function () {
-                lastSpan = -1;
-                measure();
-                applyNav();
+                shop.style.removeProperty('--deadline-stick');
+                syncTop();
             });
         }
         document.addEventListener('livewire:init', hookLivewire);
