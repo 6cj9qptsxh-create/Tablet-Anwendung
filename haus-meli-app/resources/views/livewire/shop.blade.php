@@ -155,20 +155,19 @@
                 </div>
             @endif
             </div>
+        </div>
+        </div>
 
+        <div class="shop-layout">
+        <div class="container shop-content">
             @if($orderMode === 'delivery' && count($this->deliveryDays) > 0 && $this->selectedDayInfo)
-                {{-- Unter den Tagen. Läuft mit der Navigation weg und kommt erst ganz oben zurück. --}}
+                {{-- Gehört zu den Produkten und scrollt mit ihnen aus dem Bild. --}}
                 <div class="deadline-clip">
                     <div class="deadline-info {{ $this->selectedDayInfo['class'] }}">
                         {{ $this->selectedDayInfo['text'] }}
                     </div>
                 </div>
             @endif
-        </div>
-        </div>
-
-        <div class="shop-layout">
-        <div class="container shop-content">
         <div id="all-categories" wire:key="product-grid-{{ $renderKey }}">
 
             <div>
@@ -250,4 +249,8 @@
     @include('livewire.shop-modals.thanks')
 
     @include('livewire.shop-modals.toasts')
+
+    <button type="button" class="shop-to-top" hidden aria-label="Nach oben">
+        <span class="material-symbols-rounded" aria-hidden="true">keyboard_arrow_up</span>
+    </button>
 </div>
