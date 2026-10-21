@@ -657,7 +657,6 @@ body {
     z-index: 1100;
     left: 50%;
     bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
     width: 36px;
     height: 36px;
     margin: 0;
@@ -674,6 +673,14 @@ body {
         0 0 22px var(--accent-glow);
     color: var(--text);
     cursor: pointer;
+    /* --shop-top-pull setzt shop-deadline.js: der Pfeil geht beim Scrollen kurz mit. */
+    transform: translateX(-50%) translateY(var(--shop-top-pull, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-to-top {
+        transform: translateX(-50%);
+    }
 }
 
 .shop-to-top .material-symbols-rounded {
