@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=140">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=141">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1543,7 +1543,7 @@
             function strokeBox(el) {
                 var node = el ? el.parentElement : null;
                 while (node && node !== document.documentElement) {
-                    if (node.classList && (node.classList.contains('shop-head-rest') || node.classList.contains('shop-header') || node.classList.contains('card'))) {
+                    if (node.classList && (node.classList.contains('shop-sticky') || node.classList.contains('shop-header') || node.classList.contains('card'))) {
                         if (getComputedStyle(node).display !== 'contents') {
                             var rect = node.getBoundingClientRect();
                             if (rect.width >= 8 && rect.height >= 8) return node;
@@ -1576,7 +1576,7 @@
                 var heads = document.querySelectorAll('#tab-order .header-top');
                 for (var h = 0; h < heads.length; h++) {
                     var region = heads[h].closest('.shop-region') || heads[h].closest('#tab-order');
-                    var box = region ? region.querySelector('.shop-head-rest') : null;
+                    var box = region ? region.querySelector('.shop-sticky') : null;
                     if (!box || getComputedStyle(box).display === 'contents') {
                         box = region ? region.querySelector('.shop-header') : null;
                     }
