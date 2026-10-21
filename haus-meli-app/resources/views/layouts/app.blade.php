@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=144">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=145">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1569,8 +1569,7 @@
                     var tr = card.getBoundingClientRect();
                     ro.observe(card);
                     var chips = picker.querySelectorAll(BTN);
-                    var edge = card.classList.contains('shop-sticky') ? 0 : INSET;
-                    for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr, edge);
+                    for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr);
                 }
             }
 
@@ -1587,7 +1586,6 @@
                     if (!box || getComputedStyle(box).display === 'contents') continue;
                     var tr = box.getBoundingClientRect();
                     if (tr.width < 8) continue;
-                    var edge = box.classList.contains('shop-sticky') ? 0 : INSET;
                     var buttons = heads[h].querySelectorAll(BTN);
                     for (var b = 0; b < buttons.length; b++) {
                         var btn = buttons[b];
@@ -1595,7 +1593,7 @@
                             btn.classList.remove('accent-fit');
                             continue;
                         }
-                        fitButton(btn, tr, edge);
+                        fitButton(btn, tr);
                     }
                 }
             }

@@ -655,7 +655,7 @@ body {
     position: fixed;
     z-index: 1100;
     left: 50%;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     width: 36px;
     height: 36px;
@@ -667,7 +667,10 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--card);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.5),
+        0 0 12px var(--accent),
+        0 0 22px var(--accent-glow);
     color: var(--text);
     cursor: pointer;
 }
@@ -6223,28 +6226,17 @@ body.trip-detail-open {
         background: var(--bg);
     }
 
-    /* Strich folgt der unteren Rundung, nicht nur der geraden Kante. */
+    /* Strich wie an den anderen Karten: läuft an den Radien aus. */
     body.page-content #tab-order .shop-sticky::after {
         content: '';
         position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 16px;
-        border-radius: 0 0 16px 16px;
-        padding: 0 3px var(--border-th);
-        box-sizing: border-box;
+        left: 16px;
+        right: 16px;
+        bottom: -3px;
+        height: var(--border-th);
         background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
         pointer-events: none;
         z-index: 2;
-        -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-        mask-composite: exclude;
     }
 
     /* Hält die Produkte aus der Lücke, solange die Navigation wegfährt.
