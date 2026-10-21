@@ -26,7 +26,28 @@
             } else {
                 document.body.removeAttribute('data-nav-away');
             }
+            syncDrop();
             syncTop();
+        }
+
+        /* Die Karte rückt nur unter die Navigation, wenn sie schon klebt.
+           Vorher bleibt der Andockpunkt bei 12px, sonst setzt sie zu tief an. */
+        var dropped = false;
+        function syncDrop() {
+            var bar = shop.querySelector('.shop-sticky');
+            var navOpen = phone.matches
+                && !document.body.hasAttribute('data-nav-away')
+                && !document.body.hasAttribute('data-nav-hold');
+            if (!bar || !navOpen) {
+                dropped = false;
+                document.body.removeAttribute('data-bar-drop');
+                return;
+            }
+            var barTop = bar.getBoundingClientRect().top - shop.getBoundingClientRect().top;
+            if (!dropped && barTop <= 16) dropped = true;
+            if (dropped && barTop > 70) dropped = false;
+            if (dropped) document.body.setAttribute('data-bar-drop', '');
+            else document.body.removeAttribute('data-bar-drop');
         }
 
         /* Kleine Schritte sammeln, damit ein kurzes Hochscrollen reicht. */
