@@ -130,7 +130,7 @@
             </div>
 
             @if($orderMode === 'delivery' && count($this->deliveryDays) > 0)
-                <div class="delivery-day-picker card" style="padding: 6px; margin: 0; flex-direction: row;">
+                <div class="delivery-day-picker card" style="padding: 6px 6px 14px; margin: 0; flex-direction: row;">
                     @foreach($this->deliveryDays as $day)
                         <button type="button"
                                 wire:key="delivery-day-{{ $day['date'] }}"
