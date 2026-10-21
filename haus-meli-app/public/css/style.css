@@ -277,9 +277,10 @@ body {
     margin-top: var(--spacing);
 }
 
-/* Ohne Modus-Schalter ist die Region das erste Element. Der Abstand unter
-   der Leiste kommt schon vom Seitenrahmen, sonst liegt er doppelt vor der Tageswahl. */
-.tab-pane .world > .shop-region:first-child {
+/* Ohne Modus-Schalter folgt die Region direkt auf die Abdeckung.
+   Der Abstand unter der Leiste kommt schon vom Seitenrahmen, sonst liegt er doppelt. */
+.tab-pane .world > .shop-region:first-child,
+.tab-pane .world > .shop-nav-cover + .shop-region {
     margin-top: 0;
 }
 
