@@ -44,6 +44,7 @@
     @open-history.window="historyOpen = true"
     @cart-updated.window="location.reload()"
     @checkout-completed.window="paymentOpen = false; historyOpen = false; thanksOpen = true;">
+    <div class="shop-nav-cover" aria-hidden="true"></div>
     @unless($isOwner)
     <div class="container">
 

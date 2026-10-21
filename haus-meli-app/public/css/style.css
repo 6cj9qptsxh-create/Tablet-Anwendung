@@ -650,15 +650,15 @@ body {
     bottom: calc(100% + 6px);
 }
 
-/* Shop: runder Pfeil wie bei den Events, Klick springt an den Anfang. */
+/* Shop: runder Pfeil wie bei den Events, etwas größer, Klick springt an den Anfang. */
 .shop-to-top {
     position: fixed;
     z-index: 1100;
     left: 50%;
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
     margin: 0;
     padding: 0;
     border-radius: 50%;
@@ -666,14 +666,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--card), transparent 8%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    background: var(--card);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
     color: var(--text);
     cursor: pointer;
 }
 
 .shop-to-top .material-symbols-rounded {
-    font-size: 18px;
+    font-size: 24px;
     line-height: 1;
 }
 
@@ -6189,10 +6189,9 @@ body.trip-detail-open {
 
     body.page-content #tab-order .shop-sticky {
         position: sticky;
-        /* Immer 12px unter dem Rand andocken. Die Navigation schiebt die
-           Karte nur nach unten, wenn sie schon klebt. Sonst springt der
-           Abstand zur Lieferinfo beim ersten Runterscrollen. */
-        top: calc(-1 * var(--nav-h));
+        /* Bündig mit der Navigation. Die Leiste schiebt die Karte nur nach
+           unten, wenn sie schon klebt. */
+        top: calc(-1 * (var(--nav-h) + var(--spacing)));
         z-index: 1001;
         transition: top 0.18s ease;
         display: flex;
@@ -6224,16 +6223,45 @@ body.trip-detail-open {
         background: var(--bg);
     }
 
-    /* Strich unter den Tagen. Die Tagesfarbe misst diese Kante. */
+    /* Strich folgt der unteren Rundung, nicht nur der geraden Kante. */
     body.page-content #tab-order .shop-sticky::after {
         content: '';
         position: absolute;
-        left: 16px;
-        right: 16px;
-        bottom: -3px;
-        height: var(--border-th);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 16px;
+        border-radius: 0 0 16px 16px;
+        padding: 0 3px var(--border-th);
+        box-sizing: border-box;
         background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
+        pointer-events: none;
         z-index: 2;
+        -webkit-mask:
+            linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask:
+            linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+    }
+
+    /* Hält die Produkte aus der Lücke, solange die Navigation wegfährt.
+       Über den Produkten, unter Header und Navigation. */
+    body.page-content #tab-order .shop-nav-cover {
+        position: fixed;
+        z-index: 1000;
+        top: var(--safe-top);
+        left: 0;
+        right: 0;
+        height: var(--nav-h);
+        background: var(--bg);
+        pointer-events: none;
+    }
+
+    body.page-content[data-nav-hold] #tab-order .shop-nav-cover {
+        display: none;
     }
 
     /* Ein Abstand unter der Karte. Der Hinweis bringt keinen zweiten mit. */
