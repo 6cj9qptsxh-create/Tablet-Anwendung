@@ -63,14 +63,6 @@
         {{-- Die Sticky-Platte: eckig, seitlich breiter, endet bündig an der Warenkorb-Oberkante --}}
         <div class="shop-header-wrap">
         <div class="card header shop-header">
-            @if($this->selectedDayInfo)
-                {{-- Läuft mit der Navigation weg und kommt erst ganz oben zurück. --}}
-                <div class="deadline-clip">
-                    <div class="deadline-info {{ $this->selectedDayInfo['class'] }}">
-                        {{ $this->selectedDayInfo['text'] }}
-                    </div>
-                </div>
-            @endif
             <div class="header-top">
                 <button id="history-open-btn" @click="$dispatch('open-history')" class="add-btn" style="position: relative; padding: 8px 12px; border-radius: 10px; display: flex; align-items: center; gap: 6px; background: var(--soft); color: var(--text);">
                     <span style="font-size: 1.2rem; line-height: 1;">🧾</span>
@@ -96,7 +88,8 @@
                     @endif
                 </button>
             </div>
-            
+
+            <div class="shop-head-rest">
             <div class="header-row" style="display: flex; gap: 10px; align-items: center;">
                 
                 <div style="flex: 1; position: relative;" id="categoryDropdownRoot">
@@ -161,7 +154,16 @@
                     @endforeach
                 </div>
 
+                @if($this->selectedDayInfo)
+                    {{-- Unter den Tagen. Läuft mit der Navigation weg und kommt erst ganz oben zurück. --}}
+                    <div class="deadline-clip">
+                        <div class="deadline-info {{ $this->selectedDayInfo['class'] }}">
+                            {{ $this->selectedDayInfo['text'] }}
+                        </div>
+                    </div>
+                @endif
             @endif
+            </div>
         </div>
         </div>
 

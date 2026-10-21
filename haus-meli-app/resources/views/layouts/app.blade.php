@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=139">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=140">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1437,7 +1437,7 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
-    <script src="{{ asset('js/shop-deadline.js') }}?v=14"></script>
+    <script src="{{ asset('js/shop-deadline.js') }}?v=15"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var track = document.querySelector('.tab-track');
@@ -1539,19 +1539,59 @@
                 if (!btn.classList.contains('accent-fit')) btn.classList.add('accent-fit');
             }
 
+            /* Echte Kante mit dem Strich. display:contents hat kein Rechteck. */
+            function strokeBox(el) {
+                var node = el ? el.parentElement : null;
+                while (node && node !== document.documentElement) {
+                    if (node.classList && (node.classList.contains('shop-head-rest') || node.classList.contains('shop-header') || node.classList.contains('card'))) {
+                        if (getComputedStyle(node).display !== 'contents') {
+                            var rect = node.getBoundingClientRect();
+                            if (rect.width >= 8 && rect.height >= 8) return node;
+                        }
+                    }
+                    node = node.parentElement;
+                }
+                return null;
+            }
+
             /* Die Tagesleiste scrollt, der Strich der Shop-Karte nicht.
                Deshalb am Kartenrand messen, nicht an der Leiste, und beim Scrollen neu setzen. */
             function paintDayChips() {
                 var pickers = document.querySelectorAll('.delivery-day-picker');
                 for (var p = 0; p < pickers.length; p++) {
                     var picker = pickers[p];
-                    var card = picker.parentElement ? picker.parentElement.closest(TRACK) : null;
+                    var card = strokeBox(picker);
                     if (!card) continue;
                     ro.observe(picker);
                     var tr = card.getBoundingClientRect();
-                    if (tr.width >= 8) ro.observe(card);
+                    ro.observe(card);
                     var chips = picker.querySelectorAll(BTN);
                     for (var c = 0; c < chips.length; c++) fitButton(chips[c], tr);
+                }
+            }
+
+            /* Knöpfe liegen auf dem Handy neben der Karte, nicht darin.
+               Sie nehmen denselben Strich wie die Tage. */
+            function paintHeaderButtons() {
+                var heads = document.querySelectorAll('#tab-order .header-top');
+                for (var h = 0; h < heads.length; h++) {
+                    var region = heads[h].closest('.shop-region') || heads[h].closest('#tab-order');
+                    var box = region ? region.querySelector('.shop-head-rest') : null;
+                    if (!box || getComputedStyle(box).display === 'contents') {
+                        box = region ? region.querySelector('.shop-header') : null;
+                    }
+                    if (!box || getComputedStyle(box).display === 'contents') continue;
+                    var tr = box.getBoundingClientRect();
+                    if (tr.width < 8) continue;
+                    var buttons = heads[h].querySelectorAll(BTN);
+                    for (var b = 0; b < buttons.length; b++) {
+                        var btn = buttons[b];
+                        if (btn.matches(SKIP) || btn.style.background || btn.style.backgroundColor) {
+                            btn.classList.remove('accent-fit');
+                            continue;
+                        }
+                        fitButton(btn, tr);
+                    }
                 }
             }
 
@@ -1561,6 +1601,7 @@
                 for (var i = 0; i < tracks.length; i++) {
                     var track = tracks[i];
                     if (track.classList.contains('delivery-day-picker')) continue;
+                    if (getComputedStyle(track).display === 'contents') continue;
                     var tr = track.getBoundingClientRect();
                     var buttons = track.querySelectorAll(BTN);
                     for (var j = 0; j < buttons.length; j++) {
@@ -1576,6 +1617,7 @@
                     if (tr.width >= 8) ro.observe(track);
                 }
                 paintDayChips();
+                paintHeaderButtons();
                 paintWeatherFrames();
                 var heads = document.querySelectorAll('.shop-content .super-heading, .tour-main-heading');
                 for (var h = 0; h < heads.length; h++) {
