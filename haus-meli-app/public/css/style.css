@@ -820,10 +820,12 @@ body[data-nav-hold] .shop-to-top,
 
 #mode-btn-self.active {
     background: linear-gradient(to right, var(--accent), var(--accent-soft)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px var(--accent-glow);
 }
 
 #mode-btn-delivery.active {
     background: linear-gradient(to right, var(--accent-soft), var(--accent)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px var(--accent-glow);
 }
 
 /* --- MAIN BUTTONS (Warenkorb, Hinzufügen) --- */
@@ -1703,7 +1705,7 @@ body.is-cal-tab .shell-nav {
     background-clip: border-box;
     background-size: var(--accent-span, 100%) 100%;
     background-position: var(--accent-x, 0px) center;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px var(--accent-glow);
 }
 
 .delivery-day-picker .toggle-btn.active .delivery-day-chip-day,
