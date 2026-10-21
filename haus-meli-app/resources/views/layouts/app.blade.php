@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=137">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=139">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1437,7 +1437,7 @@
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
     <script src="{{ asset('js/weather.js') }}?v=6"></script>
-    <script src="{{ asset('js/shop-deadline.js') }}?v=12"></script>
+    <script src="{{ asset('js/shop-deadline.js') }}?v=14"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var track = document.querySelector('.tab-track');
@@ -1445,8 +1445,8 @@
             var nav = document.querySelector('.shell-nav');
             var phone = window.matchMedia('(max-width: 767px)');
             if (!track || !shop || !nav) return;
-            /* Die Leiste selbst steuert shop-deadline.js: weg beim Runterscrollen,
-               sofort wieder da beim Hochscrollen. Hier nur der Tab-Wechsel. */
+            /* Die Leiste steuert shop-deadline.js: mit dem Hinweis weg,
+               erst ganz oben wieder da. Hier nur der Tab-Wechsel. */
             var away = false;
             function syncNav() {
                 if (!phone.matches) {
@@ -1462,7 +1462,8 @@
                 }
                 if (away) return;
                 away = true;
-                document.body.style.setProperty('--nav-shift', '0px');
+                if (window.hausMeliShopNav) window.hausMeliShopNav(false);
+                else document.body.style.setProperty('--nav-shift', '0px');
             }
             /* Erst wenn die Seite steht. Mitten in der Bewegung reißt
                transform/clip-path das Einrasten ab (Shop bleibt halb stehen). */
