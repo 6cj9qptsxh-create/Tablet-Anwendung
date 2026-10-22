@@ -53,6 +53,7 @@ Route::get('/info/webcam-stand', function (\Illuminate\Http\Request $request) {
 
     return response()->json([
         'time' => $cam['time'] ?? null,
+        'video' => ($cam['video'] ?? '') !== '' ? $cam['video'] : null,
     ]);
 })->name('info.webcam-stand');
 

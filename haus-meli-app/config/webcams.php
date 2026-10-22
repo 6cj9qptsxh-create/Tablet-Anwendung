@@ -1,8 +1,7 @@
 <?php
 
-// Standbilder ohne Abspielsymbol. Videokameras von Kappl/See legen ein Play-Zeichen
-// ins Bild, obwohl der Klick nur die Kameraseite öffnet. Die bleiben draussen.
-// ort und zone entsprechen den Wetterpunkten in config/weather.php.
+// Standbild plus, wo Feratel eines ablegt, nur das neueste Video.
+// Der Verlauf auf der Kameraseite bleibt draussen. ort und zone entsprechen config/weather.php.
 
 return [
     'kappl' => [
@@ -12,6 +11,7 @@ return [
             'asl' => 1180,
             'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-diasbahn-talstation_webcam_104131839',
             'image' => 'https://www.kappl-see.com/var/webcams/104131839.jpg',
+            'feratel' => 5589,
         ],
         'berg' => [
             'name' => 'Diasbahn Bergstation',
@@ -19,6 +19,7 @@ return [
             'asl' => 1830,
             'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-diasbahn-bergstation_webcam_104131835',
             'image' => 'https://www.kappl-see.com/var/webcams/104131835.jpg',
+            'feratel' => 5585,
         ],
     ],
     'see' => [
@@ -60,6 +61,7 @@ return [
             'asl' => 1600,
             'page' => 'https://www.galtuer.com/de/reise-planen/webcams/webcam-dorf_webcam_104131863',
             'image' => 'https://www.galtuer.com/var/webcams/104131863.jpg',
+            'feratel' => 5548,
         ],
         'berg' => [
             'name' => 'Breitspitzbahn',
@@ -67,6 +69,7 @@ return [
             'asl' => 2120,
             'page' => 'https://www.galtuer.com/de/reise-planen/webcams/webcam-breitspitzbahn_webcam_104131861',
             'image' => 'https://www.galtuer.com/var/webcams/104131861.jpg',
+            'feratel' => 5547,
         ],
     ],
 ];
