@@ -4,7 +4,7 @@
         ownerInfo: {{ !empty($infoOwner) ? 'true' : 'false' }},
         section: (function () {
             const owner = {{ !empty($infoOwner) ? 'true' : 'false' }};
-            const allowed = owner ? ['wetter', 'out', 'cams'] : ['now', 'wetter', 'out', 'cams', 'haus'];
+            const allowed = owner ? ['wetter', 'out'] : ['now', 'wetter', 'out', 'haus'];
             try {
                 const saved = localStorage.getItem('hausMeliInfoSection');
                 if (allowed.indexOf(saved) !== -1) return saved;
@@ -13,9 +13,8 @@
         })(),
         copied: '',
         camTick: Math.floor(Date.now() / 180000),
-        camPlayer: '',
         setSection(name) {
-            if (this.ownerInfo && name !== 'wetter' && name !== 'out' && name !== 'cams') return;
+            if (this.ownerInfo && name !== 'wetter' && name !== 'out') return;
             this.section = name;
             try { localStorage.setItem('hausMeliInfoSection', name); } catch (e) {}
             const pane = this.$root.closest('.tab-pane');
@@ -50,12 +49,26 @@
             this._copyT = setTimeout(() => { this.copied = ''; }, 1400);
         },
         touchCams() {
-            if (this.section !== 'cams') {
-                if (this.camPlayer) this.camPlayer = '';
-                return;
-            }
+            if (this.section !== 'wetter') return;
             const next = Math.floor(Date.now() / 180000);
             if (next !== this.camTick) this.camTick = next;
+            this.loadCamTime();
+        },
+        async loadCamTime() {
+            if (this.section !== 'wetter') return;
+            const ort = this.$wire.weatherOrt || '';
+            const zone = this.$wire.weatherZone || '';
+            try {
+                const res = await fetch('/info/webcam-stand?ort=' + encodeURIComponent(ort) + '&zone=' + encodeURIComponent(zone), {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if ((this.$wire.weatherOrt || '') !== ort || (this.$wire.weatherZone || '') !== zone) return;
+                const el = this.$root.querySelector('[data-cam-time]');
+                if (!el || !data.time) return;
+                el.textContent = data.time;
+            } catch (e) {}
         },
         camSrc(url) {
             const join = url.indexOf('?') === -1 ? '?' : '&';
@@ -93,7 +106,6 @@
             @endunless
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'wetter' }" :aria-selected="section === 'wetter'" @click="setSection('wetter')">Wetter</button>
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'out' }" :aria-selected="section === 'out'" @click="setSection('out')">Umgebung</button>
-            <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'cams' }" :aria-selected="section === 'cams'" @click="setSection('cams')">Webcams</button>
             @unless($infoOwner)
             <button type="button" role="tab" class="info-switch-btn" :class="{ 'is-on add-btn': section === 'haus' }" :aria-selected="section === 'haus'" @click="setSection('haus')">Haus</button>
             @endunless
@@ -165,6 +177,37 @@
                 @endforeach
             </div>
         </div>
+        @if($webcam)
+            <article class="info-cam" wire:key="wx-cam-{{ $weatherOrt }}-{{ $weatherZone }}">
+                <p class="info-cam-time" data-cam-time>{{ $webcam['time'] }}</p>
+                <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
+                    <img
+                        :src="camSrc(@js($webcam['image']))"
+                        alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
+                        width="720"
+                        height="405"
+                        loading="lazy"
+                    >
+                </a>
+                <div class="info-cam-meta">
+                    <span class="info-cam-text">
+                        <strong>{{ $webcam['name'] }}</strong>
+                        <p>
+                            {{ $webcam['place'] }}
+                            @if($webcam['asl'])
+                                · {{ number_format($webcam['asl'], 0, ',', '.') }} m
+                            @endif
+                            @if($webcam['source'] !== '')
+                                · {{ $webcam['source'] }}
+                            @endif
+                        </p>
+                    </span>
+                    <a class="info-cam-open" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $webcam['name'] }} auf {{ $webcam['source'] }} öffnen">
+                        <span class="material-symbols-rounded info-go">open_in_new</span>
+                    </a>
+                </div>
+            </article>
+        @endif
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
         @else
@@ -417,67 +460,6 @@
                 </span>
                 <span class="material-symbols-rounded info-go">location_on</span>
             </a>
-        </div>
-    </div>
-
-    <div class="info-panel" x-show="section === 'cams'" x-cloak>
-        <div class="info-kicker">Livebilder</div>
-        <template x-if="camPlayer">
-            <div class="info-cam-stage">
-                <button type="button" class="info-cam-close" @click="camPlayer = ''">Schließen</button>
-                <iframe class="info-cam-frame" :src="camPlayer" title="Webcam-Player" allow="fullscreen" allowfullscreen loading="lazy"></iframe>
-            </div>
-        </template>
-        <div class="info-cams">
-            @foreach($webcams as $cam)
-                @if($cam['image'] !== '')
-                    <article class="info-cam">
-                        <a class="info-cam-shot" href="{{ $cam['page'] }}" target="_blank" rel="noopener noreferrer">
-                            <img
-                                :src="camSrc(@js($cam['image']))"
-                                alt="Webcam {{ $cam['name'] }}, {{ $cam['place'] }}"
-                                width="720"
-                                height="405"
-                                loading="lazy"
-                            >
-                        </a>
-                        <div class="info-cam-meta">
-                            <span class="info-cam-text">
-                                <strong>{{ $cam['name'] }}</strong>
-                                <p>
-                                    {{ $cam['place'] }}
-                                    @if($cam['asl'])
-                                        · {{ number_format($cam['asl'], 0, ',', '.') }} m
-                                    @endif
-                                    @if($cam['source'] !== '')
-                                        · {{ $cam['source'] }}
-                                    @endif
-                                </p>
-                            </span>
-                            @if($cam['embed'] !== '')
-                                <button type="button" class="info-cam-play" @click="camPlayer = @js($cam['embed'])">Player</button>
-                            @endif
-                            <a class="info-cam-open" href="{{ $cam['page'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $cam['name'] }} auf {{ $cam['source'] }} öffnen">
-                                <span class="material-symbols-rounded info-go">open_in_new</span>
-                            </a>
-                        </div>
-                    </article>
-                @else
-                    <a class="info-line is-link" href="{{ $cam['page'] }}" target="_blank" rel="noopener noreferrer">
-                        <span class="info-line-ico"><span class="material-symbols-rounded">videocam</span></span>
-                        <span class="info-line-text">
-                            <strong>{{ $cam['name'] }}</strong>
-                            <p>
-                                {{ $cam['place'] }}
-                                @if($cam['asl'])
-                                    · {{ number_format($cam['asl'], 0, ',', '.') }} m
-                                @endif
-                            </p>
-                        </span>
-                        <span class="material-symbols-rounded info-go">open_in_new</span>
-                    </a>
-                @endif
-            @endforeach
         </div>
     </div>
 </div>

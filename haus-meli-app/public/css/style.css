@@ -2669,18 +2669,25 @@ body.is-cal-tab .shell-nav {
     text-transform: uppercase;
 }
 
-.info-cams {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
 .info-cam {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--shadow);
+}
+
+.info-cam-time {
+    margin: 0;
+    padding: 12px 14px 0;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.info-cam-time:empty {
+    display: none;
 }
 
 .info-cam-shot {
@@ -2725,64 +2732,6 @@ body.is-cal-tab .shell-nav {
     flex-shrink: 0;
     color: var(--muted);
     text-decoration: none;
-}
-
-.info-cam-play,
-.info-cam-close {
-    flex-shrink: 0;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 700;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    border-radius: 10px;
-    min-height: 36px;
-    padding: 0 12px;
-    cursor: pointer;
-}
-
-.info-cam-stage {
-    container-type: inline-size;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 12px;
-    box-shadow: var(--shadow);
-}
-
-.info-cam-close {
-    align-self: flex-end;
-}
-
-.info-cam-frame {
-    display: block;
-    width: 100%;
-    min-height: 240px;
-    border: 0;
-    border-radius: 12px;
-    background: #111;
-    height: calc(100cqi * 9 / 16 + 95px);
-}
-
-@container (max-width: 449px) {
-    .info-cam-frame {
-        height: calc(100cqi * 9 / 16 + 145px);
-    }
-}
-
-@media (max-width: 767px) {
-    .info-toolbar .info-switch {
-        flex-wrap: wrap;
-    }
-
-    .info-toolbar .info-switch-btn {
-        flex: 1 1 calc(33.333% - 6px);
-        white-space: nowrap;
-    }
 }
 
 .info-status {
