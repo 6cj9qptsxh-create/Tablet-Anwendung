@@ -16,10 +16,34 @@ class InfoWebcamsTest extends TestCase
 
         Carbon::setTestNow(Carbon::parse('2026-10-22 12:00:00', 'Europe/Vienna'));
         Http::fake([
-            'https://www.kappl-see.com/var/webcams/*' => Http::response('', 200, [
+            'https://www.kappl-see.com/var/webcams/*' => Http::response('2026:10:22 07:40:00', 200, [
                 'Last-Modified' => 'Thu, 22 Oct 2026 10:26:21 GMT',
             ]),
-            'https://www.ischgl.com/var/webcams/*' => Http::response('', 200, [
+            'https://www.ischgl.com/de/webcam-archive*' => function ($request) {
+                parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+                $archive = (string) ($query['archive'] ?? '');
+                if (str_contains($archive, 'idalp')) {
+                    $images = [
+                        '18:00' => '/var/webcams/archive/99396-idalp/2026-10/bild-22-18-00.jpg',
+                        '19:00' => '/var/webcams/archive/99396-idalp/2026-10/bild-22-19-00.jpg',
+                        '20:00' => '/var/webcams/archive/99396-idalp/2026-10/bild-22-20-00.jpg',
+                    ];
+                } else {
+                    $images = [
+                        '19:00' => '/var/webcams/archive/124696581-paznaun/2026-10/bild-22-19-00.jpg',
+                        '20:00' => '/var/webcams/archive/124696581-paznaun/2026-10/bild-22-20-00.jpg',
+                    ];
+                }
+
+                return Http::response(['success' => true, 'images' => $images], 200);
+            },
+            'https://www.ischgl.com/var/webcams/archive/*' => function ($request) {
+                $url = $request->url();
+                $older = str_contains($url, '18-00') || (str_contains($url, 'paznaun') && str_contains($url, '19-00'));
+
+                return Http::response($older ? 'older-frame' : 'current-frame', 200);
+            },
+            'https://www.ischgl.com/var/webcams/*' => Http::response('current-frame', 200, [
                 'Last-Modified' => 'Thu, 22 Oct 2026 08:00:00 GMT',
             ]),
             'https://www.galtuer.com/var/webcams/*' => Http::response('', 200, [
@@ -31,6 +55,19 @@ class InfoWebcamsTest extends TestCase
                 $body = '<meta property="og:video" content="https://sts001.feratel.co.at/streams/stsstore002/1/'.$cam.'_testVid.mp4">';
 
                 return Http::response($body, 200);
+            },
+            'https://sts001.feratel.co.at/*' => function ($request) {
+                $url = $request->url();
+                $utc = '2026-10-22 09:15:00';
+                if (str_contains($url, '05585')) {
+                    $utc = '2026-10-22 14:40:00';
+                } elseif (str_contains($url, '05548')) {
+                    $utc = '2026-10-22 08:30:00';
+                } elseif (str_contains($url, '05547')) {
+                    $utc = '2026-10-22 15:05:00';
+                }
+
+                return Http::response('{"date": "'.$utc.'"}', 206);
             },
         ]);
     }
@@ -58,7 +95,8 @@ class InfoWebcamsTest extends TestCase
 
         $info
             ->assertSee('Diasbahn Talstation')
-            ->assertSee('12:26 Uhr')
+            ->assertSee('11:15 Uhr')
+            ->assertDontSee('12:26 Uhr')
             ->assertSee('1.180 m')
             ->assertSee('104131839.jpg', false)
             ->assertSee('05589_testVid.mp4', false)
@@ -66,11 +104,15 @@ class InfoWebcamsTest extends TestCase
             ->assertDontSee('Medrig')
             ->call('setWeatherChoice', 'kappl', 'berg')
             ->assertSee('Diasbahn Bergstation')
+            ->assertSee('16:40 Uhr')
+            ->assertDontSee('11:15 Uhr')
             ->assertSee('1.830 m')
             ->assertSee('05585_testVid.mp4', false)
             ->assertDontSee('Diasbahn Talstation')
             ->call('setWeatherChoice', 'see', 'tal')
             ->assertSee('Valley')
+            ->assertSee('07:40 Uhr')
+            ->assertDontSee('12:26 Uhr')
             ->assertSee('1.100 m')
             ->assertSee('104131847.jpg', false)
             ->assertDontSee('Nordseite')
@@ -84,11 +126,13 @@ class InfoWebcamsTest extends TestCase
             ->call('setWeatherChoice', 'ischgl', 'tal')
             ->assertSee('Ischgl Dorf')
             ->assertSee('1.400 m')
-            ->assertSee('10:00 Uhr')
+            ->assertSee('20:00 Uhr')
             ->assertSee('124696581.jpg', false)
             ->assertDontSee('Idalp')
             ->call('setWeatherChoice', 'ischgl', 'berg')
             ->assertSee('Idalp')
+            ->assertSee('19:00 Uhr')
+            ->assertDontSee('20:00 Uhr')
             ->assertSee('100178345.jpg', false)
             ->assertDontSee('Ischgl Dorf')
             ->call('setWeatherChoice', 'galtuer', 'tal')
@@ -96,12 +140,15 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('Dorf auf galtuer.com', false)
             ->assertSee('1.600 m')
             ->assertSee('1584 m')
-            ->assertSee('12:26 Uhr')
+            ->assertSee('10:30 Uhr')
+            ->assertDontSee('12:26 Uhr')
             ->assertSee('104131863.jpg', false)
             ->assertSee('05548_testVid.mp4', false)
             ->assertDontSee('Breitspitzbahn')
             ->call('setWeatherChoice', 'galtuer', 'berg')
             ->assertSee('Breitspitzbahn')
+            ->assertSee('17:05 Uhr')
+            ->assertDontSee('10:30 Uhr')
             ->assertSee('2.120 m')
             ->assertSee('2295 m')
             ->assertSee('104131861.jpg', false)
@@ -118,14 +165,14 @@ class InfoWebcamsTest extends TestCase
         $this->getJson('/info/webcam-stand?ort=kappl&zone=tal')
             ->assertOk()
             ->assertJson([
-                'time' => '12:26 Uhr',
+                'time' => '11:15 Uhr',
                 'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05589_testVid.mp4?dcsdesign=feratel4',
             ]);
 
         $this->getJson('/info/webcam-stand?ort=see&zone=berg')
             ->assertOk()
             ->assertJson([
-                'time' => '12:26 Uhr',
+                'time' => '07:40 Uhr',
                 'video' => null,
             ]);
 
