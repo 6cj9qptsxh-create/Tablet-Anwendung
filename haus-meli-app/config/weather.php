@@ -32,13 +32,22 @@ return [
         'ischgl' => [
             'label' => 'Ischgl',
             'zones' => [
+                'tal' => ['lat' => 47.0120, 'lon' => 10.2913, 'asl' => 1376],
                 'berg' => ['lat' => 46.9818, 'lon' => 10.3176, 'asl' => 2319],
             ],
         ],
         'see' => [
             'label' => 'See',
             'zones' => [
+                'tal' => ['lat' => 47.0833, 'lon' => 10.4667, 'asl' => 1056],
                 'berg' => ['lat' => 47.0734, 'lon' => 10.4767, 'asl' => 1802],
+            ],
+        ],
+        'galtuer' => [
+            'label' => 'Galtür',
+            'zones' => [
+                'tal' => ['lat' => 46.9684, 'lon' => 10.1872, 'asl' => 1584],
+                'berg' => ['lat' => 46.9561, 'lon' => 10.1271, 'asl' => 2295],
             ],
         ],
     ],
