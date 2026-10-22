@@ -1,12 +1,12 @@
 <?php
 
 use App\Http\Controllers\E1001AgendaController;
-use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\ElevationController;
 use App\Http\Controllers\PlannedRouteShareController;
 use App\Http\Controllers\SavedToursController;
 use App\Http\Controllers\TourGraphController;
 use App\Http\Controllers\TripGpxController;
+use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +44,18 @@ Route::get('/api/e1001/agenda', E1001AgendaController::class)
 
 Route::get('/api/weather', [WeatherController::class, 'show'])
     ->name('weather.show');
+
+Route::get('/info/webcam-stand', function (\Illuminate\Http\Request $request) {
+    $cam = \App\Support\Webcams::forSpot(
+        (string) $request->query('ort', ''),
+        (string) $request->query('zone', ''),
+    );
+
+    return response()->json([
+        'time' => $cam['time'] ?? null,
+    ]);
+})->name('info.webcam-stand');
+
 Route::get('/api/e1001/weather', [WeatherController::class, 'terminal'])
     ->name('e1001.weather');
 
