@@ -54,26 +54,45 @@ class Webcams
             return '';
         }
 
-        return Cache::remember('webcam.clip.'.$cam, 120, function () use ($cam) {
-            try {
-                $response = Http::timeout(4)->get('https://webtv.feratel.com/webtv/', [
-                    'design' => 'v5',
-                    'cam' => $cam,
-                    'lg' => 'de',
-                ]);
-            } catch (Throwable) {
-                return '';
-            }
-            if (! $response->ok()) {
-                return '';
-            }
-            if (! preg_match('#https://sts\d+\.feratel\.co\.at/streams/[A-Za-z0-9_./-]+Vid\.mp4#', $response->body(), $match)) {
-                return '';
-            }
-            $url = $match[0];
+        $key = 'webcam.clip.v2.'.$cam;
+        $cached = Cache::get($key);
+        if (is_string($cached)) {
+            return $cached;
+        }
 
-            return str_contains($url, 'dcsdesign=') ? $url : $url.'?dcsdesign=feratel4';
-        });
+        $url = self::fetchClip($cam);
+        Cache::put($key, $url, $url === '' ? 20 : 120);
+
+        return $url;
+    }
+
+    private static function fetchClip(int $cam): string
+    {
+        $page = 'https://webtv.feratel.com/webtv/?'.http_build_query([
+            'design' => 'v5',
+            'cam' => $cam,
+            'lg' => 'de',
+        ]);
+
+        try {
+            $response = Http::timeout(8)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                    'Accept' => 'text/html',
+                ])
+                ->get($page);
+        } catch (Throwable) {
+            return '';
+        }
+        if (! $response->ok()) {
+            return '';
+        }
+        if (! preg_match('#https://sts\d+\.feratel\.co\.at/streams/[A-Za-z0-9_./-]+Vid\.mp4#', $response->body(), $match)) {
+            return '';
+        }
+        $url = $match[0];
+
+        return str_contains($url, 'dcsdesign=') ? $url : $url.'?dcsdesign=feratel4';
     }
 
     public static function updatedLabel(string $image): string
