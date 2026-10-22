@@ -25,6 +25,13 @@ class InfoWebcamsTest extends TestCase
             'https://www.galtuer.com/var/webcams/*' => Http::response('', 200, [
                 'Last-Modified' => 'Thu, 22 Oct 2026 10:26:21 GMT',
             ]),
+            'https://webtv.feratel.com/*' => function ($request) {
+                parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+                $cam = str_pad((string) ($query['cam'] ?? '0'), 5, '0', STR_PAD_LEFT);
+                $body = '<meta property="og:video" content="https://sts001.feratel.co.at/streams/stsstore002/1/'.$cam.'_testVid.mp4">';
+
+                return Http::response($body, 200);
+            },
         ]);
     }
 
@@ -54,11 +61,13 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('12:26 Uhr')
             ->assertSee('1.180 m')
             ->assertSee('104131839.jpg', false)
+            ->assertSee('05589_testVid.mp4', false)
             ->assertDontSee('Diasbahn Bergstation')
             ->assertDontSee('Medrig')
             ->call('setWeatherChoice', 'kappl', 'berg')
             ->assertSee('Diasbahn Bergstation')
             ->assertSee('1.830 m')
+            ->assertSee('05585_testVid.mp4', false)
             ->assertDontSee('Diasbahn Talstation')
             ->call('setWeatherChoice', 'see', 'tal')
             ->assertSee('Valley')
@@ -69,6 +78,7 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('Nordseite')
             ->assertSee('2.160 m')
             ->assertSee('104131843.jpg', false)
+            ->assertDontSee('testVid.mp4', false)
             ->assertDontSee('104131857', false)
             ->assertDontSee('Valley')
             ->call('setWeatherChoice', 'ischgl', 'tal')
@@ -83,18 +93,20 @@ class InfoWebcamsTest extends TestCase
             ->assertDontSee('Ischgl Dorf')
             ->call('setWeatherChoice', 'galtuer', 'tal')
             ->assertSee('Galtür')
-            ->assertSee('Webcam Dorf, Galtür', false)
+            ->assertSee('Dorf auf galtuer.com', false)
             ->assertSee('1.600 m')
             ->assertSee('1584 m')
             ->assertSee('12:26 Uhr')
             ->assertSee('104131863.jpg', false)
+            ->assertSee('05548_testVid.mp4', false)
             ->assertDontSee('Breitspitzbahn')
             ->call('setWeatherChoice', 'galtuer', 'berg')
             ->assertSee('Breitspitzbahn')
             ->assertSee('2.120 m')
             ->assertSee('2295 m')
             ->assertSee('104131861.jpg', false)
-            ->assertDontSee('Webcam Dorf, Galtür', false)
+            ->assertSee('05547_testVid.mp4', false)
+            ->assertDontSee('Dorf auf galtuer.com', false)
             ->call('setWeatherChoice', 'lauterach', 'home')
             ->assertDontSee('Idalp')
             ->assertDontSee('Nordseite')
@@ -105,10 +117,23 @@ class InfoWebcamsTest extends TestCase
     {
         $this->getJson('/info/webcam-stand?ort=kappl&zone=tal')
             ->assertOk()
-            ->assertJson(['time' => '12:26 Uhr']);
+            ->assertJson([
+                'time' => '12:26 Uhr',
+                'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05589_testVid.mp4?dcsdesign=feratel4',
+            ]);
+
+        $this->getJson('/info/webcam-stand?ort=see&zone=berg')
+            ->assertOk()
+            ->assertJson([
+                'time' => '12:26 Uhr',
+                'video' => null,
+            ]);
 
         $this->getJson('/info/webcam-stand?ort=lauterach&zone=home')
             ->assertOk()
-            ->assertJson(['time' => null]);
+            ->assertJson([
+                'time' => null,
+                'video' => null,
+            ]);
     }
 }
