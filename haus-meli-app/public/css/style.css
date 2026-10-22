@@ -2646,6 +2646,7 @@ body.is-cal-tab .shell-nav {
     border-left-width: 0;
     border-right-width: 0;
     border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
 }
 
 .info-block.wx-board-wrap::after {
@@ -2667,6 +2668,71 @@ body.is-cal-tab .shell-nav {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+}
+
+.info-cam {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.info-cam-time {
+    margin: 0;
+    padding: 12px 14px 0;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.info-cam-time:empty {
+    display: none;
+}
+
+.info-cam-shot {
+    display: block;
+    aspect-ratio: 16 / 9;
+    background: #111;
+}
+
+.info-cam-shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.info-cam-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.info-cam-text {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.info-cam-text strong {
+    display: block;
+    font-size: 1rem;
+}
+
+.info-cam-text p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+.info-cam-open {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--muted);
+    text-decoration: none;
 }
 
 .info-status {

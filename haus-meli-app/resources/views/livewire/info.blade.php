@@ -12,6 +12,7 @@
             return allowed[0];
         })(),
         copied: '',
+        camTick: Math.floor(Date.now() / 180000),
         setSection(name) {
             if (this.ownerInfo && name !== 'wetter' && name !== 'out') return;
             this.section = name;
@@ -46,6 +47,32 @@
             this.copied = key;
             clearTimeout(this._copyT);
             this._copyT = setTimeout(() => { this.copied = ''; }, 1400);
+        },
+        touchCams() {
+            if (this.section !== 'wetter') return;
+            const next = Math.floor(Date.now() / 180000);
+            if (next !== this.camTick) this.camTick = next;
+            this.loadCamTime();
+        },
+        async loadCamTime() {
+            if (this.section !== 'wetter') return;
+            const ort = this.$wire.weatherOrt || '';
+            const zone = this.$wire.weatherZone || '';
+            try {
+                const res = await fetch('/info/webcam-stand?ort=' + encodeURIComponent(ort) + '&zone=' + encodeURIComponent(zone), {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if ((this.$wire.weatherOrt || '') !== ort || (this.$wire.weatherZone || '') !== zone) return;
+                const el = this.$root.querySelector('[data-cam-time]');
+                if (!el || !data.time) return;
+                el.textContent = data.time;
+            } catch (e) {}
+        },
+        camSrc(url) {
+            const join = url.indexOf('?') === -1 ? '?' : '&';
+            return url + join + 't=' + this.camTick;
         }
      }"
      x-init="
@@ -66,6 +93,10 @@
         try {
             if (ort && (ort !== $wire.weatherOrt || (zone && zone !== $wire.weatherZone))) $wire.setWeatherChoice(ort, zone);
         } catch (e) {}
+        this.$watch('section', () => this.touchCams());
+        if (window.__hausMeliCamTimer) clearInterval(window.__hausMeliCamTimer);
+        const camRoot = this;
+        window.__hausMeliCamTimer = setInterval(() => camRoot.touchCams(), 30000);
      ">
 
     <div class="info-toolbar card">
@@ -272,6 +303,37 @@
                     @endforeach
                 </div>
             </div>
+        @endif
+        @if($webcam)
+            <article class="info-cam" wire:key="wx-cam-{{ $weatherOrt }}-{{ $weatherZone }}">
+                <p class="info-cam-time" data-cam-time>{{ $webcam['time'] }}</p>
+                <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
+                    <img
+                        :src="camSrc(@js($webcam['image']))"
+                        alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
+                        width="720"
+                        height="405"
+                        loading="lazy"
+                    >
+                </a>
+                <div class="info-cam-meta">
+                    <span class="info-cam-text">
+                        <strong>{{ $webcam['name'] }}</strong>
+                        <p>
+                            {{ $webcam['place'] }}
+                            @if($webcam['asl'])
+                                · {{ number_format($webcam['asl'], 0, ',', '.') }} m
+                            @endif
+                            @if($webcam['source'] !== '')
+                                · {{ $webcam['source'] }}
+                            @endif
+                        </p>
+                    </span>
+                    <a class="info-cam-open" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $webcam['name'] }} auf {{ $webcam['source'] }} öffnen">
+                        <span class="material-symbols-rounded info-go">open_in_new</span>
+                    </a>
+                </div>
+            </article>
         @endif
     </div>
 

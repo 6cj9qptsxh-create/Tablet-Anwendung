@@ -3,6 +3,7 @@
 namespace App\Livewire; // Bei Livewire 2: namespace App\Http\Livewire;
 
 use App\Services\MeteoblueForecast;
+use App\Support\Webcams;
 use Livewire\Component;
 
 class Info extends Component
@@ -41,6 +42,7 @@ class Info extends Component
             'weatherAsl' => $spot['asl'],
             'infoOwner' => \App\Support\ClientNetwork::isFamily()
                 && ! \App\Support\ClientNetwork::guestPreview(),
+            'webcam' => Webcams::forSpot($spot['ort'], $spot['zone']),
         ]);
     }
 
