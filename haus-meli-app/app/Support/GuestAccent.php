@@ -229,7 +229,7 @@ class GuestAccent
                 $accent = null;
             }
 
-            return self::payloadFromStay($stay, $accent, true);
+            return self::payloadFromStay($stay, $accent, ! ClientNetwork::isDemo());
         } catch (Throwable $e) {
             return $empty;
         }
@@ -238,7 +238,7 @@ class GuestAccent
     public static function remember(string $hex): bool
     {
         $hex = self::normalizeHex($hex);
-        if ($hex === '' || ! self::guestSurface()) {
+        if ($hex === '' || ClientNetwork::isDemo() || ! self::guestSurface()) {
             return false;
         }
 

@@ -1,17 +1,25 @@
 <?php
 
 use App\Http\Controllers\E1001AgendaController;
-use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\ElevationController;
 use App\Http\Controllers\PlannedRouteShareController;
 use App\Http\Controllers\SavedToursController;
 use App\Http\Controllers\TourGraphController;
 use App\Http\Controllers\TripGpxController;
+use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('layouts.app');
 });
+
+// Homepage im Heimnetz: iframe auf diese Adresse, nicht auf /.
+// Online später die erreichbare URL und frame-ancestors enger setzen.
+Route::get('/demo', function () {
+    return response()
+        ->view('layouts.app')
+        ->header('Content-Security-Policy', 'frame-ancestors *');
+})->name('demo');
 
 Route::get('/trips/variants/{variant}/gpx', TripGpxController::class)
     ->name('trips.variant.gpx');

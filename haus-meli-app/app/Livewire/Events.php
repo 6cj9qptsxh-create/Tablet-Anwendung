@@ -29,6 +29,9 @@ class Events extends Component
     /** Familien-Gerät (Owner-Netz) — anderer Datenbestand + Filter */
     public bool $isFamily = false;
 
+    /** Bleibt über Livewire-Updates erhalten, auch wenn der Folge-Request die Demo nicht mehr nennt. */
+    public bool $demoMode = false;
+
     public bool $filterOpen = false;
 
     public $modalEventType = 'privat';
@@ -96,6 +99,7 @@ class Events extends Component
 
     public function mount(): void
     {
+        $this->captureDemoMode();
         $this->applyFamilyMode();
         // Wochen-Leiste beginnt eine Woche vor heute → heute mittig erreichbar
         $this->startDate = Carbon::today()->subDays(7)->format('Y-m-d');
@@ -103,7 +107,15 @@ class Events extends Component
 
     public function hydrate(): void
     {
+        $this->captureDemoMode();
         $this->applyFamilyMode(false);
+    }
+
+    private function captureDemoMode(): void
+    {
+        if (\App\Support\ClientNetwork::isDemo()) {
+            $this->demoMode = true;
+        }
     }
 
     private function applyFamilyMode(bool $resetTypes = true): void
@@ -126,13 +138,17 @@ class Events extends Component
 
     private function detectFamilyDevice(): bool
     {
+        if ($this->demoMode) {
+            return false;
+        }
+
         return \App\Support\ClientNetwork::isFamily()
             && ! \App\Support\ClientNetwork::guestPreview();
     }
 
     private function guestPreview(): bool
     {
-        return \App\Support\ClientNetwork::guestPreview();
+        return $this->demoMode || \App\Support\ClientNetwork::guestPreview();
     }
 
     public function setViewMode(string $mode): void
@@ -1548,29 +1564,29 @@ class Events extends Component
         try {
             $publicEvents = $this->expandYearlyOccurrences(
                 DB::table('ferienwohnung_laravel.calendar_events')
-                ->where('show_guest_app', 1)
-                ->where(function ($q) use ($rangeStart, $rangeEnd) {
-                    $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
-                        $inner->where('end_date', '>=', $rangeStart)
-                            ->where('start_date', '<=', $rangeEnd);
-                    })->orWhere('repeat_yearly', 1);
-                })
-                ->get()
-                ->filter(function ($ev) {
-                    if (($ev->type ?? '') === 'no_delivery') {
-                        return false;
-                    }
-                    $title = mb_strtolower((string) ($ev->title ?? ''));
+                    ->where('show_guest_app', 1)
+                    ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                        $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
+                            $inner->where('end_date', '>=', $rangeStart)
+                                ->where('start_date', '<=', $rangeEnd);
+                        })->orWhere('repeat_yearly', 1);
+                    })
+                    ->get()
+                    ->filter(function ($ev) {
+                        if (($ev->type ?? '') === 'no_delivery') {
+                            return false;
+                        }
+                        $title = mb_strtolower((string) ($ev->title ?? ''));
 
-                    return ! str_contains($title, 'keine lieferung');
-                })
-                ->map(function ($ev) {
-                    $ev->is_private = false;
-                    $ev->is_outline = false;
-                    $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
+                        return ! str_contains($title, 'keine lieferung');
+                    })
+                    ->map(function ($ev) {
+                        $ev->is_private = false;
+                        $ev->is_outline = false;
+                        $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
 
-                    return $ev;
-                }),
+                        return $ev;
+                    }),
                 $rangeStart,
                 $rangeEnd
             )->values();
@@ -1582,21 +1598,21 @@ class Events extends Component
             try {
                 $privateEvents = $this->expandYearlyOccurrences(
                     DB::table('ferienwohnung_laravel.guest_private_events')
-                    ->where(function ($q) use ($rangeStart, $rangeEnd) {
-                        $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
-                            $inner->where('end_date', '>=', $rangeStart)
-                                ->where('start_date', '<=', $rangeEnd);
-                        })->orWhere('repeat_yearly', 1);
-                    })
-                    ->get()
-                    ->map(function ($ev) {
-                        $ev->is_private = true;
-                        $ev->is_outline = true;
-                        $ev->type = 'private';
-                        $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
+                        ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                            $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
+                                $inner->where('end_date', '>=', $rangeStart)
+                                    ->where('start_date', '<=', $rangeEnd);
+                            })->orWhere('repeat_yearly', 1);
+                        })
+                        ->get()
+                        ->map(function ($ev) {
+                            $ev->is_private = true;
+                            $ev->is_outline = true;
+                            $ev->type = 'private';
+                            $ev->title_icon = $this->iconFromTitle($ev->title ?? '');
 
-                        return $ev;
-                    }),
+                            return $ev;
+                        }),
                     $rangeStart,
                     $rangeEnd
                 );

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\SavedToursStore;
+use App\Support\ClientNetwork;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -10,6 +11,10 @@ class SavedToursController extends Controller
 {
     public function index(SavedToursStore $store): JsonResponse
     {
+        if (ClientNetwork::isDemo()) {
+            return response()->json(['ok' => true, 'routes' => $this->demoRoutes()]);
+        }
+
         return response()->json(['ok' => true, 'routes' => $store->all()]);
     }
 
@@ -30,11 +35,33 @@ class SavedToursController extends Controller
             'routes.*.route.steps.*.segmentId' => ['required', 'integer'],
         ]);
 
+        if (ClientNetwork::isDemo()) {
+            $routes = SavedToursStore::merge($this->demoRoutes(), $data['routes']);
+            session(['demo.saved_tours' => $routes]);
+
+            return response()->json(['ok' => true, 'routes' => $routes]);
+        }
+
         return response()->json(['ok' => true, 'routes' => $store->upsert($data['routes'])]);
     }
 
     public function destroy(string $id, SavedToursStore $store): JsonResponse
     {
+        if (ClientNetwork::isDemo()) {
+            $routes = SavedToursStore::without($this->demoRoutes(), $id);
+            session(['demo.saved_tours' => $routes]);
+
+            return response()->json(['ok' => true, 'routes' => $routes]);
+        }
+
         return response()->json(['ok' => true, 'routes' => $store->remove($id)]);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function demoRoutes(): array
+    {
+        $routes = session('demo.saved_tours', []);
+
+        return is_array($routes) ? array_values(array_filter($routes, 'is_array')) : [];
     }
 }
