@@ -45,6 +45,7 @@ return [
             'asl' => 1400,
             'page' => 'https://www.ischgl.com/de/reise-planen/webcams/ischgl-dorf_webcam_124696581',
             'image' => 'https://www.ischgl.com/var/webcams/124696581.jpg',
+            'archive' => '/var/webcams/archive/124696581-paznaun',
         ],
         'berg' => [
             'name' => 'Idalp',
@@ -52,6 +53,7 @@ return [
             'asl' => 2320,
             'page' => 'https://www.ischgl.com/de/reise-planen/webcams/idalp_webcam_100178345',
             'image' => 'https://www.ischgl.com/var/webcams/100178345.jpg',
+            'archive' => '/var/webcams/archive/99396-idalp',
         ],
     ],
     'galtuer' => [
