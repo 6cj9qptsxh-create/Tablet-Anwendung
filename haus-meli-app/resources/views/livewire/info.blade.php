@@ -177,37 +177,6 @@
                 @endforeach
             </div>
         </div>
-        @if($webcam)
-            <article class="info-cam" wire:key="wx-cam-{{ $weatherOrt }}-{{ $weatherZone }}">
-                <p class="info-cam-time" data-cam-time>{{ $webcam['time'] }}</p>
-                <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
-                    <img
-                        :src="camSrc(@js($webcam['image']))"
-                        alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
-                        width="720"
-                        height="405"
-                        loading="lazy"
-                    >
-                </a>
-                <div class="info-cam-meta">
-                    <span class="info-cam-text">
-                        <strong>{{ $webcam['name'] }}</strong>
-                        <p>
-                            {{ $webcam['place'] }}
-                            @if($webcam['asl'])
-                                · {{ number_format($webcam['asl'], 0, ',', '.') }} m
-                            @endif
-                            @if($webcam['source'] !== '')
-                                · {{ $webcam['source'] }}
-                            @endif
-                        </p>
-                    </span>
-                    <a class="info-cam-open" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $webcam['name'] }} auf {{ $webcam['source'] }} öffnen">
-                        <span class="material-symbols-rounded info-go">open_in_new</span>
-                    </a>
-                </div>
-            </article>
-        @endif
         @if(empty($forecast['ok']))
             <p class="info-weather-loading">{{ $forecast['error'] ?? 'Wetterdaten fehlen.' }}</p>
         @else
@@ -334,6 +303,37 @@
                     @endforeach
                 </div>
             </div>
+        @endif
+        @if($webcam)
+            <article class="info-cam" wire:key="wx-cam-{{ $weatherOrt }}-{{ $weatherZone }}">
+                <p class="info-cam-time" data-cam-time>{{ $webcam['time'] }}</p>
+                <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
+                    <img
+                        :src="camSrc(@js($webcam['image']))"
+                        alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
+                        width="720"
+                        height="405"
+                        loading="lazy"
+                    >
+                </a>
+                <div class="info-cam-meta">
+                    <span class="info-cam-text">
+                        <strong>{{ $webcam['name'] }}</strong>
+                        <p>
+                            {{ $webcam['place'] }}
+                            @if($webcam['asl'])
+                                · {{ number_format($webcam['asl'], 0, ',', '.') }} m
+                            @endif
+                            @if($webcam['source'] !== '')
+                                · {{ $webcam['source'] }}
+                            @endif
+                        </p>
+                    </span>
+                    <a class="info-cam-open" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $webcam['name'] }} auf {{ $webcam['source'] }} öffnen">
+                        <span class="material-symbols-rounded info-go">open_in_new</span>
+                    </a>
+                </div>
+            </article>
         @endif
     </div>
 

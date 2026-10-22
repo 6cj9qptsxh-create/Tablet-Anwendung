@@ -2646,6 +2646,7 @@ body.is-cal-tab .shell-nav {
     border-left-width: 0;
     border-right-width: 0;
     border-bottom: var(--border-th) solid var(--accent-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow);
 }
 
 .info-block.wx-board-wrap::after {
