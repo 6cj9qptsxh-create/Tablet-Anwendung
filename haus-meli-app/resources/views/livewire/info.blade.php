@@ -66,9 +66,24 @@
                 const data = await res.json();
                 if ((this.$wire.weatherOrt || '') !== ort || (this.$wire.weatherZone || '') !== zone) return;
                 const el = this.$root.querySelector('[data-cam-time]');
-                if (!el || !data.time) return;
-                el.textContent = data.time;
+                if (el && data.time) el.textContent = data.time;
+                this.applyClip(data.video || '');
             } catch (e) {}
+        },
+        applyClip(url) {
+            const video = this.$root.querySelector('.info-cam-shot video');
+            if (!video || !url) return;
+            const source = video.querySelector('source');
+            if (!source || source.src === url) return;
+            if (!video.paused && !video.ended) return;
+            source.src = url;
+            video.load();
+        },
+        async replayCam(event) {
+            await this.loadCamTime();
+            const video = event && event.target;
+            if (!video || typeof video.play !== 'function') return;
+            try { await video.play(); } catch (e) {}
         },
         camSrc(url) {
             const join = url.indexOf('?') === -1 ? '?' : '&';
@@ -307,15 +322,29 @@
         @if($webcam)
             <article class="info-cam" wire:key="wx-cam-{{ $weatherOrt }}-{{ $weatherZone }}">
                 <p class="info-cam-time" data-cam-time>{{ $webcam['time'] }}</p>
-                <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
-                    <img
-                        :src="camSrc(@js($webcam['image']))"
-                        alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
-                        width="720"
-                        height="405"
-                        loading="lazy"
-                    >
-                </a>
+                @if($webcam['video'] !== '')
+                    <div class="info-cam-shot">
+                        <video
+                            controls
+                            playsinline
+                            preload="none"
+                            :poster="camSrc(@js($webcam['image']))"
+                            @ended="replayCam($event)"
+                        >
+                            <source src="{{ $webcam['video'] }}" type="video/mp4">
+                        </video>
+                    </div>
+                @else
+                    <a class="info-cam-shot" href="{{ $webcam['page'] }}" target="_blank" rel="noopener noreferrer">
+                        <img
+                            :src="camSrc(@js($webcam['image']))"
+                            alt="Webcam {{ $webcam['name'] }}, {{ $webcam['place'] }}"
+                            width="720"
+                            height="405"
+                            loading="lazy"
+                        >
+                    </a>
+                @endif
                 <div class="info-cam-meta">
                     <span class="info-cam-text">
                         <strong>{{ $webcam['name'] }}</strong>
