@@ -28,6 +28,7 @@ class DemoModeTest extends TestCase
             ->assertSee('data-tab="tours"', false)
             ->assertDontSee('data-tab="knx"', false)
             ->assertDontSee('id="guest-preview-form"', false);
+        $this->assertAlpineShellStaysIntact($this->fromFamily()->get('/demo')->getContent());
     }
 
     public function test_demo_hides_the_wifi_password(): void
@@ -49,6 +50,15 @@ class DemoModeTest extends TestCase
             ->assertSee('data-tab="knx"', false)
             ->assertDontSee('data-tab="tours"', false)
             ->assertSee('id="guest-preview-form"', false);
+        $this->assertAlpineShellStaysIntact($this->fromFamily()->get('/')->getContent());
+    }
+
+    private function assertAlpineShellStaysIntact(string $html): void
+    {
+        $this->assertMatchesRegularExpression(
+            '/<body[^>]*x-data="[^"]*window\.HAUS_MELI_TABS\.slice\(\)[^"]*tabName\(tab\)[^"]*"/s',
+            $html
+        );
     }
 
     public function test_requests_from_the_demo_page_stay_in_demo_mode(): void
