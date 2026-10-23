@@ -45,7 +45,8 @@ return [
             'label' => 'Ischgl',
             'zones' => [
                 'tal' => ['lat' => 47.0120, 'lon' => 10.2913, 'asl' => 1376],
-                'berg' => ['lat' => 46.9818, 'lon' => 10.3176, 'asl' => 2319],
+                'idalp' => ['lat' => 46.9818, 'lon' => 10.3176, 'asl' => 2319, 'label' => 'Idalp'],
+                'palinkopf' => ['lat' => 46.9503, 'lon' => 10.3094, 'asl' => 2864, 'label' => 'Palinkopf'],
             ],
         ],
         'galtuer' => [

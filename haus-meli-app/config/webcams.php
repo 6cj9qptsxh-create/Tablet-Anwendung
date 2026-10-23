@@ -64,13 +64,21 @@ return [
             'image' => 'https://www.ischgl.com/var/webcams/124696581.jpg',
             'archive' => '/var/webcams/archive/124696581-paznaun',
         ],
-        'berg' => [
+        'idalp' => [
             'name' => 'Idalp',
             'place' => 'Ischgl',
             'asl' => 2320,
             'page' => 'https://www.ischgl.com/de/reise-planen/webcams/idalp_webcam_100178345',
             'image' => 'https://www.ischgl.com/var/webcams/100178345.jpg',
             'archive' => '/var/webcams/archive/99396-idalp',
+        ],
+        'palinkopf' => [
+            'name' => 'Palinkopf',
+            'place' => 'Ischgl',
+            'asl' => 2864,
+            'page' => 'https://www.ischgl.com/de/reise-planen/webcams/palinkopf_webcam_100178319',
+            'image' => 'https://www.ischgl.com/var/webcams/100178319.jpg',
+            'video' => 'https://panodata1.panomax.com/cams/101/videos/101_fullHD.mp4',
         ],
     ],
     'galtuer' => [
