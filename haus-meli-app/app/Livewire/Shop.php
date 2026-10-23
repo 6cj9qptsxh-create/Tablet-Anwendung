@@ -790,6 +790,91 @@ class Shop extends Component
         $this->dispatch('notify', message: 'Bestellung gelöscht.');
     }
 
+    /** Owner löscht eine Bestellung aus dem Bestellungsmodal, auch nach Frist oder Abschluss. */
+    public function deleteHistoryOrder(string $mode, string $key): void
+    {
+        if (! $this->showsFamilyShop()) {
+            return;
+        }
+
+        if ($mode === 'self') {
+            $removed = null;
+            $this->history = collect($this->history)
+                ->reject(function ($order) use ($key, &$removed) {
+                    if (($order['mode'] ?? null) !== 'self') {
+                        return false;
+                    }
+                    if ((string) ($order['id'] ?? '') !== $key || $key === '') {
+                        return false;
+                    }
+                    $removed = $order;
+
+                    return true;
+                })
+                ->values()
+                ->all();
+
+            if (! $removed) {
+                $this->dispatch('notify', message: 'Keine Bestellung gefunden.', type: 'error');
+
+                return;
+            }
+
+            $this->adjustStock($removed['items'] ?? [], +1);
+            \Illuminate\Support\Facades\Cache::forget('shop_products_cache');
+            $this->cartCachePut('order_history', $this->history);
+            unset($this->historySections, $this->stayTotal);
+            $this->dispatch('notify', message: 'Bestellung gelöscht.');
+
+            return;
+        }
+
+        if ($mode !== 'delivery' || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $key)) {
+            return;
+        }
+
+        $frozenDate = Carbon::parse($key)->format('d.m.Y');
+        $entry = collect($this->history)->first(fn ($order) => ($order['mode'] ?? null) === 'delivery'
+            && ($order['delivery_date'] ?? null) === $frozenDate);
+        $order = $this->findOrderForDate($key);
+        $items = $order ? ($order->items ?? []) : ($entry['items'] ?? []);
+
+        if (! $order && ! $entry) {
+            $this->dispatch('notify', message: 'Keine Bestellung gefunden.', type: 'error');
+
+            return;
+        }
+
+        if ($items) {
+            $this->adjustStock($items, +1);
+            \Illuminate\Support\Facades\Cache::forget('shop_products_cache');
+        }
+
+        if ($order) {
+            $order->delete();
+        }
+
+        $this->history = collect($this->history)
+            ->reject(fn ($order) => ($order['mode'] ?? null) === 'delivery'
+                && ($order['delivery_date'] ?? null) === $frozenDate)
+            ->values()
+            ->all();
+
+        $this->cartCachePut('order_history', $this->history);
+        $this->clearDeliveryDraft($key);
+
+        if ($this->selectedDeliveryDate === $key) {
+            $this->cartDelivery = [];
+            $this->saveCart();
+            unset($this->cartDetails, $this->cartSections, $this->cartMatchesOrder);
+        }
+
+        unset($this->historySections, $this->stayTotal, $this->deliveryDays, $this->selectedDayInfo);
+        $this->renderKey++;
+
+        $this->dispatch('notify', message: 'Bestellung gelöscht.');
+    }
+
     public function updateCartQty($key, $newQty)
     {
         $this->pullSharedCart();

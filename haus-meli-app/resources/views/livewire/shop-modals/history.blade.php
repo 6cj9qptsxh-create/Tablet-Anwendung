@@ -18,18 +18,29 @@
                     <div class="history-list">
                         @foreach($sections['delivery'] as $entry)
                             @php $order = $entry['raw']; @endphp
-                            <button type="button"
-                                    class="history-card {{ $entry['editable'] ? 'is-editable' : 'is-locked' }}"
-                                    wire:click="openHistoryOrder('{{ $entry['date_ymd'] }}')"
-                                    wire:key="history-delivery-{{ $entry['date_ymd'] }}">
+                            <div class="history-card {{ $entry['editable'] ? 'is-editable' : 'is-locked' }}"
+                                 wire:click="openHistoryOrder('{{ $entry['date_ymd'] }}')"
+                                 wire:key="history-delivery-{{ $entry['date_ymd'] }}">
                                 <div class="history-card-top">
                                     <div class="history-card-title">
                                         <span class="history-card-day">{{ $entry['label_day'] }}</span>
                                         <span class="history-card-meta">aktualisiert {{ $entry['placed_label'] }}</span>
                                     </div>
-                                    <span class="history-status {{ $entry['editable'] ? 'ok' : 'done' }}">
-                                        {{ $entry['status_label'] }}
-                                    </span>
+                                    <div class="history-card-side">
+                                        <span class="history-status {{ $entry['editable'] ? 'ok' : 'done' }}">
+                                            {{ $entry['status_label'] }}
+                                        </span>
+                                        @if($isOwner)
+                                            <button type="button"
+                                                    class="btn-delete"
+                                                    wire:click.stop="deleteHistoryOrder('delivery', '{{ $entry['date_ymd'] }}')"
+                                                    wire:confirm="Bestellung vom {{ $entry['label_day'] }} wirklich löschen?"
+                                                    title="Bestellung löschen"
+                                                    aria-label="Bestellung löschen">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <div class="history-card-items">
@@ -54,7 +65,7 @@
                                 <div class="history-card-total">
                                     {{ number_format($order['total'], 2, ',', '.') }} €
                                 </div>
-                            </button>
+                            </div>
                         @endforeach
                     </div>
                 @endif
@@ -70,7 +81,19 @@
                                         <span class="history-card-day">{{ $entry['label_day'] }}</span>
                                         <span class="history-card-meta">{{ $entry['placed_label'] }}</span>
                                     </div>
-                                    <span class="history-status self">SB</span>
+                                    <div class="history-card-side">
+                                        <span class="history-status self">SB</span>
+                                        @if($isOwner)
+                                            <button type="button"
+                                                    class="btn-delete"
+                                                    wire:click="deleteHistoryOrder('self', '{{ $order['id'] ?? '' }}')"
+                                                    wire:confirm="Entnahme vom {{ $entry['label_day'] }} wirklich löschen?"
+                                                    title="Bestellung löschen"
+                                                    aria-label="Bestellung löschen">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <div class="history-card-items">
