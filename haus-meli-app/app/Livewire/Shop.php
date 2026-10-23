@@ -2,29 +2,43 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Order;
-use App\Models\Product;
 use Carbon\Carbon;
+use Livewire\Component;
 
 class Shop extends Component
 {
     public $selectedCategory = '__all'; // "__all" oder "__super_Getränke" oder "Getränke||Kaffee"
+
     public $search = '';
+
     public $orderMode = 'delivery'; // 'delivery' oder 'self'
+
     public $cartDelivery = [];
+
     public $cartSelf = [];
+
     public $isOwner = false;
+
     public $selectedDeliveryDate = null; // Y-m-d
+
     public $history = [];
+
     public $showCheckoutModal = false;
+
     public $showWelcomeModal = false;
+
     public $feedbackText = ''; // <--- NEU: Für das Danke-Modal
+
     public $renderKey = 0; // <--- NEU: Zwingt Alpine.js zum Neu-Laden
 
+    /** Bleibt über Livewire-Updates erhalten, auch wenn der Folge-Request die Demo nicht mehr nennt. */
+    public bool $demoMode = false;
+
     private const CUTOFF_HOUR = 20;
+
     private const CUTOFF_MINUTE = 30;
-    
+
     // Wird aufgerufen, wenn sich der Modus ändert
     public function setOrderMode($mode)
     {
@@ -47,12 +61,20 @@ class Shop extends Component
     /** Schalter aus, nur Lieferung. Die Gast-Vorschau zeigt die Gast-Oberfläche. */
     private function showsFamilyShop(): bool
     {
+        if ($this->inDemo()) {
+            return false;
+        }
+
         return \App\Support\ClientNetwork::isFamily()
             && ! \App\Support\ClientNetwork::guestPreview();
     }
 
     private function getChannel(): string
     {
+        if ($this->inDemo()) {
+            return 'demo';
+        }
+
         if (\App\Support\ClientNetwork::guestPreview()) {
             return 'owner_preview';
         }
@@ -96,7 +118,7 @@ class Shop extends Component
             return false;
         }
 
-        return !now()->greaterThan($this->getDeadlineForDeliveryDate($deliveryDate));
+        return ! now()->greaterThan($this->getDeadlineForDeliveryDate($deliveryDate));
     }
 
     /**
@@ -113,7 +135,7 @@ class Shop extends Component
         $hasWarning = false;
 
         $todayIsHoliday = in_array($now->format('Y-m-d'), $holidays, true);
-        $todayIsBlocked = !in_array($now->dayOfWeek, $deliveryWeekdays, true) || $todayIsHoliday;
+        $todayIsBlocked = ! in_array($now->dayOfWeek, $deliveryWeekdays, true) || $todayIsHoliday;
 
         if ($todayIsBlocked) {
             $searchDate->addDay();
@@ -123,11 +145,11 @@ class Shop extends Component
         }
 
         $cutoffTime = $now->copy()->setTime(self::CUTOFF_HOUR, self::CUTOFF_MINUTE, 0);
-        if (!$todayIsBlocked && $now->greaterThan($cutoffTime)) {
+        if (! $todayIsBlocked && $now->greaterThan($cutoffTime)) {
             $searchDate->addDay();
         }
 
-        while (!in_array($searchDate->dayOfWeek, $deliveryWeekdays, true) || in_array($searchDate->format('Y-m-d'), $holidays, true)) {
+        while (! in_array($searchDate->dayOfWeek, $deliveryWeekdays, true) || in_array($searchDate->format('Y-m-d'), $holidays, true)) {
             if (in_array($searchDate->format('Y-m-d'), $holidays, true)) {
                 $hasWarning = true;
             }
@@ -170,7 +192,7 @@ class Shop extends Component
                 'label_date' => $date->format('d.m.'),
                 'orderable' => $orderable,
                 'has_order' => (bool) $order,
-                'blocked' => !$orderable,
+                'blocked' => ! $orderable,
                 'no_delivery' => $isNoDelivery,
                 'selected' => $this->selectedDeliveryDate === $key,
             ];
@@ -181,7 +203,7 @@ class Shop extends Component
 
     public function getSelectedDayInfoProperty(): ?array
     {
-        if ($this->orderMode === 'self' || !$this->selectedDeliveryDate) {
+        if ($this->orderMode === 'self' || ! $this->selectedDeliveryDate) {
             return null;
         }
 
@@ -209,7 +231,7 @@ class Shop extends Component
             ];
         }
 
-        if (!$orderable) {
+        if (! $orderable) {
             return [
                 'class' => 'red',
                 'text' => "Bestellfrist für {$dayLabel} abgelaufen — war möglich bis {$deadlineLabel}, 20:30 Uhr.",
@@ -256,7 +278,7 @@ class Shop extends Component
     {
         // Jeder Tag der 7-Tage-Leiste ist wählbar (auch gesperrt) — für die Begründung.
         // Nicht über $this->deliveryDays gehen (Computed-Cache / Highlight).
-        if (!$this->isDateInDeliveryWindow($date)) {
+        if (! $this->isDateInDeliveryWindow($date)) {
             return;
         }
 
@@ -270,6 +292,7 @@ class Shop extends Component
             }
             unset($this->cartDetails);
             unset($this->selectedDayInfo);
+
             return;
         }
 
@@ -333,7 +356,7 @@ class Shop extends Component
 
     private function findOrderForDate(?string $date): ?Order
     {
-        if (!$date) {
+        if (! $date) {
             return null;
         }
 
@@ -345,29 +368,31 @@ class Shop extends Component
 
     private function getDeliveryDrafts(): array
     {
-        return \Cache::get($this->getCartPrefix() . 'cart_delivery_drafts', []);
+        $drafts = $this->cartCacheGet('cart_delivery_drafts', []);
+
+        return is_array($drafts) ? $drafts : [];
     }
 
     private function persistDeliveryDraft(?string $date): void
     {
-        if (!$date || $this->orderMode !== 'delivery') {
+        if (! $date || $this->orderMode !== 'delivery') {
             return;
         }
 
         $drafts = $this->getDeliveryDrafts();
         $drafts[$date] = $this->cartDelivery;
-        \Cache::put($this->getCartPrefix() . 'cart_delivery_drafts', $drafts);
+        $this->cartCachePut('cart_delivery_drafts', $drafts);
     }
 
     private function clearDeliveryDraft(?string $date): void
     {
-        if (!$date) {
+        if (! $date) {
             return;
         }
 
         $drafts = $this->getDeliveryDrafts();
         unset($drafts[$date]);
-        \Cache::put($this->getCartPrefix() . 'cart_delivery_drafts', $drafts);
+        $this->cartCachePut('cart_delivery_drafts', $drafts);
     }
 
     /**
@@ -376,7 +401,7 @@ class Shop extends Component
      */
     private function loadCartForSelectedDay(): void
     {
-        if (!$this->selectedDeliveryDate) {
+        if (! $this->selectedDeliveryDate) {
             return;
         }
 
@@ -401,17 +426,17 @@ class Shop extends Component
             $variantId = $item['variant_id'] ?? null;
             $qty = (int) ($item['qty'] ?? 0);
 
-            if (!$productId || !$variantId) {
+            if (! $productId || ! $variantId) {
                 $parts = explode('_', (string) $key, 2);
                 $productId = $productId ?: ($parts[0] ?? null);
                 $variantId = $variantId ?: ($parts[1] ?? null);
             }
 
-            if (!$productId || !$variantId || $qty <= 0) {
+            if (! $productId || ! $variantId || $qty <= 0) {
                 continue;
             }
 
-            $cartKey = $productId . '_' . $variantId;
+            $cartKey = $productId.'_'.$variantId;
             $cart[$cartKey] = [
                 'product_id' => (int) $productId,
                 'variant_id' => (int) $variantId,
@@ -425,12 +450,12 @@ class Shop extends Component
     /** Bereits in der offenen Bestellung des gewählten Tages reservierte Menge (für Stock-Checks) */
     private function getReservedQtyForVariant($variantId): int
     {
-        if ($this->orderMode !== 'delivery' || !$this->selectedDeliveryDate) {
+        if ($this->orderMode !== 'delivery' || ! $this->selectedDeliveryDate) {
             return 0;
         }
 
         $order = $this->findOrderForDate($this->selectedDeliveryDate);
-        if (!$order || !$order->isOpen()) {
+        if (! $order || ! $order->isOpen()) {
             return 0;
         }
 
@@ -450,7 +475,7 @@ class Shop extends Component
         foreach ($items as $key => $item) {
             $variantId = $item['variant_id'] ?? (explode('_', (string) $key, 2)[1] ?? null);
             $qty = (int) ($item['qty'] ?? 0);
-            if (!$variantId || $qty <= 0) {
+            if (! $variantId || $qty <= 0) {
                 continue;
             }
 
@@ -465,7 +490,6 @@ class Shop extends Component
         }
     }
 
-
     // --- WARENKORB LOGIK ---
 
     // Gibt den passenden Präfix zurück (z.B. "guest_" oder "owner_")
@@ -478,18 +502,61 @@ class Shop extends Component
         return \App\Support\ClientNetwork::isFamily() ? 'owner_' : 'guest_';
     }
 
+    private function inDemo(): bool
+    {
+        return $this->demoMode || \App\Support\ClientNetwork::isDemo();
+    }
+
+    private function captureDemoMode(): void
+    {
+        if (\App\Support\ClientNetwork::isDemo()) {
+            $this->demoMode = true;
+        }
+    }
+
+    /** Demo-Warenkorb bleibt in der Session und teilt sich nicht den Gast-Cache. */
+    private function cartCacheGet(string $suffix, mixed $default = null): mixed
+    {
+        if ($this->inDemo()) {
+            return session()->get('demo.cart.'.$suffix, $default);
+        }
+
+        return \Cache::get($this->getCartPrefix().$suffix, $default);
+    }
+
+    private function cartCachePut(string $suffix, mixed $value): void
+    {
+        if ($this->inDemo()) {
+            session()->put('demo.cart.'.$suffix, $value);
+
+            return;
+        }
+
+        \Cache::put($this->getCartPrefix().$suffix, $value);
+    }
+
+    private function cartCacheForget(string $suffix): void
+    {
+        if ($this->inDemo()) {
+            session()->forget('demo.cart.'.$suffix);
+
+            return;
+        }
+
+        \Cache::forget($this->getCartPrefix().$suffix);
+    }
+
     // Speichert den aktuellen Stand sofort für alle anderen Geräte (gemeinsamer Cache pro Kanal)
     private function saveCart()
     {
-        $prefix = $this->getCartPrefix();
-        \Cache::put($prefix . 'cart_delivery', $this->cartDelivery);
-        \Cache::put($prefix . 'cart_self', $this->cartSelf);
+        $this->cartCachePut('cart_delivery', $this->cartDelivery);
+        $this->cartCachePut('cart_self', $this->cartSelf);
 
         // Liefer-Warenkorb zusätzlich pro gewähltem Tag als Entwurf merken
         if ($this->orderMode === 'delivery' && $this->selectedDeliveryDate) {
             $drafts = $this->getDeliveryDrafts();
             $drafts[$this->selectedDeliveryDate] = $this->cartDelivery;
-            \Cache::put($prefix . 'cart_delivery_drafts', $drafts);
+            $this->cartCachePut('cart_delivery_drafts', $drafts);
         }
     }
 
@@ -499,8 +566,8 @@ class Shop extends Component
      */
     public function syncCart()
     {
-        $prefix = $this->getCartPrefix();
-        $this->cartSelf = \Cache::get($prefix . 'cart_self', []);
+        $self = $this->cartCacheGet('cart_self', []);
+        $this->cartSelf = is_array($self) ? $self : [];
 
         if ($this->orderMode === 'delivery' && $this->selectedDeliveryDate) {
             $drafts = $this->getDeliveryDrafts();
@@ -508,12 +575,14 @@ class Shop extends Component
                 $this->cartDelivery = $drafts[$this->selectedDeliveryDate] ?? [];
             } else {
                 $order = $this->findOrderForDate($this->selectedDeliveryDate);
-                $this->cartDelivery = $order
+                $delivery = $order
                     ? $this->cartFromOrderItems($order->items ?? [])
-                    : \Cache::get($prefix . 'cart_delivery', []);
+                    : $this->cartCacheGet('cart_delivery', []);
+                $this->cartDelivery = is_array($delivery) ? $delivery : [];
             }
         } else {
-            $this->cartDelivery = \Cache::get($prefix . 'cart_delivery', []);
+            $delivery = $this->cartCacheGet('cart_delivery', []);
+            $this->cartDelivery = is_array($delivery) ? $delivery : [];
         }
 
         unset($this->cartDetails);
@@ -532,37 +601,39 @@ class Shop extends Component
         if ($this->orderMode === 'delivery') {
             return $this->cartDelivery;
         }
+
         return $this->cartSelf;
     }
 
     public function addToCart($productId, $variantId, $qty)
     {
-        if ($this->orderMode === 'delivery' && !$this->selectedDayOrderable) {
+        if ($this->orderMode === 'delivery' && ! $this->selectedDayOrderable) {
             $this->dispatch('notify', message: 'Dieser Tag ist nicht bestellbar.', type: 'error');
+
             return;
         }
 
         $this->pullSharedCart();
         $cart = &$this->getActiveCart();
-        $key = $productId . '_' . $variantId;
+        $key = $productId.'_'.$variantId;
 
         $product = \App\Models\Product::with('variants')->find($productId);
         $variant = $product ? $product->variants->firstWhere('id', $variantId) : null;
-        
+
         // Wir fragen jetzt sauber und logisch nach 'stock'
         $stock = $variant ? $variant->getAttribute('stock') : null;
-        
+
         // Unendlich (9999) annehmen, wenn das Feld leer ist.
         // Bei bestehender Bestellung ist der Bestand schon abgezogen → reservierte Menge wieder freigeben.
         $maxQty = ($stock === null || $stock === '')
             ? 9999
             : (int) $stock + $this->getReservedQtyForVariant($variantId);
-        
+
         $currentQty = isset($cart[$key]) ? $cart[$key]['qty'] : 0;
         $allowedToAdd = $maxQty - $currentQty;
 
         if ($allowedToAdd <= 0) {
-            return; 
+            return;
         }
 
         if ($qty > $allowedToAdd) {
@@ -578,18 +649,18 @@ class Shop extends Component
                 'qty' => $qty,
             ];
         }
-        
-        $this->saveCart(); 
+
+        $this->saveCart();
 
         // Label für den Toast zusammenbauen:
         $product = \App\Models\Product::find($productId);
         $pName = json_decode($product->name, true)['de'] ?? 'Artikel';
-        
+
         $extraInfo = '';
         if ($variantId) {
             $variant = $product->variants->where('id', $variantId)->first();
             $vName = json_decode($variant->name, true)['de'] ?? '';
-            $extraInfo = trim($vName . ' ' . ($variant->size ?? ''));
+            $extraInfo = trim($vName.' '.($variant->size ?? ''));
         }
 
         $anzeigeName = $extraInfo ? "$pName ($extraInfo)" : $pName;
@@ -605,7 +676,7 @@ class Shop extends Component
         $this->pullSharedCart();
         $cart = &$this->getActiveCart();
         unset($cart[$key]);
-        
+
         $this->saveCart(); // Sofort hochladen!
     }
 
@@ -618,14 +689,14 @@ class Shop extends Component
         } else {
             $this->cartSelf = [];
         }
-        
+
         $this->saveCart(); // Sofort hochladen!
 
         unset($this->cartDetails);
         unset($this->cartSections);
         unset($this->cartMatchesOrder);
 
-        if (!$silent) {
+        if (! $silent) {
             $this->dispatch('notify', message: 'Warenkorb wurde geleert.');
         }
     }
@@ -664,7 +735,7 @@ class Shop extends Component
     /** Gespeicherte Bestellung für den gewählten Tag komplett löschen (inkl. Bestand zurück) */
     public function deleteOrder(): void
     {
-        if (\App\Support\ClientNetwork::guestPreview()) {
+        if ($this->inDemo() || \App\Support\ClientNetwork::guestPreview()) {
             return;
         }
 
@@ -707,8 +778,7 @@ class Shop extends Component
             ->values()
             ->all();
 
-        $prefix = $this->getCartPrefix();
-        \Illuminate\Support\Facades\Cache::put($prefix . 'order_history', $this->history);
+        $this->cartCachePut('order_history', $this->history);
 
         unset($this->cartDetails);
         unset($this->cartSections);
@@ -724,11 +794,14 @@ class Shop extends Component
     {
         $this->pullSharedCart();
         $cart = &$this->getActiveCart();
-        if (!isset($cart[$key])) return;
+        if (! isset($cart[$key])) {
+            return;
+        }
 
         if ($newQty <= 0) {
             unset($cart[$key]);
             $this->saveCart();
+
             return;
         }
 
@@ -757,13 +830,17 @@ class Shop extends Component
     {
         $this->pullSharedCart();
         $cart = &$this->getActiveCart();
-        if (!isset($cart[$oldKey])) return;
+        if (! isset($cart[$oldKey])) {
+            return;
+        }
 
         $item = $cart[$oldKey];
         $productId = $item['product_id'];
-        $newKey = $productId . '_' . $newVariantId;
+        $newKey = $productId.'_'.$newVariantId;
 
-        if ($oldKey === $newKey) return; 
+        if ($oldKey === $newKey) {
+            return;
+        }
 
         // Bestand der NEUEN Variante prüfen
         $product = \App\Models\Product::with('variants')->find($productId);
@@ -775,12 +852,13 @@ class Shop extends Component
 
         $currentQtyOfNewVariant = isset($cart[$newKey]) ? $cart[$newKey]['qty'] : 0;
         $qtyToMove = $item['qty'];
-        
+
         $allowedToAdd = $maxQty - $currentQtyOfNewVariant;
 
         // Wenn die neue Variante schon ausverkauft/am Limit ist
         if ($allowedToAdd <= 0) {
             $this->dispatch('notify', message: 'Die gewählte Variante hat keinen ausreichenden Bestand mehr.', type: 'error');
+
             return;
         }
 
@@ -822,17 +900,17 @@ class Shop extends Component
             $variantId = $item['variant_id'] ?? null;
             $qty = (int) ($item['qty'] ?? 0);
 
-            if (!$productId || !$variantId) {
+            if (! $productId || ! $variantId) {
                 $parts = explode('_', (string) $key, 2);
                 $productId = $productId ?: ($parts[0] ?? null);
                 $variantId = $variantId ?: ($parts[1] ?? null);
             }
 
-            if (!$productId || !$variantId || $qty <= 0) {
+            if (! $productId || ! $variantId || $qty <= 0) {
                 continue;
             }
 
-            $k = ((int) $productId) . '_' . ((int) $variantId);
+            $k = ((int) $productId).'_'.((int) $variantId);
             $map[$k] = ($map[$k] ?? 0) + $qty;
         }
         ksort($map);
@@ -843,12 +921,12 @@ class Shop extends Component
     /** Warenkorb entspricht exakt der gespeicherten Bestellung des gewählten Tags */
     public function getCartMatchesOrderProperty(): bool
     {
-        if ($this->orderMode !== 'delivery' || !$this->selectedDeliveryDate) {
+        if ($this->orderMode !== 'delivery' || ! $this->selectedDeliveryDate) {
             return false;
         }
 
         $order = $this->findOrderForDate($this->selectedDeliveryDate);
-        if (!$order) {
+        if (! $order) {
             return false;
         }
 
@@ -876,11 +954,11 @@ class Shop extends Component
         $orderItems = [];
         $cartItems = [];
 
-        if (!$hasOrder) {
+        if (! $hasOrder) {
             $cartItems = $items;
         } else {
             foreach ($items as $key => $item) {
-                $normKey = ((int) ($item['product_id'] ?? 0)) . '_' . ((int) ($item['variant_id'] ?? 0));
+                $normKey = ((int) ($item['product_id'] ?? 0)).'_'.((int) ($item['variant_id'] ?? 0));
                 if (isset($orderKeys[$normKey])) {
                     $orderItems[$key] = $item;
                 } else {
@@ -938,50 +1016,55 @@ class Shop extends Component
         $activeCart = $this->orderMode === 'delivery' ? $this->cartDelivery : $this->cartSelf;
         $details = [];
         $total = 0;
-        
+
         if (empty($activeCart)) {
             return ['items' => [], 'total' => 0, 'count' => 0];
         }
-        
+
         $productIds = collect($activeCart)->pluck('product_id')->unique();
         $products = \App\Models\Product::with('variants')->whereIn('id', $productIds)->get()->keyBy('id');
         $actionMonth = $this->orderMode === 'delivery' && $this->selectedDeliveryDate
             ? Carbon::parse($this->selectedDeliveryDate)->month
             : now()->addDay()->month;
-        
+
         foreach ($activeCart as $key => $item) {
             $product = $products->get($item['product_id']);
-            if (!$product) continue;
-            
+            if (! $product) {
+                continue;
+            }
+
             $variant = $product->variants->firstWhere('id', $item['variant_id']);
-            if (!$variant) continue;
-            
+            if (! $variant) {
+                continue;
+            }
+
             $pName = json_decode($product->name, true)['de'] ?? 'Unbekannt';
             $vName = json_decode($variant->name, true)['de'] ?? '';
-            
+
             $price = $variant->price;
             if ($variant->sale_month == $actionMonth) {
                 $price = round($price * 0.85, 2);
             }
-            
+
             $lineTotal = $price * $item['qty'];
             $total += $lineTotal;
 
             // Metadaten für das Klick-Modal sammeln
             $desc = json_decode($variant->description, true)['de'] ?? '';
             $allergensArr = json_decode($variant->allergens, true) ?? [];
-            
-            $availableVariants = $product->variants->map(function($v) use ($actionMonth) {
+
+            $availableVariants = $product->variants->map(function ($v) use ($actionMonth) {
                 $vLabel = json_decode($v->name, true)['de'] ?? '';
                 $vPrice = $v->price;
                 if ($v->sale_month == $actionMonth) {
                     $vPrice = round($vPrice * 0.85, 2);
                 }
+
                 return [
                     'id' => $v->id,
-                    'label' => trim($vLabel . ' ' . $v->size),
+                    'label' => trim($vLabel.' '.$v->size),
                     'price' => $vPrice,
-                    'stock' => $v->stock ?? 9999
+                    'stock' => $v->stock ?? 9999,
                 ];
             })->toArray();
 
@@ -991,39 +1074,40 @@ class Shop extends Component
                 : (int) $stock + $this->getReservedQtyForVariant($item['variant_id']);
 
             $details[$key] = [
-                'product_id'     => $product->id,
-                'variant_id'     => $item['variant_id'],
-                'image_path'     => $product->image_path,
-                'name'           => $pName,      
-                'variant_name'   => $vName,      
-                'size'           => $variant->size, 
-                'price'          => $price,
-                'qty'            => $item['qty'],
-                'line_total'     => $lineTotal,
-                'desc'           => $desc, // NEU FÜR INFO MODAL
-                'allergens'      => !empty($allergensArr) ? implode(' | ', $allergensArr) : '', // NEU
+                'product_id' => $product->id,
+                'variant_id' => $item['variant_id'],
+                'image_path' => $product->image_path,
+                'name' => $pName,
+                'variant_name' => $vName,
+                'size' => $variant->size,
+                'price' => $price,
+                'qty' => $item['qty'],
+                'line_total' => $lineTotal,
+                'desc' => $desc, // NEU FÜR INFO MODAL
+                'allergens' => ! empty($allergensArr) ? implode(' | ', $allergensArr) : '', // NEU
                 'available_variants' => $availableVariants,
-                'max_stock'      => $maxStock
+                'max_stock' => $maxStock,
             ];
         }
-        
+
         return [
             'items' => $details,
             'total' => $total,
-            'count' => collect($activeCart)->sum('qty')
+            'count' => collect($activeCart)->sum('qty'),
         ];
     }
 
     // Wird von Livewire automatisch aufgerufen, sobald man im Suchfeld tippt
     public function updatedSearch()
     {
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $this->selectedCategory = '__all'; // Springe sauber auf "Alle Kategorien"
         }
     }
 
     public function mount()
     {
+        $this->captureDemoMode();
         $this->isOwner = $this->detectOwnerFromIp();
         if ($this->isOwner) {
             $this->orderMode = 'delivery';
@@ -1039,6 +1123,7 @@ class Shop extends Component
 
     public function hydrate(): void
     {
+        $this->captureDemoMode();
         $this->isOwner = $this->showsFamilyShop();
         if ($this->isOwner) {
             $this->orderMode = 'delivery';
@@ -1047,9 +1132,8 @@ class Shop extends Component
 
     public function loadHistory()
     {
-        $prefix = $this->getCartPrefix();
-        // Lade die Historie (falls leer, dann leeres Array)
-        $this->history = \Cache::get($prefix . 'order_history', []);
+        $history = $this->cartCacheGet('order_history', []);
+        $this->history = is_array($history) ? $history : [];
     }
 
     public function checkStayDates()
@@ -1066,7 +1150,7 @@ class Shop extends Component
                 if ($currentBooking->check_in === $today) {
                     $this->showWelcomeModal = true;
                 }
-                if ($currentBooking->check_out === $today && !empty($this->history)) {
+                if ($currentBooking->check_out === $today && ! empty($this->history)) {
                     $this->showCheckoutModal = true;
                 }
             }
@@ -1078,7 +1162,7 @@ class Shop extends Component
     // Wird aufgerufen, wenn man im Warenkorb auf "Kostenpflichtig bestellen" klickt
     public function placeOrder()
     {
-        if (\App\Support\ClientNetwork::guestPreview()) {
+        if ($this->inDemo() || \App\Support\ClientNetwork::guestPreview()) {
             $this->dispatch('notify', message: 'In der Gast-Ansicht wird nichts bestellt.', type: 'error');
 
             return;
@@ -1094,7 +1178,7 @@ class Shop extends Component
             ? $this->placeDeliveryOrder($details)
             : $this->placeSelfOrder($details);
 
-        if (!$ok) {
+        if (! $ok) {
             return;
         }
 
@@ -1116,26 +1200,29 @@ class Shop extends Component
 
     private function placeDeliveryOrder(array $details): bool
     {
-        if (!$this->selectedDeliveryDate) {
+        if (! $this->selectedDeliveryDate) {
             $this->ensureSelectedDeliveryDate();
         }
 
-        if (!$this->selectedDeliveryDate) {
+        if (! $this->selectedDeliveryDate) {
             $this->dispatch('notify', message: 'Kein Liefertag verfügbar.', type: 'error');
+
             return false;
         }
 
         $deliveryDate = Carbon::parse($this->selectedDeliveryDate)->startOfDay();
         $holidays = $this->getNoDeliveryDates();
 
-        if (!$this->isDeliveryDateOrderable($deliveryDate, $holidays)) {
+        if (! $this->isDeliveryDateOrderable($deliveryDate, $holidays)) {
             $this->dispatch('notify', message: 'Bestellfrist für diesen Tag ist abgelaufen.', type: 'error');
+
             return false;
         }
 
         $existing = $this->findOrderForDate($this->selectedDeliveryDate);
         if ($existing && $existing->isLocked()) {
             $this->dispatch('notify', message: 'Diese Bestellung ist bereits abgeschlossen.', type: 'error');
+
             return false;
         }
 
@@ -1178,8 +1265,7 @@ class Shop extends Component
             ->values()
             ->all();
 
-        $prefix = $this->getCartPrefix();
-        \Illuminate\Support\Facades\Cache::put($prefix . 'order_history', $this->history);
+        $this->cartCachePut('order_history', $this->history);
 
         // Entwurf auf den neuen Bestellstand setzen (kein „2. Warenkorb“ mehr)
         $this->cartDelivery = $this->cartFromOrderItems($details['items']);
@@ -1218,8 +1304,7 @@ class Shop extends Component
 
         array_unshift($this->history, $newOrder);
 
-        $prefix = $this->getCartPrefix();
-        \Illuminate\Support\Facades\Cache::put($prefix . 'order_history', $this->history);
+        $this->cartCachePut('order_history', $this->history);
 
         $this->dispatch('notify', message: 'Entnahme verbucht!');
 
@@ -1230,9 +1315,8 @@ class Shop extends Component
     public function resetHistory()
     {
         $this->history = [];
-        $prefix = $this->getCartPrefix();
-        \Cache::forget($prefix . 'order_history');
-        
+        $this->cartCacheForget('order_history');
+
         $this->showCheckoutModal = false;
     }
 
@@ -1258,6 +1342,7 @@ class Shop extends Component
                     'label_day' => Carbon::parse($order['date'])->locale('de')->translatedFormat('D, d.m.Y'),
                     'placed_label' => Carbon::parse($order['date'])->format('d.m.Y H:i'),
                 ];
+
                 continue;
             }
 
@@ -1275,7 +1360,7 @@ class Shop extends Component
             $ymd = $deliveryDate->format('Y-m-d');
             $dbOrder = $this->findOrderForDate($ymd);
             $editable = $this->isDeliveryDateOrderable($deliveryDate, $holidays)
-                && (!$dbOrder || $dbOrder->isOpen());
+                && (! $dbOrder || $dbOrder->isOpen());
 
             $delivery[] = [
                 'raw' => $order,
@@ -1300,7 +1385,7 @@ class Shop extends Component
     public function openHistoryOrder(string $dateYmd): void
     {
         $existing = $this->findOrderForDate($dateYmd);
-        if (!$this->isDateInDeliveryWindow($dateYmd) && !$existing) {
+        if (! $this->isDateInDeliveryWindow($dateYmd) && ! $existing) {
             return;
         }
 
@@ -1341,11 +1426,10 @@ class Shop extends Component
     public function finalizeCheckout()
     {
         // 1. Historie und Warenkörbe löschen
-        $prefix = $this->getCartPrefix();
-        \Cache::forget($prefix . 'order_history');
-        \Cache::forget($prefix . 'cart_delivery');
-        \Cache::forget($prefix . 'cart_self');
-        
+        $this->cartCacheForget('order_history');
+        $this->cartCacheForget('cart_delivery');
+        $this->cartCacheForget('cart_self');
+
         // Arrays leeren
         $this->history = [];
         $this->cartDelivery = [];
@@ -1357,7 +1441,7 @@ class Shop extends Component
 
         // 3. Signal feuern: "Wir sind fertig!"
         $this->dispatch('checkout-completed');
-        
+
         // Toast feuern (Optional)
         $this->dispatch('notify', message: __('Checkout erfolgreich. Vielen Dank!'), type: 'success');
     }
@@ -1376,7 +1460,7 @@ class Shop extends Component
 
         // Textfeld nach dem Senden wieder leeren
         $this->feedbackText = '';
-        
+
         // Optional: Ein kleines Toast für den User
         $this->dispatch('notify', message: __('Feedback erfolgreich gesendet!'), type: 'success');
     }
@@ -1386,20 +1470,20 @@ class Shop extends Component
     {
         // Wir speichern das fertige Array für 60 Minuten (3600 Sekunden) im Cache!
         return \Illuminate\Support\Facades\Cache::remember('shop_products_cache', 3600, function () {
-            
+
             $products = \App\Models\Product::with('variants')
                 ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->get();
 
-            $actionMonth = now()->addDay()->month; 
+            $actionMonth = now()->addDay()->month;
 
             foreach ($products as $p) {
                 foreach ($p->variants as $v) {
-                    $v->db_price = $v->price; 
-                    
+                    $v->db_price = $v->price;
+
                     if ($v->getAttribute('sale_month') == $actionMonth) {
-                        if (!$v->getAttribute('original_price')) {
+                        if (! $v->getAttribute('original_price')) {
                             $v->setAttribute('original_price', $v->db_price);
                         }
                         $v->price = round($v->original_price * 0.85, 2);
@@ -1417,64 +1501,69 @@ class Shop extends Component
         $allProducts = $this->processedProducts;
 
         // 2. MODUS FILTER (Lieferung vs SB)
-        $filteredByMode = $allProducts->filter(function($p) {
+        $filteredByMode = $allProducts->filter(function ($p) {
             $superCat = strtolower(json_decode($p->super_category, true)['de'] ?? '');
             $isSB = str_contains($superCat, 'selbstbedienung') || str_contains($superCat, 'self-service');
-            
-            if ($this->orderMode === 'delivery') return !$isSB;
+
+            if ($this->orderMode === 'delivery') {
+                return ! $isSB;
+            }
+
             return $isSB;
         });
 
         // 3. CATEGORY DROPDOWN BAUEN (WICHTIG: Vor der Suche bauen, damit es stabil bleibt!)
         $dropdownItems = [];
         $superCats = [];
-        
+
         foreach ($filteredByMode as $p) {
             $sCat = json_decode($p->super_category, true)['de'] ?? 'Sonstiges';
             $cat = json_decode($p->category, true)['de'] ?? 'Sonstiges';
-            
-            if (!isset($superCats[$sCat])) {
+
+            if (! isset($superCats[$sCat])) {
                 $superCats[$sCat] = [];
             }
-            if (!in_array($cat, $superCats[$sCat])) {
+            if (! in_array($cat, $superCats[$sCat])) {
                 $superCats[$sCat][] = $cat;
             }
         }
 
         foreach ($superCats as $sCatName => $cats) {
-            $dropdownItems[] = ['value' => '__super_' . $sCatName, 'label' => $sCatName, 'isGroup' => true];
+            $dropdownItems[] = ['value' => '__super_'.$sCatName, 'label' => $sCatName, 'isGroup' => true];
             foreach ($cats as $catName) {
-                $dropdownItems[] = ['value' => $sCatName . '||' . $catName, 'label' => '  ' . $catName, 'isGroup' => false];
+                $dropdownItems[] = ['value' => $sCatName.'||'.$catName, 'label' => '  '.$catName, 'isGroup' => false];
             }
         }
 
         // 4. KATEGORIE FILTER
         if ($this->selectedCategory !== '__all') {
-            $filteredByMode = $filteredByMode->filter(function($p) {
+            $filteredByMode = $filteredByMode->filter(function ($p) {
                 $sCat = json_decode($p->super_category, true)['de'] ?? 'Sonstiges';
                 $cat = json_decode($p->category, true)['de'] ?? 'Sonstiges';
-                
+
                 if (str_starts_with($this->selectedCategory, '__super_')) {
                     return $sCat === str_replace('__super_', '', $this->selectedCategory);
                 } else {
                     $parts = explode('||', $this->selectedCategory);
                     $targetCat = count($parts) === 2 ? $parts[1] : $parts[0];
+
                     return $cat === $targetCat;
                 }
             });
         }
 
         // 5. SUCHE FILTER
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $searchTerm = strtolower($this->search);
-            $filteredByMode = $filteredByMode->filter(function($p) use ($searchTerm) {
+            $filteredByMode = $filteredByMode->filter(function ($p) use ($searchTerm) {
                 $nameDe = strtolower(json_decode($p->name, true)['de'] ?? '');
+
                 return str_contains($nameDe, $searchTerm);
             });
         }
 
         // 6. SALE LOGIK (Neu, sicher und einfach)
-        $actionMonth = now()->addDay()->month; 
+        $actionMonth = now()->addDay()->month;
         $saleProducts = collect();
         $normalProducts = collect();
 
@@ -1493,20 +1582,20 @@ class Shop extends Component
                 $normalProducts->push($p);
             }
         }
-        
+
         // 7. FÜR DIE AUSGABE GRUPPIEREN
         $groupedProducts = [];
         foreach ($normalProducts as $p) {
             $sCat = json_decode($p->super_category, true)['de'] ?? 'Sonstiges';
             $cat = json_decode($p->category, true)['de'] ?? 'Sonstiges';
-            
-            if (!isset($groupedProducts[$sCat])) {
+
+            if (! isset($groupedProducts[$sCat])) {
                 $groupedProducts[$sCat] = [];
             }
-            if (!isset($groupedProducts[$sCat][$cat])) {
+            if (! isset($groupedProducts[$sCat][$cat])) {
                 $groupedProducts[$sCat][$cat] = [];
             }
-            
+
             $groupedProducts[$sCat][$cat][] = $p;
         }
 
@@ -1519,9 +1608,9 @@ class Shop extends Component
 
         return view('livewire.shop', [
             'groupedProducts' => $groupedProducts,
-            'saleProducts' => $saleProducts, 
+            'saleProducts' => $saleProducts,
             'dropdownItems' => $dropdownItems,
-            'currentCategoryLabel' => $currentCategoryLabel
+            'currentCategoryLabel' => $currentCategoryLabel,
         ]);
     }
 }

@@ -35,6 +35,20 @@ FullCalendar braucht im Admin-Bereich ein "Exklusives" Enddatum (einen Tag läng
 * **`show_guest_app`**: Muss auf `1` stehen, sonst sieht der Gast den Termin nicht.
 * **Favoriten**: Werden in `guest_favorites` mit `event_id` UND `selected_date` gespeichert, damit Gäste einen Termin nur an einem bestimmten Tag favorisieren können.
 
+---
+
+## 4. Demo auf der Homepage (zuerst nur im Heimnetz)
+
+`http://192.168.1.10:8081/demo` zeigt die Gast-Oberfläche: Shop, Events, Infos, Touren. Wohnung fehlt. Bestellungen, Termine, Favoriten, Farben und das WLAN-Passwort werden nicht geschrieben. Der Warenkorb und gespeicherte Touren bleiben in der Browser-Session.
+
+Auf der Seite unter `/web` (Port 80):
+
+```html
+<iframe src="http://192.168.1.10:8081/demo" title="Haus Meli Tablett" style="width:420px;height:820px;border:0;"></iframe>
+```
+
+Nicht `/` einbetten. Das ist die echte App. Sobald die Homepage von außen erreichbar ist, muss die Demo-Adresse öffentlich sein und `frame-ancestors` enger werden.
+
 
 
 

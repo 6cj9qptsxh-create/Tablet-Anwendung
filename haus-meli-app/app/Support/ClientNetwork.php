@@ -32,9 +32,35 @@ class ClientNetwork
         return false;
     }
 
+    /**
+     * Homepage-Demo. Immer die Gast-Oberfläche, nichts Dauerhaftes.
+     * Der Header lässt sich nur zum Einschalten fälschen, nicht zum Ausschalten.
+     */
+    public static function isDemo(): bool
+    {
+        if (! function_exists('request') || ! app()->bound('request')) {
+            return false;
+        }
+
+        $request = request();
+        if ($request === null) {
+            return false;
+        }
+
+        if (self::pathIsDemo($request->path()) || self::pathIsDemo(self::refererPath($request))) {
+            return true;
+        }
+
+        return trim((string) $request->headers->get('X-Haus-Meli-Demo', '')) === '1';
+    }
+
     /** Familien-Gerät schaut sich die Gast-Oberfläche an, ohne Gast-Daten. */
     public static function guestPreview(): bool
     {
+        if (self::isDemo()) {
+            return true;
+        }
+
         if (! self::isFamily()) {
             return false;
         }
@@ -78,12 +104,32 @@ class ClientNetwork
     {
         return [
             'family' => self::isFamily(),
+            'demo' => self::isDemo(),
             'guest_preview' => self::guestPreview(),
             'tours' => self::showsTours(),
             'ips' => self::candidateIps(),
             'laravel_ip' => request()->ip(),
             'host' => request()->getHost(),
         ];
+    }
+
+    private static function pathIsDemo(string $path): bool
+    {
+        $path = trim($path, '/');
+
+        return $path === 'demo' || str_starts_with($path, 'demo/');
+    }
+
+    private static function refererPath(\Illuminate\Http\Request $request): string
+    {
+        $referer = trim((string) $request->headers->get('referer', ''));
+        if ($referer === '') {
+            return '';
+        }
+
+        $path = parse_url($referer, PHP_URL_PATH);
+
+        return is_string($path) ? $path : '';
     }
 
     private static function normalizeIp(string $ip): string

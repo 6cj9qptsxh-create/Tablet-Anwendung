@@ -155,6 +155,17 @@
             alpineFix: true,
         };
         console.info('[Haus Meli Build]', window.HAUS_MELI_BUILD);
+        window.HAUS_MELI_DEMO = @json(\App\Support\ClientNetwork::isDemo());
+        if (window.HAUS_MELI_DEMO && window.fetch) {
+            const hausMeliFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                const opts = init ? Object.assign({}, init) : {};
+                const headers = new Headers(opts.headers || (input instanceof Request ? input.headers : undefined));
+                headers.set('X-Haus-Meli-Demo', '1');
+                opts.headers = headers;
+                return hausMeliFetch(input, opts);
+            };
+        }
         window.hausMeliStoreTab = function (tab) {
             try { localStorage.setItem('hausMeliTab', tab); } catch (e) {}
         };
@@ -685,17 +696,23 @@
         })();
     </script>
     @livewireStyles
+    @php
+        $demoShell = \App\Support\ClientNetwork::isDemo();
+        $shellTabs = $demoShell
+            ? ['order', 'events', 'info']
+            : ['order', 'knx', 'events', 'info'];
+    @endphp
 </head>
 
 <body class="page-content"
       x-data="{
         tabs: (function () {
-          const list = ['order', 'knx', 'events', 'info'];
+          const list = @json($shellTabs);
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) list.push('tours');
           return list;
         })(),
         currentTab: (function () {
-          const allowed = ['order', 'knx', 'events', 'info'];
+          const allowed = @json($shellTabs);
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           if (allowed.includes(fromHash)) return fromHash;
@@ -706,7 +723,7 @@
         menuOpen: false,
         chromeTab: 'order',
         wheelIndex: (function () {
-          const allowed = ['order', 'knx', 'events', 'info'];
+          const allowed = @json($shellTabs);
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           const name = allowed.includes(fromHash) ? fromHash : (window.hausMeliReadTab(allowed) || 'order');
@@ -717,7 +734,7 @@
         wheelDrag: false,
         wheelStretch: 0,
         wheelW: 0,
-        guestCodeOn: {{ \App\Support\ClientNetwork::isFamily() ? 'true' : 'false' }},
+        guestCodeOn: {{ (! $demoShell && \App\Support\ClientNetwork::isFamily()) ? 'true' : 'false' }},
         tabName(tab) {
           return ({ order: 'Shop', knx: 'Wohnung', events: 'Events', info: 'Infos', tours: 'Touren' })[tab] || '';
         },
@@ -1377,7 +1394,9 @@
                 @livewire('shop')
             </section>
 
+            @unless(\App\Support\ClientNetwork::isDemo())
             <section class="tab-pane" data-tab="knx"></section>
+            @endunless
 
             <section class="tab-pane tab-pane-events cal-tab-pane" data-tab="events">
                 @livewire('events')
@@ -1407,6 +1426,12 @@
     <script>
         // Verhindert den nervigen „This page has expired“-Spam (Shop-Poll → 419).
         document.addEventListener('livewire:init', () => {
+            if (window.HAUS_MELI_DEMO) {
+                Livewire.hook('request', ({ options }) => {
+                    options.headers = options.headers || {};
+                    options.headers['X-Haus-Meli-Demo'] = '1';
+                });
+            }
             let reloading = false;
             Livewire.hook('request', ({ fail }) => {
                 fail(({ status, preventDefault }) => {
@@ -1708,7 +1733,7 @@
             </label>
         </div>
     </div>
-    @if(\App\Support\ClientNetwork::isFamily())
+    @if(\App\Support\ClientNetwork::isFamily() && ! \App\Support\ClientNetwork::isDemo())
         <form id="guest-preview-form" method="POST" action="{{ url('/gast-vorschau') }}" hidden>
             @csrf
             <input type="hidden" name="on" value="{{ \App\Support\ClientNetwork::guestPreview() ? '0' : '1' }}">

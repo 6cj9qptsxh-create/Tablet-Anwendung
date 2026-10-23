@@ -16,7 +16,7 @@
                 <span class="material-symbols-rounded" x-text="copied === 'pass' ? 'check' : 'content_copy'"></span>
             </button>
         @else
-            <p class="info-app-note">WLAN-Zugang wird eingerichtet.</p>
+            <p class="info-app-note">{{ $wifi['note'] ?? 'WLAN-Zugang wird eingerichtet.' }}</p>
         @endif
         <p class="info-app-note" data-i18n="info_app_text">Scannen Sie den App-Code, um die Anwendung auf dem Handy zu öffnen.</p>
     </div>
