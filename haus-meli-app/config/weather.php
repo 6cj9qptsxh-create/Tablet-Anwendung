@@ -10,7 +10,8 @@ return [
     // Ein Abruf pro Ort, gültig bis zur nächsten vollen Stunde.
     'api_key' => env('METEOBLUE_API_KEY', ''),
     // Meteoblue kennt keine Ortsnamen, nur einen Punkt (Breite, Länge, Höhe).
-    // Tal ist der Ort, Berg ein Punkt auf der Piste. Ein einzelner Punkt bleibt ein Button.
+    // Tal ist der Ort, Berg ein Punkt auf der Piste. label ersetzt diese Wörter.
+    // Ein einzelner Punkt bleibt ein Button.
     'orts' => [
         'lauterach' => [
             'label' => env('WEATHER_PLACE', 'Lauterach'),
@@ -40,7 +41,9 @@ return [
             'label' => 'See',
             'zones' => [
                 'tal' => ['lat' => 47.0833, 'lon' => 10.4667, 'asl' => 1056],
-                'berg' => ['lat' => 47.0734, 'lon' => 10.4767, 'asl' => 1802],
+                'medrig' => ['lat' => 47.0734, 'lon' => 10.4767, 'asl' => 1802, 'label' => 'Medrig'],
+                // Bergstation der Gondel Furglerblick.
+                'furglerblick' => ['lat' => 47.0571, 'lon' => 10.5040, 'asl' => 2570, 'label' => 'Furglerblick'],
             ],
         ],
         'galtuer' => [

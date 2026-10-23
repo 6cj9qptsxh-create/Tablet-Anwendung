@@ -65,6 +65,10 @@ class InfoWebcamsTest extends TestCase
                     $utc = '2026-10-22 08:30:00';
                 } elseif (str_contains($url, '05547')) {
                     $utc = '2026-10-22 15:05:00';
+                } elseif (str_contains($url, '05558')) {
+                    $utc = '2026-10-22 13:20:00';
+                } elseif (str_contains($url, '05557')) {
+                    $utc = '2026-10-22 11:05:00';
                 }
 
                 return Http::response('{"date": "'.$utc.'"}', 206);
@@ -110,19 +114,40 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('05585_testVid.mp4', false)
             ->assertDontSee('Diasbahn Talstation')
             ->call('setWeatherChoice', 'see', 'tal')
-            ->assertSee('Valley')
+            ->assertSee('See Paznaun Tal')
+            ->assertSee('Tal ·')
+            ->assertSee('1056 m')
+            ->assertSee('Medrig ·')
+            ->assertSee('1802 m')
+            ->assertSee('Furglerblick ·')
+            ->assertSee('2570 m')
             ->assertSee('07:40 Uhr')
             ->assertDontSee('12:26 Uhr')
             ->assertSee('1.100 m')
             ->assertSee('104131847.jpg', false)
+            ->assertDontSee('Mittelstation See')
+            ->assertDontSee('testVid.mp4', false)
             ->assertDontSee('Nordseite')
             ->call('setWeatherChoice', 'see', 'berg')
-            ->assertSee('Nordseite')
-            ->assertSee('2.160 m')
-            ->assertSee('104131843.jpg', false)
-            ->assertDontSee('testVid.mp4', false)
-            ->assertDontSee('104131857', false)
-            ->assertDontSee('Valley')
+            ->assertSet('weatherZone', 'medrig')
+            ->assertSee('Mittelstation See')
+            ->assertSee('15:20 Uhr')
+            ->assertSee('1.810 m')
+            ->assertSee('1802 m')
+            ->assertSee('104131857.jpg', false)
+            ->assertSee('05558_testVid.mp4', false)
+            ->assertDontSee('See Paznaun Tal')
+            ->assertDontSee('2.570 m')
+            ->assertDontSee('Nordseite')
+            ->call('setWeatherChoice', 'see', 'furglerblick')
+            ->assertSee('Furglerblick')
+            ->assertSee('13:05 Uhr')
+            ->assertSee('2.570 m')
+            ->assertSee('2570 m')
+            ->assertSee('104131855.jpg', false)
+            ->assertSee('05557_testVid.mp4', false)
+            ->assertDontSee('Mittelstation See')
+            ->assertDontSee('See Paznaun Tal')
             ->call('setWeatherChoice', 'ischgl', 'tal')
             ->assertSee('Ischgl Dorf')
             ->assertSee('1.400 m')
@@ -169,11 +194,25 @@ class InfoWebcamsTest extends TestCase
                 'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05589_testVid.mp4?dcsdesign=feratel4',
             ]);
 
-        $this->getJson('/info/webcam-stand?ort=see&zone=berg')
+        $this->getJson('/info/webcam-stand?ort=see&zone=tal')
             ->assertOk()
             ->assertJson([
                 'time' => '07:40 Uhr',
                 'video' => null,
+            ]);
+
+        $this->getJson('/info/webcam-stand?ort=see&zone=medrig')
+            ->assertOk()
+            ->assertJson([
+                'time' => '15:20 Uhr',
+                'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05558_testVid.mp4?dcsdesign=feratel4',
+            ]);
+
+        $this->getJson('/info/webcam-stand?ort=see&zone=furglerblick')
+            ->assertOk()
+            ->assertJson([
+                'time' => '13:05 Uhr',
+                'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05557_testVid.mp4?dcsdesign=feratel4',
             ]);
 
         $this->getJson('/info/webcam-stand?ort=lauterach&zone=home')

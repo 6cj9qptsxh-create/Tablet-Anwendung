@@ -5637,9 +5637,9 @@ body.trip-detail-open {
     }
 
     .wx-pick-card .wx-zone .info-switch-btn {
-        flex: 0 0 168px;
-        width: 168px;
-        padding: 0 12px;
+        flex: 0 0 auto;
+        width: auto;
+        padding: 0 14px;
     }
 }
 

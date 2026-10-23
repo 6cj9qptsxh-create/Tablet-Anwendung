@@ -101,9 +101,10 @@
                 if (old === 'kappl') { ort = 'kappl'; zone = 'tal'; }
                 else if (old === 'kappl-ski') { ort = 'kappl'; zone = 'berg'; }
                 else if (old === 'ischgl-ski') { ort = 'ischgl'; zone = 'berg'; }
-                else if (old === 'see-ski') { ort = 'see'; zone = 'berg'; }
+                else if (old === 'see-ski') { ort = 'see'; zone = 'medrig'; }
                 else if (old === 'lauterach') ort = 'lauterach';
             }
+            if (ort === 'see' && zone === 'berg') zone = 'medrig';
         } catch (e) {}
         try {
             if (ort && (ort !== $wire.weatherOrt || (zone && zone !== $wire.weatherZone))) $wire.setWeatherChoice(ort, zone);
@@ -188,7 +189,7 @@
                     <button type="button"
                             class="info-switch-btn {{ $weatherZone === $zoneId ? 'is-on add-btn' : '' }}"
                             wire:click="setWeatherZone('{{ $zoneId }}')"
-                            @click="try { localStorage.setItem('hausMeliWeatherZone', '{{ $zoneId }}') } catch (e) {}">@if($zoneId === 'tal')Tal · @elseif($zoneId === 'berg')Berg · @endif{{ $zone['asl'] }} m</button>
+                            @click="try { localStorage.setItem('hausMeliWeatherZone', '{{ $zoneId }}') } catch (e) {}">@if(!empty($zone['label'])){{ $zone['label'] }} · @elseif($zoneId === 'tal')Tal · @elseif($zoneId === 'berg')Berg · @endif{{ $zone['asl'] }} m</button>
                 @endforeach
             </div>
         </div>

@@ -12,7 +12,7 @@ class MeteoblueSnowLineTest extends TestCase
         $method = new \ReflectionMethod(MeteoblueForecast::class, 'snowLine');
         $method->setAccessible(true);
 
-        return $method->invoke(new MeteoblueForecast(), $freezingLevel);
+        return $method->invoke(new MeteoblueForecast, $freezingLevel);
     }
 
     public function test_snow_line_is_three_hundred_meters_below_freezing_level(): void
@@ -143,7 +143,7 @@ class MeteoblueSnowLineTest extends TestCase
         $method = new \ReflectionMethod(MeteoblueForecast::class, 'snowLevelsByHour');
         $method->setAccessible(true);
 
-        return $method->invoke(new MeteoblueForecast(), $data3h);
+        return $method->invoke(new MeteoblueForecast, $data3h);
     }
 
     /**
@@ -160,6 +160,6 @@ class MeteoblueSnowLineTest extends TestCase
         $method = new \ReflectionMethod(MeteoblueForecast::class, $name);
         $method->setAccessible(true);
 
-        return $method->invoke(new MeteoblueForecast(), ...$args);
+        return $method->invoke(new MeteoblueForecast, ...$args);
     }
 }
