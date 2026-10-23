@@ -99,12 +99,13 @@
             if (!ort) {
                 const old = localStorage.getItem('hausMeliWeatherPlace');
                 if (old === 'kappl') { ort = 'kappl'; zone = 'tal'; }
-                else if (old === 'kappl-ski') { ort = 'kappl'; zone = 'berg'; }
+                else if (old === 'kappl-ski') { ort = 'kappl'; zone = 'dias'; }
                 else if (old === 'ischgl-ski') { ort = 'ischgl'; zone = 'berg'; }
                 else if (old === 'see-ski') { ort = 'see'; zone = 'medrig'; }
                 else if (old === 'lauterach') ort = 'lauterach';
             }
             if (ort === 'see' && zone === 'berg') zone = 'medrig';
+            if (ort === 'kappl' && zone === 'berg') zone = 'dias';
         } catch (e) {}
         try {
             if (ort && (ort !== $wire.weatherOrt || (zone && zone !== $wire.weatherZone))) $wire.setWeatherChoice(ort, zone);

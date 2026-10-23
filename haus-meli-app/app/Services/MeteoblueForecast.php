@@ -45,9 +45,13 @@ class MeteoblueForecast
         }
         $row = $orts[$ort];
         $zones = is_array($row['zones'] ?? null) ? $row['zones'] : [];
-        // Der frühere See-Reiter Berg heißt jetzt Medrig.
-        if ($ort === 'see' && $zone === 'berg' && isset($zones['medrig'])) {
-            $zone = 'medrig';
+        // Frühere Reiter Berg: See heißt Medrig, Kappl heißt Dias.
+        if ($zone === 'berg') {
+            if ($ort === 'see' && isset($zones['medrig'])) {
+                $zone = 'medrig';
+            } elseif ($ort === 'kappl' && isset($zones['dias'])) {
+                $zone = 'dias';
+            }
         }
         if (! is_string($zone) || ! isset($zones[$zone])) {
             $zone = isset($zones['tal']) ? 'tal' : (string) array_key_first($zones);

@@ -23,20 +23,6 @@ return [
                 ],
             ],
         ],
-        'kappl' => [
-            'label' => 'Kappl',
-            'zones' => [
-                'tal' => ['lat' => 47.0667, 'lon' => 10.3667, 'asl' => 1258],
-                'berg' => ['lat' => 47.0688, 'lon' => 10.3563, 'asl' => 1900],
-            ],
-        ],
-        'ischgl' => [
-            'label' => 'Ischgl',
-            'zones' => [
-                'tal' => ['lat' => 47.0120, 'lon' => 10.2913, 'asl' => 1376],
-                'berg' => ['lat' => 46.9818, 'lon' => 10.3176, 'asl' => 2319],
-            ],
-        ],
         'see' => [
             'label' => 'See',
             'zones' => [
@@ -44,6 +30,22 @@ return [
                 'medrig' => ['lat' => 47.0734, 'lon' => 10.4767, 'asl' => 1802, 'label' => 'Medrig'],
                 // Bergstation der Gondel Furglerblick.
                 'furglerblick' => ['lat' => 47.0571, 'lon' => 10.5040, 'asl' => 2570, 'label' => 'Furglerblick'],
+            ],
+        ],
+        'kappl' => [
+            'label' => 'Kappl',
+            'zones' => [
+                'tal' => ['lat' => 47.0667, 'lon' => 10.3667, 'asl' => 1258],
+                // Bergstation der Diasbahn.
+                'dias' => ['lat' => 47.0669, 'lon' => 10.3585, 'asl' => 1830, 'label' => 'Dias'],
+                'alblittkopf' => ['lat' => 47.0845, 'lon' => 10.3385, 'asl' => 2690, 'label' => 'Alblittkopf'],
+            ],
+        ],
+        'ischgl' => [
+            'label' => 'Ischgl',
+            'zones' => [
+                'tal' => ['lat' => 47.0120, 'lon' => 10.2913, 'asl' => 1376],
+                'berg' => ['lat' => 46.9818, 'lon' => 10.3176, 'asl' => 2319],
             ],
         ],
         'galtuer' => [

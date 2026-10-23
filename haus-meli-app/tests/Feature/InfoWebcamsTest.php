@@ -61,6 +61,8 @@ class InfoWebcamsTest extends TestCase
                 $utc = '2026-10-22 09:15:00';
                 if (str_contains($url, '05585')) {
                     $utc = '2026-10-22 14:40:00';
+                } elseif (str_contains($url, '05586')) {
+                    $utc = '2026-10-22 12:10:00';
                 } elseif (str_contains($url, '05548')) {
                     $utc = '2026-10-22 08:30:00';
                 } elseif (str_contains($url, '05547')) {
@@ -87,8 +89,18 @@ class InfoWebcamsTest extends TestCase
         $info = Livewire::test(Info::class)
             ->assertDontSee('Webcams')
             ->assertDontSee('Livebilder')
-            ->assertDontSee('Diasbahn')
-            ->call('setWeatherChoice', 'kappl', 'tal');
+            ->assertDontSee('Diasbahn');
+
+        $menu = $info->html();
+        $pos = -1;
+        foreach (['Lauterach', 'See', 'Kappl', 'Ischgl', 'Galtür'] as $label) {
+            $at = strpos($menu, $label);
+            $this->assertNotFalse($at, $label);
+            $this->assertGreaterThan($pos, $at, $label);
+            $pos = $at;
+        }
+
+        $info->call('setWeatherChoice', 'kappl', 'tal');
 
         $html = $info->html();
         $report = strpos($html, 'info-weather-loading');
@@ -105,14 +117,32 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('104131839.jpg', false)
             ->assertSee('05589_testVid.mp4', false)
             ->assertDontSee('Diasbahn Bergstation')
+            ->assertSee('Dias ·')
+            ->assertSee('1830 m')
+            ->assertSee('Alblittkopf ·')
+            ->assertSee('2690 m')
+            ->assertDontSee('Berg ·')
+            ->assertDontSee('1900 m')
             ->assertDontSee('Medrig')
             ->call('setWeatherChoice', 'kappl', 'berg')
+            ->assertSet('weatherZone', 'dias')
             ->assertSee('Diasbahn Bergstation')
             ->assertSee('16:40 Uhr')
             ->assertDontSee('11:15 Uhr')
             ->assertSee('1.830 m')
+            ->assertSee('1830 m')
             ->assertSee('05585_testVid.mp4', false)
             ->assertDontSee('Diasbahn Talstation')
+            ->assertDontSee('2.690 m')
+            ->assertDontSee('05586_testVid.mp4', false)
+            ->call('setWeatherChoice', 'kappl', 'alblittkopf')
+            ->assertSee('Alblittkopf')
+            ->assertSee('14:10 Uhr')
+            ->assertSee('2.690 m')
+            ->assertSee('2690 m')
+            ->assertSee('104131833.jpg', false)
+            ->assertSee('05586_testVid.mp4', false)
+            ->assertDontSee('Diasbahn')
             ->call('setWeatherChoice', 'see', 'tal')
             ->assertSee('See Paznaun Tal')
             ->assertSee('Tal ·')
