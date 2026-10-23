@@ -5619,6 +5619,7 @@ body.trip-detail-open {
     width: auto;
     max-width: 100%;
     min-width: min(100%, 16rem);
+    gap: var(--spacing);
 }
 
 .wx-pick-card .wx-zone .info-switch-btn {
@@ -5627,6 +5628,17 @@ body.trip-detail-open {
     max-width: 100%;
     white-space: nowrap;
     padding: 0 14px;
+}
+
+@media (max-width: 767px) {
+    .wx-pick-card .wx-zone {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .wx-pick-card .wx-zone .info-switch-btn {
+        flex: 1 0 auto;
+    }
 }
 
 @media (min-width: 768px) {

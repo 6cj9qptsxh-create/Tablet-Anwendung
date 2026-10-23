@@ -46,6 +46,9 @@ class InfoWebcamsTest extends TestCase
             'https://www.ischgl.com/var/webcams/*' => Http::response('current-frame', 200, [
                 'Last-Modified' => 'Thu, 22 Oct 2026 08:00:00 GMT',
             ]),
+            'https://panodata1.panomax.com/*' => Http::response('clip', 206, [
+                'Last-Modified' => 'Thu, 22 Oct 2026 11:45:00 GMT',
+            ]),
             'https://www.galtuer.com/var/webcams/*' => Http::response('', 200, [
                 'Last-Modified' => 'Thu, 22 Oct 2026 10:26:21 GMT',
             ]),
@@ -183,13 +186,30 @@ class InfoWebcamsTest extends TestCase
             ->assertSee('1.400 m')
             ->assertSee('20:00 Uhr')
             ->assertSee('124696581.jpg', false)
-            ->assertDontSee('Idalp')
+            ->assertSee('Idalp ·')
+            ->assertSee('2319 m')
+            ->assertSee('Palinkopf ·')
+            ->assertSee('2864 m')
+            ->assertDontSee('Berg ·')
+            ->assertDontSee('2.320 m')
             ->call('setWeatherChoice', 'ischgl', 'berg')
+            ->assertSet('weatherZone', 'idalp')
             ->assertSee('Idalp')
             ->assertSee('19:00 Uhr')
             ->assertDontSee('20:00 Uhr')
+            ->assertSee('2.320 m')
             ->assertSee('100178345.jpg', false)
             ->assertDontSee('Ischgl Dorf')
+            ->assertDontSee('101_fullHD.mp4', false)
+            ->call('setWeatherChoice', 'ischgl', 'palinkopf')
+            ->assertSee('Palinkopf')
+            ->assertSee('13:45 Uhr')
+            ->assertSee('2.864 m')
+            ->assertSee('2864 m')
+            ->assertSee('100178319.jpg', false)
+            ->assertSee('101_fullHD.mp4', false)
+            ->assertDontSee('Ischgl Dorf')
+            ->assertDontSee('100178345.jpg', false)
             ->call('setWeatherChoice', 'galtuer', 'tal')
             ->assertSee('Galtür')
             ->assertSee('Dorf auf galtuer.com', false)
@@ -244,6 +264,10 @@ class InfoWebcamsTest extends TestCase
                 'time' => '13:05 Uhr',
                 'video' => 'https://sts001.feratel.co.at/streams/stsstore002/1/05557_testVid.mp4?dcsdesign=feratel4',
             ]);
+
+        $palinkopf = $this->getJson('/info/webcam-stand?ort=ischgl&zone=palinkopf');
+        $palinkopf->assertOk()->assertJsonPath('time', '13:45 Uhr');
+        $this->assertStringContainsString('101_fullHD.mp4?v=', (string) $palinkopf->json('video'));
 
         $this->getJson('/info/webcam-stand?ort=lauterach&zone=home')
             ->assertOk()

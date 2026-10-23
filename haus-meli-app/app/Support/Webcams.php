@@ -30,8 +30,13 @@ class Webcams
         $host = (string) parse_url($page, PHP_URL_HOST);
         $host = preg_replace('/^www\./', '', $host) ?: '';
         $asl = $cam['asl'] ?? null;
+        $direct = trim((string) ($cam['video'] ?? ''));
         $feratel = $cam['feratel'] ?? null;
-        $clip = is_numeric($feratel) ? self::clip((int) $feratel) : ['url' => '', 'taken' => ''];
+        if ($direct !== '') {
+            $clip = self::directClip($direct);
+        } else {
+            $clip = is_numeric($feratel) ? self::clip((int) $feratel) : ['url' => '', 'taken' => ''];
+        }
         $archive = trim((string) ($cam['archive'] ?? ''));
         $time = $clip['taken'] !== '' ? self::labelFromUtc($clip['taken']) : self::imageLabel($image, $archive);
 
@@ -45,6 +50,61 @@ class Webcams
             'time' => $time,
             'video' => $clip['url'],
         ];
+    }
+
+    /**
+     * Fest hinterlegte Videodatei. Die Datei trägt keine Aufnahmezeit,
+     * deshalb gilt der Zeitpunkt, an dem sie geschrieben wurde.
+     *
+     * @return array{url: string, taken: string}
+     */
+    private static function directClip(string $url): array
+    {
+        $empty = ['url' => '', 'taken' => ''];
+        $parts = parse_url($url);
+        if (($parts['scheme'] ?? '') !== 'https' || ($parts['host'] ?? '') === '') {
+            return $empty;
+        }
+
+        $key = 'webcam.file.v1.'.sha1($url);
+        $cached = Cache::get($key);
+        if (is_array($cached) && isset($cached['url'], $cached['taken'])) {
+            return ['url' => (string) $cached['url'], 'taken' => (string) $cached['taken']];
+        }
+
+        $taken = self::fileWritten($url);
+        $clip = [
+            'url' => $taken === '' ? $url : $url.(str_contains($url, '?') ? '&' : '?').'v='.substr(sha1($taken), 0, 12),
+            'taken' => $taken,
+        ];
+        Cache::put($key, $clip, $taken !== '' ? 120 : 20);
+
+        return $clip;
+    }
+
+    private static function fileWritten(string $url): string
+    {
+        try {
+            $response = Http::timeout(8)
+                ->withOptions(['curl' => [CURLOPT_RANGE => '-4096']])
+                ->withHeaders(self::browserHeaders('video/mp4'))
+                ->get($url);
+        } catch (Throwable) {
+            return '';
+        }
+        if (! $response->successful()) {
+            return '';
+        }
+        $modified = $response->header('Last-Modified');
+        if (! is_string($modified) || $modified === '') {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($modified)->utc()->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return '';
+        }
     }
 
     /**
