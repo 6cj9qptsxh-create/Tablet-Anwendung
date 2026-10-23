@@ -702,17 +702,18 @@
             ? ['order', 'events', 'info']
             : ['order', 'knx', 'events', 'info'];
     @endphp
+    <script>window.HAUS_MELI_TABS = @json($shellTabs);</script>
 </head>
 
 <body class="page-content"
       x-data="{
         tabs: (function () {
-          const list = @json($shellTabs);
+          const list = window.HAUS_MELI_TABS.slice();
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) list.push('tours');
           return list;
         })(),
         currentTab: (function () {
-          const allowed = @json($shellTabs);
+          const allowed = window.HAUS_MELI_TABS.slice();
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           if (allowed.includes(fromHash)) return fromHash;
@@ -723,7 +724,7 @@
         menuOpen: false,
         chromeTab: 'order',
         wheelIndex: (function () {
-          const allowed = @json($shellTabs);
+          const allowed = window.HAUS_MELI_TABS.slice();
           if ({{ \App\Support\ClientNetwork::showsTours() ? 'true' : 'false' }}) allowed.push('tours');
           const fromHash = (location.hash || '').replace(/^#/, '');
           const name = allowed.includes(fromHash) ? fromHash : (window.hausMeliReadTab(allowed) || 'order');
