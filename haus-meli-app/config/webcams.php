@@ -13,13 +13,21 @@ return [
             'image' => 'https://www.kappl-see.com/var/webcams/104131839.jpg',
             'feratel' => 5589,
         ],
-        'berg' => [
+        'dias' => [
             'name' => 'Diasbahn Bergstation',
             'place' => 'Kappl',
             'asl' => 1830,
             'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-diasbahn-bergstation_webcam_104131835',
             'image' => 'https://www.kappl-see.com/var/webcams/104131835.jpg',
             'feratel' => 5585,
+        ],
+        'alblittkopf' => [
+            'name' => 'Alblittkopf',
+            'place' => 'Kappl',
+            'asl' => 2690,
+            'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-alblittkopf_webcam_104131833',
+            'image' => 'https://www.kappl-see.com/var/webcams/104131833.jpg',
+            'feratel' => 5586,
         ],
     ],
     'see' => [

@@ -5613,33 +5613,26 @@ body.trip-detail-open {
 }
 
 .wx-pick-card .wx-zone {
-    flex: 1 1 100%;
-    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    flex: 1 1 16rem;
+    width: auto;
     max-width: 100%;
+    min-width: min(100%, 16rem);
 }
 
 .wx-pick-card .wx-zone .info-switch-btn {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
     white-space: nowrap;
-    padding: 0 8px;
+    padding: 0 14px;
 }
 
 @media (min-width: 768px) {
     .wx-pick-card .custom-dd {
-        flex: 1 1 auto;
+        flex: 0 1 220px;
         width: auto !important;
-    }
-
-    .wx-pick-card .wx-zone {
-        flex: 0 0 auto;
-        width: auto;
-    }
-
-    .wx-pick-card .wx-zone .info-switch-btn {
-        flex: 0 0 auto;
-        width: auto;
-        padding: 0 14px;
     }
 }
 
