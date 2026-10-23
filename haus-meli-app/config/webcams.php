@@ -24,18 +24,27 @@ return [
     ],
     'see' => [
         'tal' => [
-            'name' => 'Valley',
+            'name' => 'See Paznaun Tal',
             'place' => 'See',
             'asl' => 1100,
-            'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-valley_webcam_104131847',
+            'page' => 'https://www.kappl-see.com/de/live-infos/webcams',
             'image' => 'https://www.kappl-see.com/var/webcams/104131847.jpg',
         ],
-        'berg' => [
-            'name' => 'Nordseite',
+        'medrig' => [
+            'name' => 'Mittelstation See',
             'place' => 'See',
-            'asl' => 2160,
-            'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-nordseite_webcam_104131843',
-            'image' => 'https://www.kappl-see.com/var/webcams/104131843.jpg',
+            'asl' => 1810,
+            'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-medrig-alm_webcam_104131857',
+            'image' => 'https://www.kappl-see.com/var/webcams/104131857.jpg',
+            'feratel' => 5558,
+        ],
+        'furglerblick' => [
+            'name' => 'Furglerblick',
+            'place' => 'See',
+            'asl' => 2570,
+            'page' => 'https://www.kappl-see.com/de/live-infos/webcams/webcam-furglerblick_webcam_104131855',
+            'image' => 'https://www.kappl-see.com/var/webcams/104131855.jpg',
+            'feratel' => 5557,
         ],
     ],
     'ischgl' => [

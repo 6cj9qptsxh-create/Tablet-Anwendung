@@ -21,6 +21,7 @@ class MeteoblueForecast
      * 300 m darunter, weil die Flocken erst auf dem Weg nach unten schmelzen.
      */
     private const SNOW_LINE_BELOW_FREEZING_M = 300;
+
     /** @return array<string, array{label:string,zones:array<string,array{lat:float,lon:float,asl:int}>}> */
     public function orts(): array
     {
@@ -41,6 +42,10 @@ class MeteoblueForecast
         }
         $row = $orts[$ort];
         $zones = is_array($row['zones'] ?? null) ? $row['zones'] : [];
+        // Der frühere See-Reiter Berg heißt jetzt Medrig.
+        if ($ort === 'see' && $zone === 'berg' && isset($zones['medrig'])) {
+            $zone = 'medrig';
+        }
         if (! is_string($zone) || ! isset($zones[$zone])) {
             $zone = isset($zones['tal']) ? 'tal' : (string) array_key_first($zones);
         }
