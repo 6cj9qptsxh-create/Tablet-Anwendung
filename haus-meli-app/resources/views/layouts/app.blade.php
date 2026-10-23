@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=149">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=150">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1648,6 +1648,7 @@
                 paintDayChips();
                 paintHeaderButtons();
                 paintWeatherFrames();
+                paintHistoryTotals();
                 var heads = document.querySelectorAll('.shop-content .super-heading, .tour-main-heading');
                 for (var h = 0; h < heads.length; h++) {
                     var head = heads[h];
@@ -1683,6 +1684,38 @@
                     paintDayChips();
                 });
             }
+            /* Beträge im Bestellungsmodal nehmen denselben Strich wie ihre Karte. */
+            function paintHistoryTotals() {
+                var cards = document.querySelectorAll('.history-card');
+                for (var i = 0; i < cards.length; i++) {
+                    var total = cards[i].querySelector('.history-card-total');
+                    if (!total) continue;
+                    var tr = cards[i].getBoundingClientRect();
+                    var br = total.getBoundingClientRect();
+                    if (tr.width < 8 || br.width < 2) continue;
+                    ro.observe(cards[i]);
+                    total.style.setProperty('--accent-span', Math.max(0, tr.width - 32).toFixed(2) + 'px');
+                    total.style.setProperty('--accent-x', ((tr.left + 16) - br.left).toFixed(2) + 'px');
+                }
+                var stays = document.querySelectorAll('.history-stay-total');
+                for (var s = 0; s < stays.length; s++) {
+                    var sum = stays[s].querySelector('strong');
+                    if (!sum) continue;
+                    var box = stays[s].getBoundingClientRect();
+                    var sr = sum.getBoundingClientRect();
+                    if (box.width < 8 || sr.width < 2) continue;
+                    ro.observe(stays[s]);
+                    sum.style.setProperty('--accent-span', Math.max(0, box.width - 32).toFixed(2) + 'px');
+                    sum.style.setProperty('--accent-x', ((box.left + 16) - sr.left).toFixed(2) + 'px');
+                }
+            }
+
+            window.addEventListener('open-history', function () {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(paintHistoryTotals);
+                });
+            });
+
             /* Tages- und Stundenleiste scrollen, der Strich der Wetterkarte nicht. */
             function paintWeatherFrames() {
                 var cards = document.querySelectorAll('.info-block.wx-board-wrap');
