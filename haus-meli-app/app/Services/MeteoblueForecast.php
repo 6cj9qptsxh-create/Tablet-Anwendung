@@ -21,6 +21,9 @@ class MeteoblueForecast
      * 300 m darunter, weil die Flocken erst auf dem Weg nach unten schmelzen.
      */
     private const SNOW_LINE_BELOW_FREEZING_M = 300;
+
+    /** 1 mm Wasser entspricht etwa 1 cm Neuschnee. */
+    private const SNOW_CM_PER_MM = 1.0;
     /** @return array<string, array{label:string,zones:array<string,array{lat:float,lon:float,asl:int}>}> */
     public function orts(): array
     {
@@ -603,17 +606,18 @@ class MeteoblueForecast
         return is_numeric($snowM) && (int) $snowM < $asl;
     }
 
-    private function rainText(float $mm, bool $millimetre = false): string
+    private function rainText(float $mm, bool $asSnow = false): string
     {
         if ($mm <= 0) {
             return '–';
         }
-        $unit = $millimetre ? 'mm' : 'L/m²';
-        if (abs($mm - round($mm)) < 0.05) {
-            return ((int) round($mm)).' '.$unit;
+        $amount = $asSnow ? $mm * self::SNOW_CM_PER_MM : $mm;
+        $unit = $asSnow ? 'cm' : 'L/m²';
+        if (abs($amount - round($amount)) < 0.05) {
+            return ((int) round($amount)).' '.$unit;
         }
 
-        return number_format($mm, 1, ',', '').' '.$unit;
+        return number_format($amount, 1, ',', '').' '.$unit;
     }
 
     private function sunText(mixed $value): ?string

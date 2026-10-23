@@ -112,14 +112,14 @@ class MeteoblueSnowLineTest extends TestCase
         $this->assertTrue($snow['weighted']);
     }
 
-    public function test_precipitation_below_the_point_is_shown_in_millimetres(): void
+    public function test_precipitation_below_the_point_is_shown_as_snow_centimetres(): void
     {
         $this->assertTrue($this->call('fallsAsSnow', 1600, 1900));
         $this->assertFalse($this->call('fallsAsSnow', 2400, 1900));
         $this->assertFalse($this->call('fallsAsSnow', 1900, 1900));
         $this->assertFalse($this->call('fallsAsSnow', null, 1900));
-        $this->assertSame('4 mm', $this->call('rainText', 4.0, true));
-        $this->assertSame('1,5 mm', $this->call('rainText', 1.5, true));
+        $this->assertSame('4 cm', $this->call('rainText', 4.0, true));
+        $this->assertSame('1,5 cm', $this->call('rainText', 1.5, true));
         $this->assertSame('4 L/m²', $this->call('rainText', 4.0, false));
         $this->assertSame('–', $this->call('rainText', 0.0, true));
     }
