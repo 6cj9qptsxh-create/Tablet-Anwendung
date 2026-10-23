@@ -77,7 +77,7 @@ class MeteoblueForecast
         if (is_array($cached)) {
             $this->keepUntilNextHour($cacheKey, $cached);
 
-            return $this->present($cached);
+            return $this->present($cached, $place['asl']);
         }
 
         try {
@@ -95,7 +95,7 @@ class MeteoblueForecast
         } catch (LockTimeoutException $e) {
             $cached = Cache::get($cacheKey);
             if (is_array($cached)) {
-                return $this->present($cached);
+                return $this->present($cached, $place['asl']);
             }
 
             return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
@@ -105,7 +105,7 @@ class MeteoblueForecast
             return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
         }
 
-        return $this->present($fresh);
+        return $this->present($fresh, $place['asl']);
     }
 
     private function keepUntilNextHour(string $cacheKey, array $cached): void
@@ -357,7 +357,7 @@ class MeteoblueForecast
         ];
     }
 
-    private function present(array $data): array
+    private function present(array $data, int $asl = 0): array
     {
         if (empty($data['ok'])) {
             return $data;
@@ -382,16 +382,14 @@ class MeteoblueForecast
             $index = count($days);
             $day['name'] = $index === 0 ? 'Heute' : ($index === 1 ? 'Morgen' : $names[(int) $when->format('w')]);
             $day['short'] = $index === 0 ? 'Heute' : $week[(int) $when->format('w')];
-            $day['rain_text'] = $this->rainText((float) ($day['rain'] ?? 0));
-
             $hours = $day['hours'] ?? [];
             foreach ($hours as $h => $hour) {
                 $mm = (float) ($hour['rain'] ?? 0);
                 $hours[$h]['rain_height'] = $this->rainHeight($mm);
-                $hours[$h]['rain_text'] = $this->rainText($mm);
                 if ($mm <= 0) {
                     $hours[$h]['snow_m'] = null;
                 }
+                $hours[$h]['rain_text'] = $this->rainText($mm, $this->fallsAsSnow($hours[$h]['snow_m'] ?? null, $asl));
                 $stamp = $date.' '.substr((string) ($hour['time'] ?? ''), 0, 2);
                 $hours[$h]['is_now'] = $stamp === $nowKey;
                 if ($hours[$h]['is_now']) {
@@ -402,10 +400,11 @@ class MeteoblueForecast
                 }
             }
             $day['hours'] = $hours;
-            $day['rain_slots'] = $this->rainSlots($hours);
+            $day['rain_slots'] = $this->rainSlots($hours, $asl);
             if (empty($day['snow_weighted'])) {
                 $day['snow_m'] = null;
             }
+            $day['rain_text'] = $this->rainText((float) ($day['rain'] ?? 0), $this->fallsAsSnow($day['snow_m'] ?? null, $asl));
             if (($day['snow_m'] ?? null) !== null) {
                 $showSnow = true;
             }
@@ -536,12 +535,23 @@ class MeteoblueForecast
         return $meters;
     }
 
-    private function rainSlots(array $hours): array
+    private function rainSlots(array $hours, int $asl = 0): array
     {
         $blocks = array_fill(0, 8, 0.0);
+        $snowOnly = array_fill(0, 8, true);
+        $wet = array_fill(0, 8, false);
         foreach ($hours as $hour) {
             $clock = (int) substr((string) ($hour['time'] ?? ''), 0, 2);
-            $blocks[min(7, intdiv($clock, 3))] += (float) ($hour['rain'] ?? 0);
+            $slot = min(7, intdiv($clock, 3));
+            $mm = (float) ($hour['rain'] ?? 0);
+            $blocks[$slot] += $mm;
+            if ($mm <= 0) {
+                continue;
+            }
+            $wet[$slot] = true;
+            if (! $this->fallsAsSnow($hour['snow_m'] ?? null, $asl)) {
+                $snowOnly[$slot] = false;
+            }
         }
         $labels = ['0–3 Uhr', '3–6 Uhr', '6–9 Uhr', '9–12 Uhr', '12–15 Uhr', '15–18 Uhr', '18–21 Uhr', '21–24 Uhr'];
         $slots = [];
@@ -550,7 +560,7 @@ class MeteoblueForecast
             $slots[] = [
                 'label' => $labels[$i],
                 'mm' => $mm,
-                'text' => $this->rainText($mm),
+                'text' => $this->rainText($mm, $wet[$i] && $snowOnly[$i]),
                 'height' => $this->rainHeight($mm),
             ];
         }
@@ -587,16 +597,23 @@ class MeteoblueForecast
         return (int) min(100, max(1, round($mm / self::RAIN_FULL_MM * 100)));
     }
 
-    private function rainText(float $mm): string
+    /** Schneefallgrenze unter dem Messpunkt: dort fällt der Niederschlag als Schnee. */
+    private function fallsAsSnow(mixed $snowM, int $asl): bool
+    {
+        return is_numeric($snowM) && (int) $snowM < $asl;
+    }
+
+    private function rainText(float $mm, bool $millimetre = false): string
     {
         if ($mm <= 0) {
             return '–';
         }
+        $unit = $millimetre ? 'mm' : 'L/m²';
         if (abs($mm - round($mm)) < 0.05) {
-            return ((int) round($mm)).' L/m²';
+            return ((int) round($mm)).' '.$unit;
         }
 
-        return number_format($mm, 1, ',', '').' L/m²';
+        return number_format($mm, 1, ',', '').' '.$unit;
     }
 
     private function sunText(mixed $value): ?string
