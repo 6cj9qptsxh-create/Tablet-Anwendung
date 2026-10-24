@@ -70,6 +70,11 @@
                 this.applyClip(data.video || '');
             } catch (e) {}
         },
+        pauseCam() {
+            this.$root.querySelectorAll('.info-cam-shot video').forEach((video) => {
+                try { video.pause(); } catch (e) {}
+            });
+        },
         applyClip(url) {
             const video = this.$root.querySelector('.info-cam-shot video');
             if (!video || !url) return;
@@ -80,6 +85,10 @@
             video.load();
         },
         async replayCam(event) {
+            if (this.section !== 'wetter' || (window.__hausMeliTab && window.__hausMeliTab !== 'info')) {
+                this.pauseCam();
+                return;
+            }
             await this.loadCamTime();
             const video = event && event.target;
             if (!video || typeof video.play !== 'function') return;
@@ -111,7 +120,10 @@
         try {
             if (ort && (ort !== $wire.weatherOrt || (zone && zone !== $wire.weatherZone))) $wire.setWeatherChoice(ort, zone);
         } catch (e) {}
-        this.$watch('section', () => this.touchCams());
+        this.$watch('section', (name) => {
+            if (name !== 'wetter') this.pauseCam();
+            this.touchCams();
+        });
         if (window.__hausMeliCamTimer) clearInterval(window.__hausMeliCamTimer);
         const camRoot = this;
         window.__hausMeliCamTimer = setInterval(() => camRoot.touchCams(), 30000);
@@ -180,7 +192,7 @@
                     @foreach($weatherOrts as $ortId => $ortOption)
                         <div class="custom-dd-item {{ $weatherOrt === $ortId ? 'selected' : '' }}"
                              wire:click="setWeatherOrt('{{ $ortId }}')"
-                             @click="open = false; try { localStorage.setItem('hausMeliWeatherOrt', '{{ $ortId }}') } catch (e) {}">
+                             @click="if ('{{ $ortId }}' !== $wire.weatherOrt) pauseCam(); open = false; try { localStorage.setItem('hausMeliWeatherOrt', '{{ $ortId }}') } catch (e) {}">
                             {{ $ortOption['label'] }}
                         </div>
                     @endforeach
@@ -191,7 +203,7 @@
                     <button type="button"
                             class="info-switch-btn {{ $weatherZone === $zoneId ? 'is-on add-btn' : '' }}"
                             wire:click="setWeatherZone('{{ $zoneId }}')"
-                            @click="try { localStorage.setItem('hausMeliWeatherZone', '{{ $zoneId }}') } catch (e) {}">@if(!empty($zone['label'])){{ $zone['label'] }} · @elseif($zoneId === 'tal')Tal · @elseif($zoneId === 'berg')Berg · @endif{{ $zone['asl'] }} m</button>
+                            @click="if ('{{ $zoneId }}' !== $wire.weatherZone) pauseCam(); try { localStorage.setItem('hausMeliWeatherZone', '{{ $zoneId }}') } catch (e) {}">@if(!empty($zone['label'])){{ $zone['label'] }} · @elseif($zoneId === 'tal')Tal · @elseif($zoneId === 'berg')Berg · @endif{{ $zone['asl'] }} m</button>
                 @endforeach
             </div>
         </div>
