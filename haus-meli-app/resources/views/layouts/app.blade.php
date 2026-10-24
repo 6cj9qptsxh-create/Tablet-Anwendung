@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=151">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=152">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1385,8 +1385,6 @@
 
     <div class="edge-swipe-left" aria-hidden="true"></div>
 
-    @include('livewire.general-partials.header')
-
 	@include('livewire.general-partials.navigation')
 
     <div class="tab-pager" x-ref="pager">
@@ -1462,7 +1460,7 @@
         });
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
-    <script src="{{ asset('js/weather.js') }}?v=6"></script>
+    <script src="{{ asset('js/weather.js') }}?v=7"></script>
     <script src="{{ asset('js/shop-deadline.js') }}?v=20"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -1514,27 +1512,6 @@
         });
     </script>
     <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            
-            function updateClock() {
-                const now = new Date();
-                const clockEl = document.getElementById('header-clock');
-                if (clockEl) {
-                    clockEl.textContent = now.toLocaleTimeString('de-DE', {
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    });
-                }
-            }
-
-            // 1. Einmal sofort ausführen, damit nicht 1 Sekunde lang "00:00:00" dort steht
-            updateClock();
-
-            // 2. Den Motor starten: Führt die Funktion ab sofort alle 1000 Millisekunden aus
-            setInterval(updateClock, 1000);
-            
-        });
-    </script>
     <script>
         /* Buttons übernehmen den hell–dunkel–hell-Strich ihrer Box, an der Stelle, wo sie liegen. */
         (function () {
