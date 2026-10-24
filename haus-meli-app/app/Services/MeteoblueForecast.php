@@ -87,29 +87,44 @@ class MeteoblueForecast
             $place['lon'],
             $place['asl']
         );
+        $staleKey = $cacheKey.'.stale';
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
             $this->keepUntilNextHour($cacheKey, $cached);
+            $this->keepStale($staleKey, $cached);
 
             return $this->present($cached, $place['asl']);
         }
 
+        if ($this->paused()) {
+            return $this->duringPause($staleKey, $place);
+        }
+
         try {
-            $fresh = Cache::lock($cacheKey.'.lock', 25)->block(20, function () use ($cacheKey, $key, $place) {
+            $fresh = Cache::lock($cacheKey.'.lock', 25)->block(20, function () use ($cacheKey, $staleKey, $key, $place) {
                 $cached = Cache::get($cacheKey);
                 if (is_array($cached)) {
                     return $cached;
                 }
+                if ($this->paused()) {
+                    return null;
+                }
 
                 $fresh = $this->download($key, $place);
                 Cache::put($cacheKey, $fresh, $this->freshUntil());
+                $this->keepStale($staleKey, $fresh);
 
                 return $fresh;
             });
+        } catch (MeteoblueLimited) {
+            return $this->duringPause($staleKey, $place);
         } catch (LockTimeoutException $e) {
             $cached = Cache::get($cacheKey);
             if (is_array($cached)) {
                 return $this->present($cached, $place['asl']);
+            }
+            if ($this->paused()) {
+                return $this->duringPause($staleKey, $place);
             }
 
             return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
@@ -119,7 +134,61 @@ class MeteoblueForecast
             return ['ok' => false, 'error' => 'Wetterdienst nicht erreichbar.', 'place' => $place['label']];
         }
 
+        if (! is_array($fresh)) {
+            return $this->duringPause($staleKey, $place);
+        }
+
         return $this->present($fresh, $place['asl']);
+    }
+
+    private function keepStale(string $staleKey, array $cached): void
+    {
+        Cache::put($staleKey, $cached, now()->addHours(36));
+    }
+
+    private function paused(): bool
+    {
+        return Cache::get('weather.meteoblue.pause') === true;
+    }
+
+    /**
+     * 429 gilt für den ganzen Schlüssel. Solange die Pause läuft, bleibt
+     * der letzte Bericht stehen und es geht kein weiterer Abruf raus.
+     *
+     * @param  array{id:string,label:string,lat:float,lon:float,asl:int}  $place
+     */
+    private function duringPause(string $staleKey, array $place): array
+    {
+        $stale = Cache::get($staleKey);
+        if (is_array($stale)) {
+            return $this->present($stale, $place['asl']);
+        }
+
+        return ['ok' => false, 'error' => 'Wetterdienst begrenzt die Abrufe.', 'place' => $place['label']];
+    }
+
+    private function pauseFor(\Illuminate\Http\Client\Response $response): void
+    {
+        $seconds = $this->retryAfterSeconds($response);
+        Cache::put('weather.meteoblue.pause', true, now()->addSeconds($seconds));
+        Log::warning('meteoblue response rejected', [
+            'status' => 429,
+            'retry_after' => $seconds,
+        ]);
+    }
+
+    private function retryAfterSeconds(\Illuminate\Http\Client\Response $response): int
+    {
+        $header = trim($response->header('Retry-After'));
+        if (is_numeric($header)) {
+            $seconds = (int) $header;
+        } elseif ($header !== '' && ($at = strtotime($header)) !== false) {
+            $seconds = $at - time();
+        } else {
+            $seconds = 3600;
+        }
+
+        return max(60, min($seconds, 6 * 3600));
     }
 
     private function keepUntilNextHour(string $cacheKey, array $cached): void
@@ -252,6 +321,12 @@ class MeteoblueForecast
             'forecast_days' => 7,
             'apikey' => $key,
         ]);
+
+        if ($response->status() === 429) {
+            $this->pauseFor($response);
+
+            throw new MeteoblueLimited('meteoblue status 429');
+        }
 
         if (! $response->ok() || $response->json('error')) {
             Log::warning('meteoblue response rejected', ['status' => $response->status()]);
@@ -905,3 +980,5 @@ class MeteoblueForecast
         return $names[$index];
     }
 }
+
+class MeteoblueLimited extends \RuntimeException {}
