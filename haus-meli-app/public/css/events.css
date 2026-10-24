@@ -209,7 +209,13 @@ body.is-cal-tab .cal-tab-pane {
     font-size: 1.35rem;
 }
 
+/* Outline, solange nicht nur Favoriten aktiv sind. Rot nur im Favoriten-Filter. */
+.cal-plan-toggle {
+    color: var(--muted);
+}
+
 .cal-plan-toggle .material-symbols-rounded {
+    color: inherit;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 }
 
@@ -219,6 +225,7 @@ body.is-cal-tab .cal-tab-pane {
 }
 
 .cal-plan-toggle.is-on .material-symbols-rounded {
+    color: var(--color-red-border);
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 }
 
