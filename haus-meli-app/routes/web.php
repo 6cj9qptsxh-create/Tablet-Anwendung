@@ -9,7 +9,10 @@ use App\Http\Controllers\TripGpxController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::get('/', function (\Illuminate\Http\Request $request) {
+    $lang = $request->query('lang');
+    \App\Support\GuestLang::captureHomepage(is_string($lang) ? $lang : null);
+
     return view('layouts.app');
 });
 
@@ -106,4 +109,15 @@ Route::post('/gast-farbe', function (\Illuminate\Http\Request $request) {
     $saved = \App\Support\GuestAccent::remember((string) $request->input('accent', ''));
 
     return response()->json(\App\Support\GuestAccent::clientPayload(), $saved ? 200 : 422);
+});
+
+Route::get('/gast-sprache', function () {
+    return response()->json(\App\Support\GuestLang::clientPayload());
+});
+
+Route::post('/gast-sprache', function (\Illuminate\Http\Request $request) {
+    $source = $request->input('source') === 'homepage' ? 'homepage' : 'app';
+    $saved = \App\Support\GuestLang::remember((string) $request->input('lang', ''), $source);
+
+    return response()->json(\App\Support\GuestLang::clientPayload(), $saved ? 200 : 422);
 });

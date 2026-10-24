@@ -2913,6 +2913,19 @@ body.is-cal-tab .shell-nav {
 }
 
 .info-line.is-house { --line: #d4b483; }
+
+.stay-lang {
+    flex-wrap: wrap;
+}
+
+.stay-lang-switch {
+    flex: 1 1 100%;
+}
+
+.stay-lang-switch .info-switch-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
 .info-line.is-link { --line: #7eb6ff; }
 .info-line.is-food { --line: #e2a15a; }
 .info-line.is-sos { --line: #ff8a80; background: var(--card); }

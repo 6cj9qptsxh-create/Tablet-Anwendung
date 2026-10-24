@@ -189,6 +189,40 @@ class GuestAccent
     }
 
     /**
+     * Laufender Aufenthalt inklusive Buchungszeile. Leer, wenn keine Buchung heute trifft.
+     *
+     * @return array{key: string, from: string, until: string, row: array<string, mixed>}|null
+     */
+    public static function openStay(): ?array
+    {
+        try {
+            $today = self::today();
+            $columns = self::bookingColumns();
+            $rows = self::currentRows($today);
+            $stay = self::pickStay($rows, $columns, $today);
+            if ($stay === null) {
+                return null;
+            }
+            foreach ($rows as $row) {
+                if (self::stayKey($row, $columns) !== $stay['key']) {
+                    continue;
+                }
+                if (self::dateOnly($row['check_in'] ?? '') !== $stay['from']) {
+                    continue;
+                }
+                $stay['row'] = $row;
+
+                return $stay;
+            }
+            $stay['row'] = [];
+
+            return $stay;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * @param  array{key: string, from: string, until: string}|null  $stay
      * @return array{active: bool, accent: ?string, from: ?string, until: ?string, writable: bool}
      */
