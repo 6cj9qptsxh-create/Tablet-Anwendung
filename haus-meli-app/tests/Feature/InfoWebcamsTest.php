@@ -113,6 +113,7 @@ class InfoWebcamsTest extends TestCase
         $this->assertLessThan($cam, $report);
 
         $info
+            ->assertSee('pauseCam()', false)
             ->assertSee('Diasbahn Talstation')
             ->assertSee('11:15 Uhr')
             ->assertDontSee('12:26 Uhr')
@@ -276,5 +277,18 @@ class InfoWebcamsTest extends TestCase
                 'time' => null,
                 'video' => null,
             ]);
+    }
+
+    public function test_the_shell_pauses_the_webcam_outside_the_info_tab(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $info = file_get_contents(resource_path('views/livewire/info.blade.php'));
+
+        $this->assertIsString($layout);
+        $this->assertIsString($info);
+        $this->assertStringContainsString("if (tab === 'info') return;", $layout);
+        $this->assertStringContainsString(".info-cam-shot video", $layout);
+        $this->assertStringContainsString("if (name !== 'wetter') this.pauseCam();", $info);
+        $this->assertStringContainsString("window.__hausMeliTab !== 'info'", $info);
     }
 }

@@ -167,7 +167,12 @@
             };
         }
         window.hausMeliStoreTab = function (tab) {
+            window.__hausMeliTab = tab;
             try { localStorage.setItem('hausMeliTab', tab); } catch (e) {}
+            if (tab === 'info') return;
+            document.querySelectorAll('.info-cam-shot video').forEach(function (video) {
+                try { video.pause(); } catch (e) {}
+            });
         };
         window.hausMeliReadTab = function (allowed) {
             try {
