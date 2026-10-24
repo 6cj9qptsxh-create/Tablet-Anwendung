@@ -125,7 +125,7 @@ class Events extends Component
             return;
         }
 
-        $allowed = $this->familyTypes();
+        $allowed = $this->filterableTypes();
         if ($resetTypes) {
             $this->activeTypes = $allowed;
         } else {
@@ -263,7 +263,8 @@ class Events extends Component
 
     public function toggleType($type): void
     {
-        if ($this->isFamily && ! in_array($type, $this->familyTypes(), true)) {
+        $allowed = $this->isFamily ? $this->filterableTypes() : null;
+        if ($allowed !== null && ! in_array($type, $allowed, true)) {
             return;
         }
 
@@ -282,10 +283,6 @@ class Events extends Component
 
     public function toggleLocation($location): void
     {
-        if ($this->isFamily) {
-            return;
-        }
-
         if (in_array($location, $this->inactiveLocations)) {
             $this->inactiveLocations = array_diff($this->inactiveLocations, [$location]);
         } else {
@@ -296,39 +293,40 @@ class Events extends Component
 
     public function toggleFavsOnly(): void
     {
-        if ($this->isFamily) {
-            return;
-        }
-
         $this->showFavsOnly = ! $this->showFavsOnly;
         $this->weekEpoch++;
     }
 
     public function toggleFavorite($eventId, $date): void
     {
-        if ($this->isFamily || $this->guestPreview()) {
+        if ($this->guestPreview()) {
             return;
         }
 
-        $exists = DB::table('ferienwohnung_laravel.guest_favorites')
+        $table = $this->favoritesTable();
+        if ($table === null) {
+            return;
+        }
+
+        $exists = DB::table($table)
             ->where('event_id', $eventId)
             ->where('selected_date', $date)
             ->exists();
 
         if ($exists) {
-            DB::table('ferienwohnung_laravel.guest_favorites')
+            DB::table($table)
                 ->where('event_id', $eventId)
                 ->where('selected_date', $date)
                 ->delete();
         } else {
-            DB::table('ferienwohnung_laravel.guest_favorites')
+            DB::table($table)
                 ->insert(['event_id' => $eventId, 'selected_date' => $date]);
         }
     }
 
     public function toggleFavoriteModal(): void
     {
-        if ($this->isFamily || $this->guestPreview()) {
+        if ($this->guestPreview()) {
             return;
         }
 
@@ -414,12 +412,19 @@ class Events extends Component
         $this->modalEventType = 'privat';
 
         if ($this->isFamily) {
-            $this->modalMode = 'edit';
-            $ev = DB::table('ferienwohnung_laravel.calendar_events')
-                ->where('id', $id)
-                ->whereIn('type', $this->familyTypes())
-                ->first();
-            if ($ev) {
+            if (str_starts_with((string) $id, 'h_')) {
+                $this->modalMode = 'view';
+                $holidays = $this->getAustrianHolidays(Carbon::parse($date)->year);
+                $this->modalTitle = $holidays[$date] ?? 'Feiertag';
+                $this->modalIsFavorite = $this->isFavoriteOnDate($id, $date);
+                $this->dispatch('open-modal', ready: true);
+
+                return;
+            }
+
+            $ev = DB::table('ferienwohnung_laravel.calendar_events')->where('id', $id)->first();
+            if ($ev && in_array((string) ($ev->type ?? ''), $this->familyTypes(), true)) {
+                $this->modalMode = 'edit';
                 $this->modalEventType = ($ev->type ?? '') === 'schicht' ? 'schicht' : 'privat';
                 $this->modalTitle = $ev->title;
                 $this->modalStartTime = $ev->start_time ? Carbon::parse($ev->start_time)->format('H:i') : '';
@@ -437,6 +442,14 @@ class Events extends Component
                 $this->modalOwner = $this->personCode($ev->owner ?? null);
                 $this->modalIsBirthday = ($ev->type ?? '') === 'geburtstag' || $this->isBirthdayTitle((string) ($ev->title ?? ''));
                 $this->modalBirthYear = ! empty($ev->birth_year) ? (int) $ev->birth_year : null;
+            } elseif ($ev) {
+                $this->modalMode = 'view';
+                $this->modalTitle = $ev->title;
+                $this->modalStartTime = $ev->start_time ? Carbon::parse($ev->start_time)->format('H:i') : '';
+                $this->modalEndTime = $ev->end_time ? Carbon::parse($ev->end_time)->format('H:i') : '';
+                $this->modalLocation = $ev->location;
+                $this->modalUrl = $ev->url ?? '';
+                $this->modalIsFavorite = $this->isFavoriteOnDate($id, $date);
             }
             $this->dispatch('open-modal', ready: true);
 
@@ -478,10 +491,7 @@ class Events extends Component
                     $this->modalUrl = $ev->url ?? '';
                 }
             }
-            $this->modalIsFavorite = ! $this->guestPreview() && DB::table('ferienwohnung_laravel.guest_favorites')
-                ->where('event_id', $id)
-                ->where('selected_date', $date)
-                ->exists();
+            $this->modalIsFavorite = $this->isFavoriteOnDate($id, $date);
         }
 
         $this->dispatch('open-modal', ready: true);
@@ -842,7 +852,7 @@ class Events extends Component
             $nowTopPx = (($now->hour - 6) * 60) + $now->minute + 15;
         }
 
-        $availableLocations = $this->isFamily ? collect() : $this->collectLocationsForStrip($days, $weeks);
+        $availableLocations = $this->collectLocationsForStrip($days, $weeks);
         $shiftTemplates = $this->isFamily ? $this->loadShiftTemplates() : collect();
 
         return view('livewire.events', [
@@ -1272,6 +1282,17 @@ class Events extends Component
         return ['schicht', 'privat', 'geburtstag'];
     }
 
+    /** Öffentliche Ereignistypen aus dem Admin-Kalender (Region). */
+    private function publicEventTypes(): array
+    {
+        return ['operating', 'topevent', 'event', 'info'];
+    }
+
+    private function filterableTypes(): array
+    {
+        return array_values(array_merge($this->familyTypes(), $this->publicEventTypes()));
+    }
+
     private function isBirthdayTitle(string $title): bool
     {
         return (bool) preg_match('/\bgeburtstag\b/ui', $title);
@@ -1280,6 +1301,9 @@ class Events extends Component
     private function familyEventType($ev): string
     {
         $type = (string) ($ev->type ?? 'privat');
+        if (in_array($type, $this->publicEventTypes(), true) || $type === 'holiday') {
+            return $type;
+        }
         if ($type === 'schicht') {
             return 'schicht';
         }
@@ -1288,6 +1312,11 @@ class Events extends Component
         }
 
         return 'privat';
+    }
+
+    private function isPersonalFamilyEvent($ev): bool
+    {
+        return in_array($this->familyEventType($ev), $this->familyTypes(), true);
     }
 
     private function endDateForTimes(string $startDate, ?string $startTime, ?string $endTime): string
@@ -1499,13 +1528,18 @@ class Events extends Component
 
     private function passesFilters($ev, bool $isFavOnThisDay): bool
     {
-        if ($this->isFamily) {
-            return in_array($this->familyEventType($ev), $this->activeTypes, true);
-        }
-
         $titleLower = mb_strtolower((string) ($ev->title ?? ''));
         if (($ev->type ?? '') === 'no_delivery' || str_contains($titleLower, 'keine lieferung')) {
             return false;
+        }
+
+        if ($this->isFamily) {
+            $type = $this->familyEventType($ev);
+            $typeOk = in_array($type, $this->activeTypes, true) || $type === 'holiday';
+            $locOk = empty($ev->location) || ! in_array($ev->location, $this->inactiveLocations, true);
+            $favOk = ! $this->showFavsOnly || $isFavOnThisDay || $this->isPersonalFamilyEvent($ev);
+
+            return $typeOk && $locOk && $favOk;
         }
 
         $typeOk = in_array($ev->type, $this->activeTypes, true)
@@ -1517,14 +1551,46 @@ class Events extends Component
         return $typeOk && $locOk && $favOk;
     }
 
+    private function favoritesTable(): ?string
+    {
+        if ($this->guestPreview()) {
+            return null;
+        }
+        if ($this->isFamily) {
+            $this->ensureOwnerFavoritesTable();
+
+            return 'ferienwohnung_laravel.owner_favorites';
+        }
+
+        return 'ferienwohnung_laravel.guest_favorites';
+    }
+
+    private function isFavoriteOnDate($eventId, string $date): bool
+    {
+        $table = $this->favoritesTable();
+        if ($table === null) {
+            return false;
+        }
+
+        try {
+            return DB::table($table)
+                ->where('event_id', $eventId)
+                ->where('selected_date', $date)
+                ->exists();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
     private function loadFavorites(): array
     {
-        if ($this->isFamily || $this->guestPreview()) {
+        $table = $this->favoritesTable();
+        if ($table === null) {
             return [];
         }
 
         try {
-            return DB::table('ferienwohnung_laravel.guest_favorites')
+            return DB::table($table)
                 ->get()
                 ->groupBy('event_id')
                 ->map(fn ($items) => $items->pluck('selected_date')->toArray())
@@ -1541,8 +1607,9 @@ class Events extends Component
         $this->ensurePeopleColumns();
 
         if ($this->isFamily) {
+            $personal = collect();
             try {
-                return $this->expandYearlyOccurrences(
+                $personal = $this->expandYearlyOccurrences(
                     DB::table('ferienwohnung_laravel.calendar_events')
                         ->whereIn('type', $this->familyTypes())
                         ->where(function ($q) use ($rangeStart, $rangeEnd) {
@@ -1556,8 +1623,56 @@ class Events extends Component
                     $rangeEnd
                 )->map(fn ($ev) => $this->decorateFamilyEvent($ev));
             } catch (\Exception $e) {
-                return collect();
             }
+
+            $public = collect();
+            try {
+                $public = $this->expandYearlyOccurrences(
+                    DB::table('ferienwohnung_laravel.calendar_events')
+                        ->whereIn('type', $this->publicEventTypes())
+                        ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                            $q->where(function ($inner) use ($rangeStart, $rangeEnd) {
+                                $inner->where('end_date', '>=', $rangeStart)
+                                    ->where('start_date', '<=', $rangeEnd);
+                            })->orWhere('repeat_yearly', 1);
+                        })
+                        ->get()
+                        ->filter(function ($ev) {
+                            $title = mb_strtolower((string) ($ev->title ?? ''));
+
+                            return ! str_contains($title, 'keine lieferung');
+                        })
+                        ->map(fn ($ev) => $this->decoratePublicEvent($ev)),
+                    $rangeStart,
+                    $rangeEnd
+                )->values();
+            } catch (\Exception $e) {
+            }
+
+            $years = [Carbon::parse($rangeStart)->year, Carbon::parse($rangeEnd)->year];
+            foreach (array_unique($years) as $year) {
+                foreach ($this->getAustrianHolidays($year) as $date => $name) {
+                    if ($date >= $rangeStart && $date <= $rangeEnd) {
+                        $public->push((object) [
+                            'id' => 'h_'.$date,
+                            'title' => $name,
+                            'display_title' => $name,
+                            'type' => 'holiday',
+                            'start_date' => $date,
+                            'end_date' => $date,
+                            'start_time' => null,
+                            'end_time' => null,
+                            'location' => null,
+                            'is_private' => false,
+                            'is_outline' => false,
+                            'color' => 'var(--color-red-border)',
+                            'title_icon' => null,
+                        ]);
+                    }
+                }
+            }
+
+            return $personal->merge($public)->values();
         }
 
         $publicEvents = collect();
@@ -1661,6 +1776,40 @@ class Events extends Component
         }
 
         return $ev;
+    }
+
+    private function decoratePublicEvent($ev)
+    {
+        $ev->type = (string) ($ev->type ?? 'event');
+        $ev->is_private = false;
+        $ev->is_outline = false;
+        $ev->display_title = (string) ($ev->title ?? '');
+        $ev->title_icon = $this->iconFromTitle((string) ($ev->title ?? ''));
+        $ev->age = null;
+        $ev->who = '';
+
+        return $ev;
+    }
+
+    private function ensureOwnerFavoritesTable(): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+        $ready = true;
+        try {
+            DB::statement(
+                'CREATE TABLE IF NOT EXISTS ferienwohnung_laravel.owner_favorites (
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    event_id VARCHAR(64) NOT NULL,
+                    selected_date DATE NOT NULL,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY owner_favorites_event_date (event_id, selected_date)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+        } catch (\Exception $e) {
+        }
     }
 
     private function birthdayDisplayName(string $title): string
