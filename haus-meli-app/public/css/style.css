@@ -1109,72 +1109,6 @@ body[data-nav-hold] .shop-to-top,
    3. SHELL & NAVIGATION
    ========================================= */
 
-#info-card {
-    padding: 6px 16px;
-}
-
-/* --- TOP INFO AREA (Wetter, Sprache, Uhr) --- */
-.info-card-head {
-    /* Grid für exakte Drittel-Aufteilung */
-    display: grid !important;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: center !important;
-
-    width: 100%;
-    min-height: 0;
-    margin: 0 auto;
-
-    /* Unten eckig, damit es nahtlos an den Rand passt (falls oben angedockt) */
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-
-    position: relative;
-}
-
-/* Der farbige Strich unter der Info-Karte */
-.info-card-head::after {
-    content: '';
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: -3px;
-    height: var(--border-th);
-    background: linear-gradient(to right, var(--accent-soft), var(--accent), var(--accent-soft));
-    z-index: 2;
-}
-
-/* Elemente im Header ausrichten */
-.header-weather {
-    justify-self: start;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1rem;
-    line-height: 1;
-}
-
-#hw-icon {
-    font-size: 2.15rem;
-    line-height: 1;
-}
-
-#lang-switch {
-    justify-self: center;
-    min-width: 44px;
-    padding: 0 6px;
-    font-size: 1.05rem;
-    line-height: 1;
-}
-
-#header-clock {
-    justify-self: end;
-    font-size: 1.05rem;
-    font-weight: bold;
-    font-family: monospace;
-    color: #aeb5d1;
-    line-height: 1;
-}
-
 /* --- NAVIGATION: vorige Seite, aktuelle, nächste ---
    In der Ruhe zeigt die Mitte nur den aktuellen Namen in einer Glaspille.
    Ein horizontaler Zug öffnet das Rad: die Namen laufen mit dem Finger,
@@ -1355,34 +1289,6 @@ body[data-nav-hold] .shop-to-top,
         inset 0 -1px 0 rgba(255, 255, 255, 0.08),
         0 8px 20px color-mix(in srgb, var(--accent), transparent 62%),
         0 0 0 2px var(--accent-soft);
-}
-
-.header-tools {
-    justify-self: center;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-}
-
-.header-tools .shell-btn {
-    flex: 0 0 auto;
-    width: auto;
-    padding: 2px 6px;
-}
-
-.header-pay {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px;
-    border: 0;
-    background: transparent;
-    color: var(--muted, rgba(255, 255, 255, 0.7));
-    cursor: pointer;
-}
-
-.header-pay .material-symbols-rounded {
-    font-size: 1.25rem;
 }
 
 /* --- NAVIGATION BAR (Tabs) --- */
@@ -3007,6 +2913,19 @@ body.is-cal-tab .shell-nav {
 }
 
 .info-line.is-house { --line: #d4b483; }
+
+.stay-lang {
+    flex-wrap: wrap;
+}
+
+.stay-lang-switch {
+    flex: 1 1 100%;
+}
+
+.stay-lang-switch .info-switch-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
 .info-line.is-link { --line: #7eb6ff; }
 .info-line.is-food { --line: #e2a15a; }
 .info-line.is-sos { --line: #ff8a80; background: var(--card); }
@@ -3639,11 +3558,6 @@ body.is-cal-tab .shell-nav {
         padding-top: var(--safe-top);
     }
 
-    /* Handy: Uhr, Sprache und Wetter liefert das Gerät bzw. der Infos-Tab */
-    #info-card.info-card-head {
-        display: none !important;
-    }
-
     /* 1. App-Download-Karte ausblenden (Platz sparen am Handy) */
     #mobile-app-card {
         display: none !important;
@@ -3811,15 +3725,6 @@ body.is-cal-tab .shell-nav {
         display: none !important;
     }
 }
-
-/* Handy quer: die Breite liegt über 767px, die Höhe bleibt die kurze Seite.
-   Tablet im Querformat ist deutlich höher und behält Wetter und Uhr. */
-@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
-    #info-card.info-card-head {
-        display: none !important;
-    }
-}
-
 
 /* --- DESKTOP LAYOUT (> 768px) --- */
 /* Hier schalten wir um auf "Nebeneinander" */

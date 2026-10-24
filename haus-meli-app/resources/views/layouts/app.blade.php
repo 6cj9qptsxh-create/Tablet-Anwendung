@@ -15,7 +15,7 @@
     <title>Haus Meli</title>
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('icon-192.png') }}">
     
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=151">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=153">
     <link rel="stylesheet" href="{{ asset('css/events.css') }}?v=103">
     <link rel="stylesheet" href="{{ asset('css/leaflet-fix.css') }}?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -501,6 +501,7 @@
                 if (STAY && STAY.active && STAY.until && today > STAY.until) paint(STANDARD);
                 if (today === stayRefreshDay) return;
                 refreshStay();
+                if (window.hausMeliRefreshLang) window.hausMeliRefreshLang();
             }
             window.hausMeliApplyAccent = function (code) {
                 if (GUEST) {
@@ -708,6 +709,20 @@
             : ['order', 'knx', 'events', 'info'];
     @endphp
     <script>window.HAUS_MELI_TABS = @json($shellTabs);</script>
+    <script>
+        window.HAUS_MELI_LANG = @json(\App\Support\GuestLang::clientPayload());
+        window.hausMeliDeviceLang = function (fallback) {
+            var l = (navigator.languages && navigator.languages[0]) || navigator.language || fallback || 'de';
+            return String(l).toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
+        };
+        window.APP = window.APP || {};
+        window.APP.lang = (function (fallback) {
+            var stay = window.HAUS_MELI_LANG && window.HAUS_MELI_LANG.lang;
+            if (stay === 'de' || stay === 'en') return stay;
+            return window.hausMeliDeviceLang(fallback);
+        })(@json(str_replace('_', '-', app()->getLocale())));
+        document.documentElement.lang = window.APP.lang;
+    </script>
 </head>
 
 <body class="page-content"
@@ -1390,8 +1405,6 @@
 
     <div class="edge-swipe-left" aria-hidden="true"></div>
 
-    @include('livewire.general-partials.header')
-
 	@include('livewire.general-partials.navigation')
 
     <div class="tab-pager" x-ref="pager">
@@ -1452,12 +1465,71 @@
     </script>
 
     <script>
+        window.hausMeliApplyLang = function (data) {
+            window.HAUS_MELI_LANG = data && typeof data === 'object' ? data : (window.HAUS_MELI_LANG || {});
+            var stay = window.HAUS_MELI_LANG.lang;
+            var lang = stay === 'de' || stay === 'en' ? stay : window.hausMeliDeviceLang(@json(str_replace('_', '-', app()->getLocale())));
+            window.APP = window.APP || {};
+            window.APP.lang = lang;
+            document.documentElement.lang = lang;
+            window.dispatchEvent(new CustomEvent('haus-lang', {
+                detail: {
+                    lang: lang,
+                    source: window.HAUS_MELI_LANG.source || '',
+                    writable: !!window.HAUS_MELI_LANG.writable
+                }
+            }));
+        };
+        window.hausMeliRefreshLang = function () {
+            fetch(@json(url('/gast-sprache')), { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data && typeof data === 'object') window.hausMeliApplyLang(data); })
+                .catch(function () {});
+        };
+        window.hausMeliSetLang = function (lang) {
+            if (lang !== 'de' && lang !== 'en') return Promise.resolve(false);
+            if (!window.HAUS_MELI_LANG || !window.HAUS_MELI_LANG.writable) return Promise.resolve(false);
+            var token = document.querySelector('meta[name="csrf-token"]');
+            return fetch(@json(url('/gast-sprache')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token ? token.getAttribute('content') : ''
+                },
+                body: JSON.stringify({ lang: lang, source: 'app' })
+            }).then(function (r) {
+                return r.json().then(function (data) {
+                    if (r.ok && data && typeof data === 'object') {
+                        window.hausMeliApplyLang(data);
+                        return true;
+                    }
+                    return false;
+                });
+            }).catch(function () { return false; });
+        };
+        window.addEventListener('message', function (event) {
+            if (event.source !== window.parent || window.parent === window) return;
+            var data = event.data;
+            if (!data || data.type !== 'haus-meli-lang') return;
+            var lang = data.lang === 'en' ? 'en' : (data.lang === 'de' ? 'de' : '');
+            if (!lang || !window.HAUS_MELI_LANG || !window.HAUS_MELI_LANG.writable) return;
+            var token = document.querySelector('meta[name="csrf-token"]');
+            fetch(@json(url('/gast-sprache')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token ? token.getAttribute('content') : ''
+                },
+                body: JSON.stringify({ lang: lang, source: 'homepage' })
+            }).then(function (r) { return r.json(); }).then(function (payload) {
+                if (payload && typeof payload === 'object' && payload.lang) window.hausMeliApplyLang(payload);
+            }).catch(function () {});
+        });
+    </script>
+    <script>
         window.APP = Object.assign(window.APP || {}, {
-            // Sprache kommt vom Gerät (Browser/Handy), Laravel-Locale nur als Fallback
-            lang: (function (fallback) {
-                var l = (navigator.languages && navigator.languages[0]) || navigator.language || fallback || 'de';
-                return String(l).toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
-            })(@json(str_replace('_', '-', app()->getLocale()))),
             // Fallback wenn Bilder nur auf dem Admin-Server liegen (lokal Port 8000)
             toursMediaUrl: @json(rtrim((string) env('TOURS_MEDIA_URL', ''), '/')),
             plannedShareUrl: '/tours/planned/share',
@@ -1467,7 +1539,7 @@
         });
     </script>
     <script>document.documentElement.lang = window.APP.lang;</script>
-    <script src="{{ asset('js/weather.js') }}?v=6"></script>
+    <script src="{{ asset('js/weather.js') }}?v=7"></script>
     <script src="{{ asset('js/shop-deadline.js') }}?v=20"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -1519,27 +1591,6 @@
         });
     </script>
     <script>document.addEventListener('touchstart', function () {}, { passive: true });</script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            
-            function updateClock() {
-                const now = new Date();
-                const clockEl = document.getElementById('header-clock');
-                if (clockEl) {
-                    clockEl.textContent = now.toLocaleTimeString('de-DE', {
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    });
-                }
-            }
-
-            // 1. Einmal sofort ausführen, damit nicht 1 Sekunde lang "00:00:00" dort steht
-            updateClock();
-
-            // 2. Den Motor starten: Führt die Funktion ab sofort alle 1000 Millisekunden aus
-            setInterval(updateClock, 1000);
-            
-        });
-    </script>
     <script>
         /* Buttons übernehmen den hell–dunkel–hell-Strich ihrer Box, an der Stelle, wo sie liegen. */
         (function () {

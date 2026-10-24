@@ -1,7 +1,24 @@
 <div class="container info-app"
      @haus-weather-hour.window="$wire.$refresh()"
+     @haus-lang.window="lang = $event.detail.lang; langSource = $event.detail.source || ''; langWritable = !!$event.detail.writable"
      x-data="{
         ownerInfo: {{ !empty($infoOwner) ? 'true' : 'false' }},
+        lang: (window.APP && window.APP.lang) || 'de',
+        langSource: (window.HAUS_MELI_LANG && window.HAUS_MELI_LANG.source) || '',
+        langWritable: !!(window.HAUS_MELI_LANG && window.HAUS_MELI_LANG.writable),
+        setLang(code) {
+            if (!this.langWritable || (code !== 'de' && code !== 'en')) return;
+            const previous = this.lang;
+            const previousSource = this.langSource;
+            this.lang = code;
+            this.langSource = 'app';
+            const done = window.hausMeliSetLang ? window.hausMeliSetLang(code) : Promise.resolve(false);
+            Promise.resolve(done).then((ok) => {
+                if (ok) return;
+                this.lang = previous;
+                this.langSource = previousSource;
+            });
+        },
         section: (function () {
             const owner = {{ !empty($infoOwner) ? 'true' : 'false' }};
             const allowed = owner ? ['wetter', 'out'] : ['now', 'wetter', 'out', 'haus'];
@@ -385,6 +402,17 @@
     <div class="info-panel" x-show="section === 'haus'" x-cloak>
         <div class="info-kicker" data-i18n="info_apt_title">Infos zur Wohnung</div>
         <div class="info-rows">
+            <div class="info-line is-house stay-lang">
+                <span class="info-line-ico"><span class="material-symbols-rounded">translate</span></span>
+                <span class="info-line-text">
+                    <strong>Sprache</strong>
+                    <p x-text="langSource === 'app' ? 'Für diesen Aufenthalt' : (langSource ? 'Von der Homepage' : 'Sprache des Geräts')"></p>
+                </span>
+                <div class="info-switch stay-lang-switch" role="group" aria-label="Sprache">
+                    <button type="button" class="info-switch-btn" :class="{ 'is-on add-btn': lang === 'de' }" :aria-pressed="lang === 'de'" :disabled="!langWritable" @click="setLang('de')">Deutsch</button>
+                    <button type="button" class="info-switch-btn" :class="{ 'is-on add-btn': lang === 'en' }" :aria-pressed="lang === 'en'" :disabled="!langWritable" @click="setLang('en')">English</button>
+                </div>
+            </div>
             <div class="info-line is-house">
                 <span class="info-line-ico"><span class="material-symbols-rounded">schedule</span></span>
                 <span class="info-line-text">
