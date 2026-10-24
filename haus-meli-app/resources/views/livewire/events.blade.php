@@ -150,9 +150,17 @@
                     </h2>
                 @endif
                 <div class="cal-toolbar-icons">
+                    <button type="button"
+                            class="cal-icon-btn cal-plan-toggle {{ $showFavsOnly ? 'is-on' : '' }}"
+                            wire:click="toggleFavsOnly"
+                            title="Mein Plan"
+                            aria-label="Mein Plan"
+                            aria-pressed="{{ $showFavsOnly ? 'true' : 'false' }}">
+                        <span class="material-symbols-rounded" aria-hidden="true">favorite</span>
+                    </button>
                     <div class="cal-filter-wrap">
                         <button type="button"
-                                class="cal-icon-btn cal-filter-toggle {{ ($showFavsOnly || count($inactiveLocations) || ($isFamily ? count($activeTypes) < 7 : false)) ? 'has-dot' : '' }}"
+                                class="cal-icon-btn cal-filter-toggle {{ (count($inactiveLocations) || ($isFamily ? count($activeTypes) < 7 : false)) ? 'has-dot' : '' }}"
                                 :class="{ 'is-open': filterOpen }"
                                 @pointerdown.stop
                                 @click="filterOpen ? closeFilters() : openFilters()"
@@ -176,10 +184,6 @@
                                     <span>Geburtstag</span>
                                 </button>
                                 <div class="cal-filter-sep">Region</div>
-                                <button type="button" wire:click="toggleFavsOnly" class="filter-chk-btn {{ $showFavsOnly ? 'checked' : '' }}">
-                                    <div class="chk-box"></div>
-                                    <span>❤️ Mein Plan</span>
-                                </button>
                                 <button type="button" wire:click="toggleType('operating')" class="filter-chk-btn {{ in_array('operating', $activeTypes) ? 'checked' : '' }}">
                                     <div class="chk-box"></div>
                                     <span>🚠 Betrieb</span>
@@ -239,10 +243,6 @@
                                     </div>
                                 </div>
                             @else
-                                <button type="button" wire:click="toggleFavsOnly" class="filter-chk-btn {{ $showFavsOnly ? 'checked' : '' }}">
-                                    <div class="chk-box"></div>
-                                    <span>❤️ Mein Plan</span>
-                                </button>
                                 <button type="button" wire:click="toggleType('operating')" class="filter-chk-btn {{ in_array('operating', $activeTypes) ? 'checked' : '' }}">
                                     <div class="chk-box"></div>
                                     <span>🚠 Betrieb</span>
