@@ -152,7 +152,7 @@
                 <div class="cal-toolbar-icons">
                     <div class="cal-filter-wrap">
                         <button type="button"
-                                class="cal-icon-btn cal-filter-toggle {{ ($isFamily ? count($activeTypes) < 3 : ($showFavsOnly || count($inactiveLocations))) ? 'has-dot' : '' }}"
+                                class="cal-icon-btn cal-filter-toggle {{ ($showFavsOnly || count($inactiveLocations) || ($isFamily ? count($activeTypes) < 7 : false)) ? 'has-dot' : '' }}"
                                 :class="{ 'is-open': filterOpen }"
                                 @pointerdown.stop
                                 @click="filterOpen ? closeFilters() : openFilters()"
@@ -175,6 +175,36 @@
                                     <div class="chk-box"></div>
                                     <span>Geburtstag</span>
                                 </button>
+                                <div class="cal-filter-sep">Region</div>
+                                <button type="button" wire:click="toggleFavsOnly" class="filter-chk-btn {{ $showFavsOnly ? 'checked' : '' }}">
+                                    <div class="chk-box"></div>
+                                    <span>❤️ Mein Plan</span>
+                                </button>
+                                <button type="button" wire:click="toggleType('operating')" class="filter-chk-btn {{ in_array('operating', $activeTypes) ? 'checked' : '' }}">
+                                    <div class="chk-box"></div>
+                                    <span>🚠 Betrieb</span>
+                                </button>
+                                <button type="button" wire:click="toggleType('topevent')" class="filter-chk-btn {{ in_array('topevent', $activeTypes) ? 'checked' : '' }}">
+                                    <div class="chk-box"></div>
+                                    <span>⭐ Top-Events</span>
+                                </button>
+                                <button type="button" wire:click="toggleType('event')" class="filter-chk-btn {{ in_array('event', $activeTypes) ? 'checked' : '' }}">
+                                    <div class="chk-box"></div>
+                                    <span>📅 Events</span>
+                                </button>
+                                <button type="button" wire:click="toggleType('info')" class="filter-chk-btn {{ in_array('info', $activeTypes) ? 'checked' : '' }}">
+                                    <div class="chk-box"></div>
+                                    <span>ℹ️ Infos</span>
+                                </button>
+                                @if(count($availableLocations) > 0)
+                                    <div class="cal-filter-sep">Orte</div>
+                                    @foreach($availableLocations as $loc)
+                                        <button type="button" wire:click="toggleLocation('{{ $loc }}')" class="filter-chk-btn {{ !in_array($loc, $inactiveLocations) ? 'checked' : '' }}">
+                                            <div class="chk-box"></div>
+                                            <span>📍 {{ $loc }}</span>
+                                        </button>
+                                    @endforeach
+                                @endif
                                 <div class="cal-filter-sep">Schichtvorlagen</div>
                                 @forelse($shiftTemplates as $tpl)
                                     <div class="cal-tpl-row" style="--tpl-color: {{ $tpl->color ?: '#2563eb' }};">
@@ -325,6 +355,7 @@
                                                 @endif
                                                 <span class="agenda-title">
                                                     <span class="agenda-title-text">@if(!empty($ev->title_icon))<span class="material-symbols-rounded cal-ev-ico">{{ $ev->title_icon }}</span>@endif{{ $ev->display_title ?? $ev->title }}</span>
+                                                    @if(empty($ev->is_private) && !empty($ev->is_favorite)) ❤️ @endif
                                                     @if($colKey === 'birthdays' && !empty($ev->age))
                                                         <span class="agenda-age">{{ $ev->age }}J</span>
                                                     @endif
